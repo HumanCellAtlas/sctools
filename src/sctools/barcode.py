@@ -3,6 +3,7 @@ from collections import Counter, Mapping
 import numpy as np
 from .encodings import TwoBit
 from .stats import base4_entropy
+import pysam
 
 
 class Barcodes:
@@ -19,22 +20,22 @@ class Barcodes:
         """
         if not isinstance(barcodes, Mapping):
             raise TypeError('barcode set must be a dict-like object mapping barcodes to counts')
-        self._data = barcodes
+        self._mapping = barcodes
         if not isinstance(barcode_length, int) and barcode_length > 0:
             raise ValueError('barcode length must be a positive integer')
         self._barcode_length = barcode_length
 
     def __contains__(self, item):
-        return item in self._data
+        return item in self._mapping
 
     def __iter__(self):
-        return iter(self._data)
+        return iter(self._mapping)
 
     def __len__(self):
-        return len(self._data)
+        return len(self._mapping)
 
     def __getitem__(self, item):
-        return self._data[item]
+        return self._mapping[item]
 
     def summarize_hamming_distances(self):
         """returns descriptive statistics on hamming distances between pairs of barcodes"""
@@ -56,7 +57,7 @@ class Barcodes:
         :return np.array: barcode_length x 4 2d array
         """
         base_counts_by_position = np.zeros((self._barcode_length, 4), dtype=np.uint64)
-        keys = np.fromiter(self._data.keys(), dtype=np.uint64)
+        keys = np.fromiter(self._mapping.keys(), dtype=np.uint64)
 
         for i in reversed(range(self._barcode_length)):
             binary_base_representations, counts = np.unique(keys & 3, return_counts=True)
@@ -112,3 +113,70 @@ class Barcodes:
         """construct an ObservedBarcodeSet from an iterable of bytes barcodes"""
         tbe = TwoBit(barcode_length)
         return cls(Counter(tbe.encode(b) for b in iterable), barcode_length=barcode_length)
+
+
+class ErrorsToCorrectBarcodesMap:
+
+    def __init__(self, errors_to_barcodes):
+        """use a hash map of erroneous_barcode -> true barcode to correct errors in cell barcodes
+
+        :param dict errors_to_barcodes: mapping of errors to the barcodes that could generate them.
+        """
+        if not isinstance(errors_to_barcodes, Mapping):
+            raise TypeError('errors_to_barcodes must be a mapping of erroneous barcodes to correct '
+                            'barcodes, not %a' % type(errors_to_barcodes))
+        self._map = errors_to_barcodes
+
+    def get_corrected_barcode(self, barcode):
+        return self._map[barcode]
+
+    @staticmethod
+    def _prepare_single_base_error_hash_table(barcodes):
+        """
+
+        :param Iterable barcodes: iterable of string barcodes
+        :return dict: mapping between erroneous barcodes with single-base mutations and the barcode
+          they were generated from
+        """
+        error_map = {}
+        for barcode in barcodes:
+
+            # include correct barcode
+            error_map[barcode] = barcode
+
+            # include all single-base errors
+            for i, nucleotide in enumerate(barcode):
+                errors = set('ACGTN')
+                errors.discard(nucleotide)
+                for e in errors:
+                    error_map[barcode[:i] + e + barcode[i + 1:]] = barcode
+        return error_map
+
+    @classmethod
+    def single_hamming_errors_from_whitelist(cls, whitelist_file):
+        """factory method to generate instance of class from a file containing "correct" barcodes
+
+        :param str whitelist_file: text file containing barcode per line
+        :return ErrorsToCorrectBarcodesMap: instance of cls.
+        """
+        with open(whitelist_file, 'r') as f:
+            return cls(cls._prepare_single_base_error_hash_table((line[:-1] for line in f)))
+
+    def correct_bam(self, bam_file, output_bam_file):
+        """correct barcodes in a (potentially unaligned) bamfile, given a whitelist
+
+        :param str bam_file: BAM format file in same order as the fastq files
+        :param str output_bam_file:  BAM format file containing cell, umi, and sample tags.
+        """
+        with pysam.AlignmentFile(bam_file, 'rb') as fin, \
+                pysam.AlignmentFile(output_bam_file, 'wb', template=fin) as fout:
+            for alignment in fin:
+                try:
+                    # pysam tags mimic tags in SAM specification -- they encode a two-
+                    # character tag (key), the type of the tag (Z = string), and the
+                    # tag value.
+                    tag = self.get_corrected_barcode(alignment.get_tag('CR'))
+                    alignment.set_tag('CB', tag, 'Z')
+                except KeyError:
+                    pass  # code not in tag, just write the record as-is without a CB tag.
+                fout.write(alignment)
