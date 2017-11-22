@@ -17,9 +17,9 @@ CLASSIFIERS = [
 
 setup(
     name='sctools',
-    version='0.1.0',
+    version='0.1.4',
     description='Utilities for large-scale distributed single cell data processing',
-    url='https://github.com/humancellatlas/scsequtil.git',
+    url='https://github.com/humancellatlas/sctools.git',
     author='Ambrose J. Carr',
     author_email='mail@ambrosejcarr.com',
     package_dir={'': 'src'},
@@ -32,7 +32,8 @@ setup(
     ],
     entry_points={
             'console_scripts': [
-                'Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes'
+                'Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes',
+                'SplitBam = sctools.platform:GenericPlatform.split_bam'
             ]
     },
     classifiers=CLASSIFIERS,

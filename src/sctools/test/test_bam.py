@@ -1,22 +1,23 @@
-import pytest
 import os
-from .. import bam
+import pytest
+import glob
+from .. import bam, platform
 
 
-data_dir = os.path.split(__file__)[0] + '/data'
+data_dir = os.path.split(__file__)[0] + '/data/'
 
 
 # TEST SUBSETALIGNMENTS
 
-@pytest.fixture(scope='module', params=[data_dir + '/test.sam', data_dir + '/test.bam'])
+@pytest.fixture(scope='module', params=[data_dir + 'test.sam', data_dir + 'test.bam'])
 def sa_object(request):
     """fixture returns SubsetAlignments objects for testing"""
     return bam.SubsetAlignments(request.param)
 
 
 @pytest.fixture(scope='module', params=[
-    (data_dir + '/test.sam', 20, 20),
-    (data_dir + '/test.bam', 20, 20)])
+    (data_dir + 'test.sam', 20, 20),
+    (data_dir + 'test.bam', 20, 20)])
 def indices(request):
     """fixture returns indices from a SubsetAlignments objects for testing"""
     sa = bam.SubsetAlignments(request.param[0])
@@ -71,3 +72,49 @@ def test_chromosome_19_comes_before_21(indices):
 
 
 # TAGGER TESTED IN INTEGRATION TESTS ONLY (see test_entrypoints.py)
+
+# TEST SPLIT
+
+@pytest.fixture(scope='module', params=[data_dir + 'test.sam', data_dir + 'test.bam'])
+def bamfile(request):
+    return request.param
+
+
+def test_split_bam_raises_value_error_when_passed_bam_without_barcodes(bamfile):
+    split_size = 0.02  # our test data is very small, 0.01mb = ~10kb, which should yield 5 files.
+    with pytest.raises(RuntimeError):
+        bam.split(bamfile, 'test_output', 'CB', split_size)
+
+
+@pytest.fixture
+def tagged_bam():
+    args = [
+        '--r1', data_dir + 'test_r1.fastq',
+        '--i1', data_dir + 'test_i7.fastq',
+        '--u2', data_dir + 'test_r2.bam',
+        '--output-bamfile', 'test_tagged_bam.bam',
+        '--whitelist', data_dir + '1k-august-2016.txt']
+    platform.TenXV2.attach_barcodes(args)
+    return 'test_tagged_bam.bam'
+
+
+def test_split_on_tagged_bam(tagged_bam):
+    split_size = 0.005  # our test data is very small, this value should yield 3 files
+    outputs = bam.split(tagged_bam, 'test_output', 'CB', split_size)
+    assert len(outputs) == 3
+
+    # cleanup
+    os.remove(tagged_bam)  # clean up
+    for f in glob.glob('test_output_*'):
+        os.remove(f)
+
+
+def test_split_with_large_chunk_size_generates_one_file(tagged_bam):
+    split_size = 1024  # our test data is very small, this value should yield 1 file
+    outputs = bam.split(tagged_bam, 'test_output', 'CB', split_size)
+    assert len(outputs) == 1
+
+    # cleanup
+    os.remove(tagged_bam)  # clean up
+    for f in glob.glob('test_output_*'):
+        os.remove(f)

@@ -172,11 +172,9 @@ class ErrorsToCorrectBarcodesMap:
                 pysam.AlignmentFile(output_bam_file, 'wb', template=fin) as fout:
             for alignment in fin:
                 try:
-                    # pysam tags mimic tags in SAM specification -- they encode a two-
-                    # character tag (key), the type of the tag (Z = string), and the
-                    # tag value.
+                    # pysam tags mimic tags in SAM specification; Z = string
                     tag = self.get_corrected_barcode(alignment.get_tag('CR'))
-                    alignment.set_tag('CB', tag, 'Z')
-                except KeyError:
-                    pass  # code not in tag, just write the record as-is without a CB tag.
+                except KeyError:  # pass through the uncorrected barcode.
+                    tag = alignment.get_tag('CR')
+                alignment.set_tag(tag='CB', value=tag, value_type='Z')
                 fout.write(alignment)
