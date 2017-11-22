@@ -188,3 +188,64 @@ def test_fields_populate_properly(reader_all_compressions):
         assert all(i in alphabet for i in record.sequence.strip())
         assert record.name2 == name2_string
         assert all(i in ascii_chars for i in record.quality.strip())
+
+
+# TEST BarcodeGeneratorWithCorrectedCellbarcodes
+
+@pytest.fixture(scope='function')
+def embedded_barcode_generator():
+    cell_barcode = fastq.EmbeddedBarcode(start=0, end=16, quality_tag='CY', sequence_tag='CR')
+    molecule_barcode = fastq.EmbeddedBarcode(start=16, end=26, quality_tag='UY', sequence_tag='UR')
+    return fastq.EmbeddedBarcodeGenerator(data_dir + 'test_r1.fastq.gz',
+                                          [cell_barcode, molecule_barcode])
+
+
+@pytest.fixture(scope='function')
+def barcode_generator_with_corrected_cell_barcodes():
+    cell_barcode = fastq.EmbeddedBarcode(start=0, end=16, quality_tag='CY', sequence_tag='CR')
+    molecule_barcode = fastq.EmbeddedBarcode(start=16, end=26, quality_tag='UY', sequence_tag='UR')
+    return fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+        data_dir + 'test_r1.fastq.gz', cell_barcode, data_dir + '1k-august-2016.txt',
+        [molecule_barcode])
+
+
+def test_embedded_barcode_generator_produces_outputs_of_expected_size(embedded_barcode_generator):
+    for cell_seq, cell_qual, umi_seq, umi_qual in embedded_barcode_generator:
+
+        # correct values
+        correct_cell_barcode_length = 16
+        correct_umi_length = 10
+
+        # note that all barcodes are strings and therefore should get 'Z' values
+
+        # test cell tags
+        assert cell_seq[0] == 'CR'
+        assert len(cell_seq[1]) == correct_cell_barcode_length
+        assert all(v in 'ACGTN' for v in cell_seq[1])
+        assert cell_seq[2] == 'Z'
+        assert cell_qual[0] == 'CY'
+        assert len(cell_qual[1]) == correct_cell_barcode_length
+        assert all(v in string.printable for v in cell_qual[1])
+        assert cell_seq[2] == 'Z'
+
+        # test umi tags
+        assert umi_seq[0] == 'UR'
+        assert len(umi_seq[1]) == correct_umi_length
+        assert all(v in 'ACGTN' for v in umi_seq[1])
+        assert umi_seq[2] == 'Z'
+        assert umi_qual[0] == 'UY'
+        assert len(umi_qual[1]) == correct_umi_length
+        assert all(v in string.printable for v in umi_qual[1])
+        assert umi_seq[2] == 'Z'
+
+        break  # just the first tag is fine
+
+
+def test_corrects_barcodes(barcode_generator_with_corrected_cell_barcodes):
+    success = False
+    for barcode_sets in barcode_generator_with_corrected_cell_barcodes:
+        for barcode_set in barcode_sets:
+            if barcode_set[0] == 'CB':
+                success = True
+                break
+    assert success
