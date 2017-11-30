@@ -2,7 +2,7 @@ from . import fastq, bam
 import argparse
 
 
-class PlatformBase:
+class GenericPlatform:
     """Abstract base class for platform specific metadata"""
 
     @classmethod
@@ -10,8 +10,44 @@ class PlatformBase:
         """command line entrypoint for attaching barcodes to a bamfile."""
         raise NotImplementedError
 
+    @classmethod
+    def split_bam(cls, args=None):
+        """command line entrypoint for splitting a bamfile into subfiles of equal size.
 
-class TenXV2(PlatformBase):
+        prints filenames of chunks to stdout
+
+        :param list args: optional arguments list, for testing (see test/test_entrypoints.py for
+          example).
+        :return int:
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            '-b', '--bamfile', required=True,
+            help='input bamfile')
+        parser.add_argument(
+            '-p', '--output-prefix', required=True,
+            help='prefix for output chunks')
+        parser.add_argument(
+            '-s', '--subfile-size', required=False, default=1000, type=float,
+            help='approximate size target for each subfile (in MB)')
+        parser.add_argument('-t', '--tag', required=True, help='tag to split bamfile over')
+        parser.set_defaults(raise_missing=True)
+        parser.add_argument('--drop-missing', action='store_false',
+                            help='drop records without tag specified by -t/--tag (default '
+                                 'behavior is to raise an exception')
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        filenames = bam.split(
+            args.bamfile, args.output_prefix, args.tag, args.subfile_size, args.raise_missing)
+
+        print(' '.join(filenames))
+        return 0
+
+
+class TenXV2(GenericPlatform):
 
     # 10x contains three barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
@@ -40,9 +76,9 @@ class TenXV2(PlatformBase):
         barcodes embedded in each fastq record. For 10x, this means extracting the cell, umi, and
         sample barcode.
 
-        :param str r1:
-        :param str i1:
-        :param str whitelist:
+        :param str r1: fastq file, read 1
+        :param str i1: fastq file, read 2
+        :param str whitelist: file containing barcodes -- one barcode perline.
         :return [Generator]: a list of embedded barcodes generators associated with each fastq
           record
         """

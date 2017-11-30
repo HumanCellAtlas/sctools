@@ -202,8 +202,8 @@ class EmbeddedBarcodeGenerator(Reader):
 
 class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
 
-    def __init__(self, fastq_files, embedded_cell_barcode, whitelist, other_embedded_barcodes=None,
-                 *args, **kwargs):
+    def __init__(self, fastq_files, embedded_cell_barcode, whitelist,
+                 other_embedded_barcodes=tuple(), *args, **kwargs):
         """
         parse fastq files for barcodes(s) defined by EmbeddedBarcode objects, producing a generator
         that yields extracted barcode objects in a form that is consumable by pysam's bam and sam
@@ -219,10 +219,10 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
           return bytes objects.
         """
         super().__init__(files=fastq_files, *args, **kwargs)
-        if isinstance(other_embedded_barcodes, (list, None)):
+        if isinstance(other_embedded_barcodes, (list, tuple)):
             self.embedded_barcodes = other_embedded_barcodes
         else:
-            raise TypeError('other_embedded_barcodes must be a list of barcodes if provided')
+            raise TypeError('if passed, other_embedded_barcodes must be a list or tuple')
         self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
             whitelist)
         self.embedded_cell_barcode = embedded_cell_barcode
@@ -242,6 +242,6 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         seq_tag, qual_tag = extract_barcode(record, cb)
         try:
             corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
-            return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')
         except KeyError:
-            return seq_tag, qual_tag
+            corrected_cb = seq_tag[1]  # couldn't find the right barcode!
+        return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')

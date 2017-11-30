@@ -1,5 +1,9 @@
 import warnings
+import os
+import math
 import pysam
+from itertools import cycle
+
 
 """
 unlike fastq and gtf which lack flexible iterators, the pysam wrapper provides an excellent iterator 
@@ -115,7 +119,7 @@ class Tagger:
           (see fastq.Tag)
         """
         with pysam.AlignmentFile(self.bam_file, 'rb', check_sq=False) as inbam, \
-                pysam.AlignmentFile(output_bam_name, 'wb', header=inbam.header) as outbam:
+                pysam.AlignmentFile(output_bam_name, 'wb', template=inbam) as outbam:
 
             # zip up all the iterators
             for *tag_sets, sam_record in zip(*tag_generators, inbam):
@@ -123,3 +127,87 @@ class Tagger:
                     for tag in tag_set:
                         sam_record.set_tag(*tag)
                 outbam.write(sam_record)
+
+
+def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True):
+    """
+    split a bam file into subfiles by tag, calculating the number of splits so that the chunks are
+    approximately approx_mb_per_split
+
+    :param str in_bam: input bam file
+    :param str out_prefix:  prefix for all output files; output will be named as prefix_n where n
+      is an integer equal to the chunk number.
+    :param tag: the bam tag to split on
+    :param float approx_mb_per_split: the target file size for each chunk in mb
+    :param raise_missing: default=True, if True, raise a RuntimeError if a record is encountered
+      without a tag. Else silently discard the record.
+
+
+    :return [str]: output file names
+    """
+
+    def _cleanup(files_to_counts, files_to_names, rm_all=False):
+        """close files, remove any empty files.
+
+        :param dict files_to_counts:
+        :param dict files_to_names:
+        :param bool rm_all: indicates all files should be removed, regardless of count number.
+        :return:
+        """
+        for bamfile, count in files_to_counts.items():
+            # corner case: clean up files that were created, but didn't get data because
+            # n_cell < n_barcode
+            bamfile.close()
+            if count == 0 or rm_all:
+                os.remove(files_to_names[bamfile])
+                del files_to_names[bamfile]
+
+    # find correct number of subfiles to spawn
+    bam_mb = os.path.getsize(in_bam) * 1e-6
+    n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
+    if n_subfiles > 500:
+        warnings.warn('Number of requested subfiles (%d) exceeds 500; this may cause OS errors by '
+                      'exceeding fid limits' % n_subfiles)
+    if n_subfiles > 1000:
+        raise ValueError('Number of requested subfiles (%d) exceeds 1000; this will usually cause '
+                         'OS errors, please increase max_mb_per_split.' % n_subfiles)
+
+    # create all the output files
+    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+
+        # map files to counts
+        files_to_counts = {}
+        files_to_names = {}
+        for i in range(n_subfiles):
+            out_bam_name = out_prefix + '_%d.bam' % i
+            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)
+            files_to_counts[open_bam] = 0
+            files_to_names[open_bam] = out_bam_name
+
+        # cycler over files to assign new barcodes to next file
+        file_cycler = cycle(files_to_counts.keys())
+
+        # create an empty map for barcodes to files
+        tags_to_files = {}
+
+        # loop over input, partitioning barcodes into files
+        for alignment in input_alignments:
+            try:
+                tag_content = alignment.get_tag(tag)
+            except KeyError:
+                if raise_missing:
+                    _cleanup(files_to_counts, files_to_names, rm_all=True)
+                    raise RuntimeError(
+                        'alignment encountered that is missing %s tag.' % tag)
+                else:
+                    continue
+            try:
+                out_file = tags_to_files[tag_content]
+            except KeyError:
+                out_file = next(file_cycler)
+                tags_to_files[tag_content] = out_file
+            out_file.write(alignment)
+            files_to_counts[out_file] += 1
+
+    _cleanup(files_to_counts, files_to_names)
+    return list(files_to_names.values())
