@@ -56,19 +56,21 @@ class Reader:
     def __iter__(self):
         for file_ in self._files:
 
-            # set correct mode when string requested; gz and bzip treat 'r' = bytes, 'rt' = string
-            if self._mode == 'r' and any(file_.endswith(s) for s in ['.gz', '.bz2']):
-                mode = 'rt'
-            else:
-                mode = self._mode
+            # determine encoding & set correct mode; gz and bzip treat 'r' = bytes, 'rt' = string
+            with open(file_, 'rb') as f:
+                data = f.read(3)
+                if data[:2] == b'\x1f\x8b':  # gzip magic number
+                    openhook = gzip.open
+                    mode = 'rt' if self._mode == 'r' else self._mode
+                elif data == b'BZh':  # bz2 magic number
+                    openhook = bz2.open
+                    mode = 'rt' if self._mode == 'r' else self._mode
+                else:
+                    openhook = open
+                    mode = self._mode
 
             # open file
-            if file_.endswith('.gz'):
-                f = gzip.open(file_, mode)
-            elif file_.endswith('.bz2'):
-                f = bz2.open(file_, mode)
-            else:
-                f = open(file_, mode)
+            f = openhook(file_, mode)
 
             # iterate over the file, dropping header lines if requested
             try:

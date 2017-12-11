@@ -17,7 +17,7 @@ CLASSIFIERS = [
 
 setup(
     name='sctools',
-    version='0.1.4',
+    version='0.1.6',
     description='Utilities for large-scale distributed single cell data processing',
     url='https://github.com/humancellatlas/sctools.git',
     author='Ambrose J. Carr',
