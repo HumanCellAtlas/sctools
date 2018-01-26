@@ -1,4 +1,4 @@
-#Loose structure of code
+# Loose structure of code
 
 #### BaseMetric - base class for different metrics collectors
 * setup() - any setup a metrics class has to do
