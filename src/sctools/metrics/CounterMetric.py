@@ -10,7 +10,7 @@ class CounterMetric(BaseMetric):
 
     def accept_read(self, sam_record):
         blah = sam_record.get_tag("CB") # grab tag value from input to main program and pass to here
-        c[blah] += 1
+        c[blah] += 1 # update counter for each sam record
 
     def finish_up(self):
-        # output metric to a file
+        # output Counter histogram
