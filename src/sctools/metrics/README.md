@@ -36,7 +36,7 @@
 ##### categorical data:
 - count number (could include genes)
 
-####what groupings/gather methods do we need?
+#### what groupings/gather methods do we need?
 - cell [cell]
 - molecules [cell, umi, sample]
 - sequence fragments [cell, umi, sample, [chrom, insert position] | sequence]
