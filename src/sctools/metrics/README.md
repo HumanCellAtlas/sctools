@@ -3,7 +3,7 @@
 #### BaseMetric - base class for different metrics collectors
 * setup() - any setup a metrics class has to do
 * accept_read() - process a record for your metric
-* finish_up() - finalize any calculations needed and write out file
+* calculate_and_output() - finalize any calculations needed and write out file
 
 
 #### MetricsRunner - class with command line interface, determines what metrics to run and inputs for those metrics

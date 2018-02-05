@@ -1,19 +1,33 @@
+import argparse
+
+
 class MetricsRunner:
-    list_of_base_metrics_to_run = []
-    input_bam = "some/path/through/command"
-    """
-    Based on input passed through the command line we would decide
-    which metrics to run on what bam
-    """
 
-    def run_metrics(self):
-        global list_of_base_metrics_to_run, input_bam
+    @staticmethod
+    def run_metrics(list_of_metrics_to_run, input_bam):
 
-        for metric in list_of_base_metrics_to_run:
+        for metric in list_of_metrics_to_run:
             metric.setup()
 
         for read in input_bam:
             metric.accept_read(read)
 
-        for metric in list_of_base_metrics_to_run:
-            metric.finish_up()
+        for metric in list_of_metrics_to_run:
+            metric.calculate_and_output()
+
+
+def convert_class_name_to_class(list_of_class_names):
+    # maybe some kind of case statement or python equivalent to grab a class from a string
+    pass
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_bam", help="path to input bam file")
+    parser.add_argument("-m", "--metric", action="append", help="metrics to run on input_bam")
+    args = parser.parse_args()
+    metric_classes = None  # convert_class_name_to_class(args.metric)
+    MetricsRunner.run_metrics(metric_classes, args.input_bam)
+
+
+if __name__ == '__main__':
+    main()
