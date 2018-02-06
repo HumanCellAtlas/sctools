@@ -1,3 +1,2 @@
-from . import BaseMetric
-from . import CounterMetric
-from . import CountUnmappedReadsMetric
+from . import basemetric
+from . import metricsrunner

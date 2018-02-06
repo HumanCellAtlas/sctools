@@ -8,7 +8,7 @@ class BaseMetric:
         """Do some kind of one time initialization for the metrics class"""
 
     @abc.abstractmethod
-    def accept_read(self, sam_record):
+    def gather_metric(self, sam_record):
         """What the metric to do with each read of a bam"""
 
     @abc.abstractmethod
