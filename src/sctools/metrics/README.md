@@ -9,7 +9,7 @@
 #### MetricsRunner - class with command line interface, determines what metrics to run and inputs for those metrics
 * loop through each metric and call setup() on each
 * loop through bam calling metric.accept_read() for each metric
-* loop through each metric and call finish_up() on each 
+* loop through each metric and call calculate_and_output() on each 
 
 
 #### what kinds of objects do we need to parse

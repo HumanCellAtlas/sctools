@@ -2,7 +2,7 @@ import argparse
 import pysam
 
 
-class MetricsRunner:
+class Runner:
 
     def __init__(self, sam_file, open_mode=None):
         """
@@ -28,7 +28,7 @@ class MetricsRunner:
         """
 
         for metric in metrics_to_run:
-            metric.setup()
+            metric.initialize()
 
         with pysam.AlignmentFile(self.input_sam, self.open_mode) as sam:
             for record in sam:
@@ -41,19 +41,19 @@ class MetricsRunner:
 
 def convert_class_name_to_class(metric_class_names):
     # maybe some kind of case statement or python equivalent to grab a class from a string
-    # once we define a metric class that extends basemetric.py we can fill out this method
+    # once we define a metric class that extends base_metric.py we can fill out this method
     pass
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_bam", help="path to input bam file")
-    parser.add_argument("-m", "--metric", action="append", help="metrics to run on input_bam")
+    parser.add_argument("-m", "--metrics", nargs='+', help="metrics to run on input_bam")
     args = parser.parse_args()
 
-    metric_classes = None  # convert_class_name_to_class(args.metric)
+    metric_classes = None  # convert_class_name_to_class(args.metrics)
 
-    runner = MetricsRunner(args.input_bam)
+    runner = Runner(args.input_bam)
     runner.run_metrics(metric_classes)
 
 
