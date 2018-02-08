@@ -69,7 +69,7 @@ class TenXV2(GenericPlatform):
         bam_tagger.tag(output_bamfile_name, tag_generators)
 
     @classmethod
-    def make_tag_generators(cls, r1, i1, whitelist=None):
+    def make_tag_generators(cls, r1, i1=None, whitelist=None):
         """Create tag generators from fastq files.
 
         Tag generators are iterators that run over fastq records, they extract and yield all of the
@@ -77,29 +77,30 @@ class TenXV2(GenericPlatform):
         sample barcode.
 
         :param str r1: fastq file, read 1
-        :param str i1: fastq file, read 2
+        :param str i1: (optional) fastq file, index read
         :param str whitelist: file containing barcodes -- one barcode perline.
         :return [Generator]: a list of embedded barcodes generators associated with each fastq
           record
         """
+        tag_generators = []
+
+        # generator for cell and molecule barcodes
         if whitelist is not None:
-            return [
-                fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
-                    fastq_files=r1,
-                    embedded_cell_barcode=cls.cell_barcode,
-                    whitelist=whitelist,
-                    other_embedded_barcodes=[cls.molecule_barcode],
-                ),
-                fastq.EmbeddedBarcodeGenerator(
-                    fastq_files=i1, embedded_barcodes=[cls.sample_barcode])
-            ]
+            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+                fastq_files=r1,
+                embedded_cell_barcode=cls.cell_barcode,
+                whitelist=whitelist,
+                other_embedded_barcodes=[cls.molecule_barcode],
+            ))
         else:
-            return [
-                fastq.EmbeddedBarcodeGenerator(
-                    fastq_files=r1, embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode]),
-                fastq.EmbeddedBarcodeGenerator(
-                    fastq_files=i1, embedded_barcodes=[cls.sample_barcode])
-            ]
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
+                fastq_files=r1, embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode]))
+
+        # generator for sample barcodes
+        if i1 is not None:
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
+                fastq_files=i1, embedded_barcodes=[cls.sample_barcode]))
+        return tag_generators
 
     @classmethod
     def attach_barcodes(cls, args=None):
@@ -111,13 +112,14 @@ class TenXV2(GenericPlatform):
         parser = argparse.ArgumentParser()
         parser.add_argument(
             '--r1', required=True,
-            help='read 1 fastq record for a 10x genomics experiment')
-        parser.add_argument(
-            '--i1', required=True, help='i7 fastq record for a 10x genomics experiment')
+            help='read 1 fastq file for a 10x genomics v2 experiment')
         parser.add_argument(
             '--u2', required=True,
-            help='unaligned read-2 bam containing genomic information. Can be converted'
+            help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
                  'using picard FastqToSam')
+        parser.add_argument(
+            '--i1', default=None,
+            help='(optional) i7 index fastq file for a 10x genomics experiment')
         parser.add_argument('-o', '--output-bamfile', required=True,
                             help='filename for tagged bam')
         parser.add_argument('-w', '--whitelist', default=None,
@@ -128,7 +130,6 @@ class TenXV2(GenericPlatform):
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-
         tag_generators = cls.make_tag_generators(args.r1, args.i1, args.whitelist)
         cls.tag_bamfile(args.u2, args.output_bamfile, tag_generators)
 
