@@ -1,7 +1,6 @@
 import argparse
 import pysam
 
-
 class Runner:
 
     def __init__(self, sam_file, open_mode=None):
@@ -51,7 +50,7 @@ def main():
     parser.add_argument("-m", "--metrics", nargs='+', help="metrics to run on input_bam")
     args = parser.parse_args()
 
-    metric_classes = None  # convert_class_name_to_class(args.metrics)
+    metric_classes = [collect_unique_fragment_by_umi.UniqueFragmentPerUMI()]  # convert_class_name_to_class(args.metrics)
 
     runner = Runner(args.input_bam)
     runner.run_metrics(metric_classes)
