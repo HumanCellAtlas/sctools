@@ -49,8 +49,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_bam", help="path to input bam file")
     parser.add_argument("basename", type=str, help="basename of metrics to output")
-    parser.add_argument("-m", "--metrics", nargs='+', help="metrics to run on input_bam")
-    parser.add_argument("-cbt", "--cell_barcode_tag", type=str, help="tag value to grab cell barcode from record",
+    parser.add_argument("-m", "--metrics", nargs='+', help="metrics to run on input_bam, possible values include:"
+                                                           " \"UniqueFragmentPerUMI\"")
+    parser.add_argument("-cbt", "--cell_barcode_tag", type=str, help="tag value to grab cell barcode from record ",
                         default="CR")
     parser.add_argument("-mbt", "--molecular_barcode_tag", type=str, help="tag value to grab cell barcode from record",
                         default="UR")
