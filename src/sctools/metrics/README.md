@@ -1,15 +1,20 @@
-# Loose structure of code
-
 #### BaseMetric - base class for different metrics collectors
-* setup() - any setup a metrics class has to do
-* accept_read() - process a record for your metric
+* initialize() - any setup a metrics class has to do
+* gather_metric() - process a record for your metric
 * calculate_and_output() - finalize any calculations needed and write out file
 
 
 #### MetricsRunner - class with command line interface, determines what metrics to run and inputs for those metrics
-* loop through each metric and call setup() on each
-* loop through bam calling metric.accept_read() for each metric
-* loop through each metric and call calculate_and_output() on each 
+* loop through each metric and call initialize() on each
+* loop through bam calling metric.gather_metric() for each metric
+* loop through each metric and call calculate_and_output() on each
+
+##### Command Line Usage
+usage: runner.py [-h] [-m METRICS [METRICS ...]] [-cbt CELL_BARCODE_TAG]
+                 [-mbt MOLECULAR_BARCODE_TAG]
+                 input_bam basename
+                 
+Required arguments: input_bam, basename, and at least one metric
 
 
 #### what kinds of objects do we need to parse

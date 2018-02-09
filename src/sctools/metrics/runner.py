@@ -56,6 +56,10 @@ def main():
                         default="UR")
     args = parser.parse_args()
 
+    if len(args.metrics) == 0:
+        print("you need to provide at least one metric for this program to run")
+        exit(1)
+
     metric_classes = convert_class_name_to_class(args.metrics)
 
     runner = Runner(args.input_bam)
