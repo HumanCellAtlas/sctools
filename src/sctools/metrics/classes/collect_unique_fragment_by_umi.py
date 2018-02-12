@@ -17,7 +17,6 @@ class UniqueFragmentPerUMI(base_metric.BaseMetric):
         self.basename = args.basename
         self.cell_barcode_tag = args.cell_barcode_tag
         self.umi_barcode_tag = args.molecular_barcode_tag
-        return
 
     def gather_metric(self, sam_record):
         if sam_record.is_unmapped:
@@ -41,6 +40,7 @@ class UniqueFragmentPerUMI(base_metric.BaseMetric):
     def calculate_and_output(self):
         detail_header_columns = ["Cell_Barcode", "Total_UMI_Fragments", "Mean_Fragments_Per_UMI", "Standard_Deviation"]
         summary_header_columns = ["Total_UMI_Fragments", "Mean_Fragments_Per_UMI", "Standard_Deviation"]
+        # write out detail metrics
         with open(self.basename + '.unique_fragment_by_umi_detail_metrics.tsv', 'w') as detail_metrics:
             writer = csv.writer(detail_metrics, delimiter='\t')
             writer.writerow(detail_header_columns)
@@ -64,11 +64,11 @@ class UniqueFragmentPerUMI(base_metric.BaseMetric):
                 fragments_per_umi_in_bam.extend(fragments_per_umi_in_cell_barcode)
                 writer.writerow([cell_barcode, total_umi_fragments_captured_in_cell_barcode,
                                  total_umi_fragments_captured_in_cell_barcode / total_umis_in_cell_barcode, std_dev])
+        # write out summary metrics (metrics for the whole bam file)
         with open(self.basename + '.unique_fragment_by_umi_summary_metrics.tsv', 'w') as summary_metrics:
             writer = csv.writer(summary_metrics, delimiter='\t')
             writer.writerow(summary_header_columns)
             std_dev = statistics.stdev(fragments_per_umi_in_bam)
             writer.writerow([total_umi_fragments_captured_in_bam,
                              total_umi_fragments_captured_in_bam / total_umis_in_bam, std_dev])
-        return
 
