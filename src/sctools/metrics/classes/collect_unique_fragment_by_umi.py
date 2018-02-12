@@ -6,17 +6,14 @@ import statistics
 
 class UniqueFragmentPerUMI(base_metric.BaseMetric):
 
-    def __init__(self):
-        self.cell_barcode_to_umi = None
-        self.basename = None
-        self.cell_barcode_tag = None
-        self.umi_barcode_tag = None
-
-    def initialize(self, args):
+    def __init__(self, args):
         self.cell_barcode_to_umi = collections.defaultdict(dict)
         self.basename = args.basename
         self.cell_barcode_tag = args.cell_barcode_tag
         self.umi_barcode_tag = args.molecular_barcode_tag
+
+    def initialize(self):
+        pass
 
     def gather_metric(self, sam_record):
         if sam_record.is_unmapped:

@@ -30,19 +30,19 @@ class Runner:
         """
 
         for metric in metrics_to_run:
-            metric.initialize(metric, args)
+            metric.initialize()
 
         with pysam.AlignmentFile(self.input_sam, self.open_mode) as sam:
             for record in sam:
                 for metric in metrics_to_run:
-                    metric.gather_metric(metric, record)
+                    metric.gather_metric(record)
 
         for metric in metrics_to_run:
-            metric.calculate_and_output(metric)
+            metric.calculate_and_output()
 
 
-def convert_class_name_to_class(metric_class_names):
-    return [getattr(classes, metric_name) for metric_name in metric_class_names]
+def convert_class_name_to_class(args):
+    return [getattr(classes, metric_name)(args) for metric_name in args.metrics]
 
 
 def main():
@@ -61,7 +61,7 @@ def main():
         print("you need to provide at least one metric for this program to run")
         exit(1)
 
-    metric_classes = convert_class_name_to_class(args.metrics)
+    metric_classes = convert_class_name_to_class(args)
 
     runner = Runner(args.input_bam)
     runner.run_metrics(args, metric_classes)

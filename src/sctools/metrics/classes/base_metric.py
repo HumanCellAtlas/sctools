@@ -1,6 +1,6 @@
 class BaseMetric:
 
-    def initialize(self, args):
+    def initialize(self):
         """Do some kind of one time initialization for the metrics class"""
         raise NotImplementedError
 
