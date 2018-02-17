@@ -1,4 +1,4 @@
-#### BaseMetric - base class for different metrics collectors
+#### MetricCollector - base class for different metrics collectors
 * initialize() - any setup a metrics class has to do
 * gather_metric() - process a record for your metric
 * calculate_and_output() - finalize any calculations needed and write out file
