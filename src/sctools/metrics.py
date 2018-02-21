@@ -2,19 +2,10 @@ from .encodings import TwoBit
 from collections import defaultdict
 import argparse
 import pysam
-# from typing import NamedTuple
 
 
 class TagError(Exception):
     pass
-
-
-# class Molecule(NamedTuple):
-#     min_mismatches: int
-#     reverse_strand: int
-#     is_spliced: bool  # logic: if any reads overlapping an intron are found, set to False
-#     is_unique: bool = True
-#     observations: int = 0
 
 
 class Molecule:
@@ -43,7 +34,8 @@ class MetricCollector:
         self._metric_data = defaultdict(dict)
 
     def gather_metric_data(self, sam_record):
-        """Extract metric information from a sam_record
+        """
+        Extract metric information from a sam_record
 
         :param pysam.AlignedFragment sam_record: pysam object generated from a SAM format record
         """
@@ -85,7 +77,7 @@ class MetricCollector:
             except KeyError:
                 self._metric_data[(cell_encoded, molecule_encoded)]['multi-mapped'] = 1
 
-        # record is uniquely mapped.
+        # record is uniquely mapped to one genomic locus.
         else:
             # assumptions:
             # assume XF tag will contain all necessary information about where a gene is mapped
@@ -113,7 +105,7 @@ class MetricCollector:
                         self._metric_data[(cell_encoded, molecule_encoded)]['no-gene'] += 1
                     except KeyError:
                         self._metric_data[(cell_encoded, molecule_encoded)]['no-gene'] = 1
-                    return  # TagGeneExon not adding gene tags where it should be
+                    return  # TagGeneExon not adding gene tags to intronic reads
                     # raise TagError('No GE tag found. Any read aligned to CODING or INTERGENIC '
                     #                'sequence should have a GE tag indicating the gene body it '
                     #                'aligned against. Read:\n%s' % str(sam_record))
