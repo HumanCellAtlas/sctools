@@ -134,3 +134,19 @@ class TenXV2(GenericPlatform):
         cls.tag_bamfile(args.u2, args.output_bamfile, tag_generators)
 
         return 0
+
+    @classmethod
+    def calculate_cell_metrics(cls, args=None):
+        raise NotImplementedError
+
+    @classmethod
+    def calculate_gene_metrics(cls, args=None):
+        raise NotImplementedError
+
+    @classmethod
+    def merge_cell_metrics(cls, args=None):
+        raise NotImplementedError
+
+    @classmethod
+    def merge_gene_metrics(cls, args=None):
+        raise NotImplementedError
