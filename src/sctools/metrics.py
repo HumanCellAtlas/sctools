@@ -119,20 +119,25 @@ class Gene(MetricAggregator):
         This function extracts information from all the records of a gene and adds them to the
         parent aggregator
         """
-        raise NotImplementedError  # implement this
+        pass  # no-op
 
 
 class MetricGatherer:
 
-    def __init__(self, bam_file: str):
+    def __init__(self, bam_file: str, output_stem: str):
         self._bam_file = bam_file
+        self._output_stem = output_stem
+
+    @property
+    def bam_file(self) -> str:
+        return self._bam_file
 
     @staticmethod
-    def group_by_tag(self, iterable: Iterable) -> Iterable:
+    def group_by_tag(self, tags: Iterable[str], iterable: Iterable) -> Iterable:
         pass  # function to group an iterable by a tag and produce another iterable
 
     def generate_output_file(self) -> TextIO:
-        pass  # some kind of CSV file, for portability
+        return open(self._output_stem, 'w')
 
     def parse_bam(self):
         raise NotImplementedError
@@ -154,7 +159,7 @@ class GatherCellBarcodeMetrics(MetricGatherer):
         """
         raise NotImplementedError
 
-    def parse_bam(self):
+    def parse_bam(self) -> None:
 
         # wasn't sure where to put histograms; not sure if I can abstract much more here
 

@@ -1,5 +1,6 @@
 from . import fastq, bam
 import argparse
+from typing import Iterable
 
 
 class GenericPlatform:
@@ -45,6 +46,54 @@ class GenericPlatform:
 
         print(' '.join(filenames))
         return 0
+
+    @classmethod
+    def calculate_gene_metrics(cls, args: Iterable[str]=None) -> None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        pass
+
+    @classmethod
+    def calculate_cell_metrics(cls, args: Iterable[str]=None) -> None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        pass
+
+    @classmethod
+    def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('metric_files', nargs='+', help='Input metric files')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        pass
+
+    @classmethod
+    def merge_cell_metrics(cls, args: Iterable[str]=None) -> None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('metric_files', nargs='+', help='Input metric files')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        pass
 
 
 class TenXV2(GenericPlatform):
@@ -134,19 +183,3 @@ class TenXV2(GenericPlatform):
         cls.tag_bamfile(args.u2, args.output_bamfile, tag_generators)
 
         return 0
-
-    @classmethod
-    def calculate_cell_metrics(cls, args=None):
-        raise NotImplementedError
-
-    @classmethod
-    def calculate_gene_metrics(cls, args=None):
-        raise NotImplementedError
-
-    @classmethod
-    def merge_cell_metrics(cls, args=None):
-        raise NotImplementedError
-
-    @classmethod
-    def merge_gene_metrics(cls, args=None):
-        raise NotImplementedError
