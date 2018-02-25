@@ -28,6 +28,7 @@ setup(
     install_requires=[
         'pysam',
         'numpy',
+        'pandas',
         'pytest',
     ],
     entry_points={
