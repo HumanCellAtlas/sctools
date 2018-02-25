@@ -1,6 +1,8 @@
+from typing import Tuple
 import numpy as np
 
 
+# todo see if this can be removed to eliminate the numpy dependency
 def base4_entropy(x, axis=1):
     """return entropy of x in base 4, calulated across axis.
 
@@ -25,3 +27,36 @@ def base4_entropy(x, axis=1):
     r[np.isinf(r)] = 0
 
     return np.abs(-1 * np.sum(x * r, axis=axis))
+
+
+class OnlineGaussianSufficientStatistic:
+    """
+    Implementation of Welford's online mean and variance algorithm
+    """
+
+    __slots__ = ['_count', '_mean', '_mean_squared_error']
+
+    def __init__(self):
+        self._mean_squared_error: float = 0.
+        self._mean: float = 0.
+        self._count: int = 0
+
+    def update(self, new_value: float) -> None:
+        self._count += 1
+        delta = new_value - self._mean
+        self._mean += delta / self._count
+        delta2 = new_value - self._mean
+        self._mean_squared_error += delta * delta2
+
+    @property
+    def mean(self) -> float:
+        return self._mean
+
+    def calculate_variance(self):
+        if self._count < 2:
+            return float("nan")
+        else:
+            return self._mean_squared_error / (self._count - 1)
+
+    def mean_and_variance(self) -> Tuple[float, float]:
+        return self.mean, self.calculate_variance()

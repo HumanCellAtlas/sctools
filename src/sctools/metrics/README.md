@@ -10,7 +10,7 @@ The distributed nature of the pipeline makes this practical.
 as many metrics integrate over a molecule's data. Without sorting, a data structure must be built to 
 build up the information from the bam file, and the resulting memory footprint is 20-40gb for a 
 standard HiSeq run.  
-5. To sort, the file needs three tags: Cell barcode (CB), Molecule barcode (UB) and Gene (GE). The 
+5. To sort, the file needs three tags: Cell barcode (CB), Molecule barcode (UB) and GeneMetrics (GE). The 
 latter tag is not, to my knowledge, in the HTSlib spec. 
 
 Despite the reliance on optimus assumptions, We will be able to release this tool as a stand alone 
@@ -37,7 +37,7 @@ This means we need two metrics outputs: one for Cells, and one for genes.
 
 I've pseudo-coded three classes, each of which must be subclassed to write a Metric: 
 ```
-MetricAggregator:
+SequenceMetricAggregator:
   - CellMetricAggregator
   - GeneMetricAggregator
 
@@ -46,7 +46,7 @@ MetricGatherer:
   - GeneMetricGatherer
 ```
 
-MetricAggregator stores the information for a unit of the relevant data (cell, gene) as records are
+SequenceMetricAggregator stores the information for a unit of the relevant data (cell, gene) as records are
 being processed, and has csv writing capability so that the information for only one unit is stored
 at a time, ensuring scalability to extremely large datasets. It has a `parse_records()` function 
 which has not yet been implemented which will do most of the work

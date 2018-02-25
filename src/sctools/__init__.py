@@ -6,3 +6,4 @@ from . import gtf
 from . import reader
 from . import platform
 from . import stats
+from . import metrics

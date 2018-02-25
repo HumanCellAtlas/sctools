@@ -1,5 +1,4 @@
 import os
-import pytest
 import tempfile
 from sctools import platform
 
@@ -17,7 +16,8 @@ def test_calculate_cell_metrics():
 
 def test_calculate_gene_metrics():
     platform.TenXV2.calculate_gene_metrics(
-        args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+        # args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+        args=['-i', _gene_sorted_bam, '-o', 'gene_metrics.csv'])
 
 
 def test_merge_cell_metrics():

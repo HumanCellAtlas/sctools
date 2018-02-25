@@ -1,4 +1,4 @@
-from . import fastq, bam
+from sctools import fastq, bam, metrics
 import argparse
 from typing import Iterable
 
@@ -57,7 +57,11 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        pass
+
+        gene_metric_gatherer = metrics.gatherer.GatherGeneMetrics(
+            args.input_bam, args.output_filestem)
+        gene_metric_gatherer.extract_metrics()
+
 
     @classmethod
     def calculate_cell_metrics(cls, args: Iterable[str]=None) -> None:
@@ -69,7 +73,7 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        pass
+        raise NotImplementedError
 
     @classmethod
     def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
@@ -81,7 +85,7 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        pass
+        raise NotImplementedError
 
     @classmethod
     def merge_cell_metrics(cls, args: Iterable[str]=None) -> None:
@@ -93,7 +97,7 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        pass
+        raise NotImplementedError
 
 
 class TenXV2(GenericPlatform):
