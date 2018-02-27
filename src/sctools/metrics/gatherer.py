@@ -1,8 +1,8 @@
-from typing import TextIO
 from contextlib import closing
 import pysam
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellBarcodeMetrics, GeneMetrics
+from sctools.metrics.writer import MetricCSVWriter
 
 
 class MetricGatherer:
@@ -15,12 +15,6 @@ class MetricGatherer:
     def bam_file(self) -> str:
         return self._bam_file
 
-    def generate_output_file(self) -> TextIO:
-        if self._output_stem.endswith('.csv'):
-            return open(self._output_stem, 'w')
-        else:
-            return open(self._output_stem + '.csv', 'w')
-
     def extract_metrics(self):
         raise NotImplementedError
 
@@ -29,14 +23,14 @@ class GatherCellMetrics(MetricGatherer):
 
     # requires that bam file is sorted by GE, UB, CB tags
 
-    def extract_metrics(self) -> None:
+    def extract_metrics(self, mode: str='rb') -> None:
 
         # open the files
-        with pysam.AlignmentFile(self.bam_file, 'rb') as bam_iterator, \
-                closing(self.generate_output_file()) as cell_metrics_output:
+        with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
+                closing(MetricCSVWriter(self._output_stem)) as cell_metrics_output:
 
             # write the header
-            CellBarcodeMetrics().write_csv_header(cell_metrics_output)
+            cell_metrics_output.write_header(vars(CellBarcodeMetrics()))
 
             # break up the bam file into sub-iterators over cells
             for cell_iterator, cell_tag in iter_cell_barcodes(bam_iterator=bam_iterator):
@@ -57,20 +51,21 @@ class GatherCellMetrics(MetricGatherer):
                         )
 
                 # write a record for each cell
-                metric_aggregator.write_csv_record(open_fid=cell_metrics_output, index=cell_tag)
+                metric_aggregator.finalize()
+                cell_metrics_output.write(cell_tag, vars(metric_aggregator.__dict__))
 
 
 class GatherGeneMetrics(MetricGatherer):
 
     # assumes file is sorted by UB, CB, GE tag
 
-    def extract_metrics(self):
+    def extract_metrics(self, mode: str='rb'):
         # open the files
-        with pysam.AlignmentFile(self.bam_file, 'rb') as bam_iterator, \
-                closing(self.generate_output_file()) as gene_metrics_output:
+        with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
+                closing(MetricCSVWriter(self._output_stem)) as gene_metrics_output:
 
             # write the header
-            GeneMetrics().write_csv_header(gene_metrics_output)
+            gene_metrics_output.write_header(vars(GeneMetrics()))
 
             # break up the bam file into sub-iterators over cells
             for gene_iterator, gene_tag in iter_genes(bam_iterator=bam_iterator):
@@ -91,4 +86,4 @@ class GatherGeneMetrics(MetricGatherer):
 
                 # write a record for each cell
                 metric_aggregator.finalize()
-                metric_aggregator.write_csv_record(open_fid=gene_metrics_output, index=gene_tag)
+                gene_metrics_output.write(gene_tag, vars(metric_aggregator))

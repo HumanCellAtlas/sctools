@@ -212,6 +212,7 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
     _cleanup(files_to_counts, files_to_names)
     return list(files_to_names.values())
 
+
 def iter_tag_groups(tag: str, bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
     # get first read and tag set
     reads = []
@@ -222,7 +223,7 @@ def iter_tag_groups(tag: str, bam_iterator: Iterator[pysam.AlignedSegment]) -> G
             current_tag = read.get_tag(tag)
             reads.append(read)
             break
-        except KeyError:
+        except KeyError:  # todo this needs to be tracked so we know how many reads were invalid
             continue
         except StopIteration:
             raise ValueError('No reads contained tag %s' % tag)

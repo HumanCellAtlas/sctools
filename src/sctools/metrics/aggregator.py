@@ -1,5 +1,4 @@
 from typing import Iterable, Tuple, Counter, List, Sequence
-from numbers import Number
 from collections import Counter
 import pysam
 from sctools.stats import OnlineGaussianSufficientStatistic
@@ -21,8 +20,8 @@ class SequenceMetricAggregator:
         Fragment: Tuple[Chromosome, Position, Strand]
 
         # count information
-        self.reads: int = 0
-        self.noise_reads: int = 0  # long polymers, N-sequences
+        self.n_reads: int = 0
+        self.noise_reads: int = 0  # long polymers, N-sequences; NotImplemented
         self._fragment_histogram: Counter[Fragment] = Counter()
         self._molecule_histogram: Counter[str] = Counter()
 
@@ -57,8 +56,8 @@ class SequenceMetricAggregator:
         self.genomic_reads_fraction_bases_quality_above_30_variance: float = None
         self.genomic_read_quality_mean: float = None
         self.genomic_read_quality_variance: float = None
-        self.molecules: float = None
-        self.fragments: float = None
+        self.n_molecules: float = None
+        self.n_fragments: float = None
         self.reads_per_molecule: float = None
         self.reads_per_fragment: float = None
         self.fragments_per_molecule: float = None
@@ -83,22 +82,22 @@ class SequenceMetricAggregator:
 
         self.genomic_read_quality_variance: float = self._genomic_read_quality.calculate_variance()
 
-        self.molecules: int = len(self._molecule_histogram.keys())
+        self.n_molecules: int = len(self._molecule_histogram.keys())
 
-        self.fragments: int = len(self._fragment_histogram.keys())
+        self.n_fragments: int = len(self._fragment_histogram.keys())
 
         try:
-            self.reads_per_molecule: float = self.reads / self.fragments
+            self.reads_per_molecule: float = self.n_reads / self.n_fragments
         except ZeroDivisionError:
             self.reads_per_molecule: float = float('nan')
 
         try:
-            self.reads_per_fragment: float = self.reads / self.molecules
+            self.reads_per_fragment: float = self.n_reads / self.n_molecules
         except ZeroDivisionError:
             self.reads_per_fragment: float = float('nan')
 
         try:
-            self.fragments_per_molecule: float = self.fragments / self.molecules
+            self.fragments_per_molecule: float = self.n_fragments / self.n_molecules
         except ZeroDivisionError:
             self.fragments_per_molecule: float = float('nan')
 
@@ -107,36 +106,6 @@ class SequenceMetricAggregator:
 
         self.molecules_with_single_read_evidence: int = \
             sum(1 for v in self._molecule_histogram.values() if v == 1)
-
-    def printable_metric_values(self) -> List[Number]:
-        """
-        return all the higher-order metrics, in order
-        """
-        return [v for (name, v) in self.__dict__.items() if not name.startswith('_')
-                and not callable(v)
-                and not type(v) is staticmethod]
-
-    def printable_metric_header(self) -> List[str]:
-        """
-        return all the higher-order metrics, in order
-        """
-        return [name for (name, v) in self.__dict__.items() if not name.startswith('_')
-                and not callable(v)
-                and not type(v) is staticmethod]
-
-    def write_csv_header(self, open_fid):
-        open_fid.write(
-            # ',' +
-            ','.join(self.printable_metric_header()) +
-            '\n'
-        )
-
-    def write_csv_record(self, open_fid, index: str):
-        open_fid.write(
-            index +
-            ','.join(str(n) for n in self.printable_metric_values()) +
-            '\n'
-        )
 
     @staticmethod
     def quality_string_to_numeric(quality_sequence: Iterable[str]) -> List[int]:
@@ -152,7 +121,7 @@ class SequenceMetricAggregator:
 
     @staticmethod
     def is_duplicate(record: pysam.AlignedSegment) -> bool:
-        return record.flag & 1024
+        return bool(record.flag & 1024)
 
     def parse_molecule(
             self, tags: Sequence[str], records: Iterable[pysam.AlignedSegment]) -> None:
@@ -169,7 +138,7 @@ class SequenceMetricAggregator:
             # todo might need a callback if this function has knowledge about termination conditions
             self.parse_extra_fields(tags=tags, record=record)
 
-            self.reads += 1
+            self.n_reads += 1
             # self.noise_reads += self.is_noise(record)
 
             # get components that define a unique sequence fragment
@@ -194,7 +163,7 @@ class SequenceMetricAggregator:
 
             # alignment location information
             alignment_location = record.get_tag('XF')
-            if alignment_location == 'EXONIC':
+            if alignment_location == 'CODING':
                 self.reads_mapped_exonic += 1
             elif alignment_location == 'INTRONIC':
                 self.reads_mapped_intronic += 1
@@ -209,7 +178,7 @@ class SequenceMetricAggregator:
             if number_mappings == 1:
                 self.reads_mapped_uniquely += 1
             else:
-                self.reads_mapped_multiple += 1
+                self.reads_mapped_multiple += 1  # todo without MM, this number is zero!
 
             if self.is_duplicate(record):
                 self.duplicate_reads += 1
