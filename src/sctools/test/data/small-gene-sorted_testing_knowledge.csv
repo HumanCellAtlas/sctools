@@ -1,11 +1,10 @@
 duplicate_reads,51
-duplicate_records,51
 fragments_per_molecule,2.465909090909091
 fragments_with_single_read_evidence,155
-genomic_read_quality_mean,33.6695238095
-genomic_read_quality_variance,60.8456594475
-genomic_reads_fraction_bases_quality_above_30_mean,73.6433333333
-genomic_reads_fraction_bases_quality_above_30_variance,407.596122222
+genomic_read_quality_mean,33.66952380952381
+genomic_read_quality_variance,60.84565944745244
+genomic_reads_fraction_bases_quality_above_30_mean,73.64333333333333
+genomic_reads_fraction_bases_quality_above_30_variance,407.5961222222222
 molecule_barcode_fraction_bases_above_30_mean,9.8
 molecule_barcode_fraction_bases_above_30_variance,0.54
 molecules_with_single_read_evidence,42
@@ -15,7 +14,7 @@ n_fragments,217
 n_genes,8
 n_molecules,88
 n_reads,300
-perfect_molecule_barcodes,297
+perfect_molecule_barcodes,300
 reads_mapped_exonic,300
 reads_mapped_intronic,0
 reads_mapped_uniquely,300

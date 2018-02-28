@@ -121,7 +121,7 @@ class SequenceMetricAggregator:
 
     @staticmethod
     def is_duplicate(record: pysam.AlignedSegment) -> bool:
-        return bool(record.flag & 1024)
+        return record.is_duplicate
 
     def parse_molecule(
             self, tags: Sequence[str], records: Iterable[pysam.AlignedSegment]) -> None:
