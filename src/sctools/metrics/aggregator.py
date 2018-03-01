@@ -36,6 +36,7 @@ class SequenceMetricAggregator:
         self.reads_mapped_exonic = 0
         self.reads_mapped_intronic = 0
         self.reads_mapped_utr = 0
+
         # self.reads_mapped_outside_window = 0  # reads should be within 1000 bases of UTR
         # self._read_distance_from_termination_site = OnlineGaussianSufficientStatistic()
 
@@ -134,12 +135,14 @@ class SequenceMetricAggregator:
 
             # todo think about how I could use the duplicate tag to simplify this class
 
-            # call the parse_extra_fields function to extract subclass-specific information
-            # todo might need a callback if this function has knowledge about termination conditions
+            # extract sub-class-specific information
             self.parse_extra_fields(tags=tags, record=record)
 
             self.n_reads += 1
             # self.noise_reads += self.is_noise(record)
+
+            # need a distinction between aligned reads and unaligned reads
+            # and possibly between reads with gene ids and reads without
 
             # get components that define a unique sequence fragment
             position: int = record.pos
@@ -161,7 +164,11 @@ class SequenceMetricAggregator:
                 self.quality_above_threshold(30, record.query_alignment_qualities)
             )
 
-            # alignment location information
+            # the remaining portions deal with mapped reads, so if the read is not mapped, drop it.
+            # todo verify that this does not break tests
+            if record.is_unmapped:
+                continue
+
             alignment_location = record.get_tag('XF')
             if alignment_location == 'CODING':
                 self.reads_mapped_exonic += 1
@@ -209,6 +216,7 @@ class CellBarcodeMetrics(SequenceMetricAggregator):
 
         # track non-transcriptomic reads
         self.reads_mapped_intergenic = 0
+        self.reads_unmapped = 0
         self.reads_mapped_too_many_loci = 0
 
         self._genes_histogram = Counter()
@@ -251,13 +259,17 @@ class CellBarcodeMetrics(SequenceMetricAggregator):
         )
 
         self.perfect_cell_barcodes += record.get_tag('UR') == record.get_tag('UB')
-        alignment_location = record.get_tag('XF')
-        if alignment_location == 'INTERGENIC':
-            self.reads_mapped_intergenic += 1
+
+        try:
+            alignment_location = record.get_tag('XF')
+            if alignment_location == 'INTERGENIC':
+                self.reads_mapped_intergenic += 1
+        except KeyError:
+            self.reads_unmapped += 1
 
         # todo track reads_mapped_too_many_loci after multi-alignment is done
 
-        self._genes_histogram[tags[0]] += 1
+        self._genes_histogram[tags[0]] += 1  # note that no gene == None
 
 
 class GeneMetrics(SequenceMetricAggregator):
