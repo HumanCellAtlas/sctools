@@ -25,11 +25,6 @@ An abbreviated WDL could be made in the future which would contain:
 3. MergeMetrics
 ```
 
-## Dependencies:
-The proposed implementation depends on standarization of tags across the bam file. 
-1. XF: all reads receive this tag, including unaligned reads which get `XF:Z:` (null)
-2. GE: all reads receive this tag, including intergenic and unaligned reads, `GE:Z:` (null)
-
 ## Implementation: 
 
 I believe the best course of action is to generate a metrics file that aligns with our eventual 
