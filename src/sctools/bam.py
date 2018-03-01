@@ -3,7 +3,7 @@ import os
 import math
 import pysam
 from itertools import cycle
-from typing import Iterator, Generator
+from typing import Iterator, Generator, List, Any
 
 """
 unlike fastq and gtf which lack flexible iterators, the pysam wrapper provides an excellent iterator 
@@ -213,33 +213,37 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
     return list(files_to_names.values())
 
 
-def iter_tag_groups(tag: str, bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
+def iter_tag_groups(
+        tag: str,
+        bam_iterator: Iterator[pysam.AlignedSegment],
+        filter_null: bool=False) -> Generator:
+
     # get first read and tag set
     reads = []
-    while not reads:
+    read = next(bam_iterator)
+    try:
+        current_tag = read.get_tag(tag)
+    except KeyError:
+        current_tag = None  # null tag is a category that gets emitted
 
-        try:
-            read = next(bam_iterator)
-            current_tag = read.get_tag(tag)
-            reads.append(read)
-            break
-        except KeyError:  # todo this needs to be tracked so we know how many reads were invalid
-            continue
-        except StopIteration:
-            raise ValueError('No reads contained tag %s' % tag)
-
+    # now iterate over alignment sets
     for alignment in bam_iterator:
         try:
             next_tag = alignment.get_tag(tag)
         except KeyError:
-            continue
+            next_tag = None  # null tag is a category that we will emit
         if next_tag == current_tag:
             reads.append(alignment)
         else:
-            yield iter(reads), current_tag
+            # only yield if the tag is non-null or filter_null is false
+            if not filter_null or current_tag is not None:
+                yield iter(reads), current_tag
+            # reset to next group
             reads = [alignment]
             current_tag = next_tag
-    yield iter(reads), current_tag
+
+    if not filter_null or current_tag is not None:
+        yield iter(reads), current_tag
 
 
 def iter_molecule_barcodes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
