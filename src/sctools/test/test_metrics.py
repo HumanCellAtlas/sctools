@@ -144,7 +144,7 @@ def test_higher_order_metrics_mean(gene_metrics):
         ('molecule_barcode_fraction_bases_above_30_mean', float),
         ('molecule_barcode_fraction_bases_above_30_variance', float),
         # ('genomic_reads_fraction_bases_quality_above_30_mean', float),  # These four tests are commented out because
-        # ('genomic_reads_fraction_bases_quality_above_30_variance', float), # notebook value takes dont ignore soft clipped bases
+        # ('genomic_reads_fraction_bases_quality_above_30_variance', float), # the notebook equivalent dont ignore soft clipped bases
         # ('genomic_read_quality_mean', float),
         # ('genomic_read_quality_variance', float)
         ('reads_per_molecule', float),
