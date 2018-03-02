@@ -2,6 +2,7 @@ from typing import Iterable, Tuple, Counter, List, Sequence
 from collections import Counter
 import pysam
 from sctools.stats import OnlineGaussianSufficientStatistic
+import numpy as np
 
 # note that this entire module can be rewritten with dataclass when python 3.7 stabilizes
 # see https://www.python.org/dev/peps/pep-0557/
@@ -87,12 +88,12 @@ class SequenceMetricAggregator:
         self.n_fragments: int = len(self._fragment_histogram.keys())
 
         try:
-            self.reads_per_molecule: float = self.n_reads / self.n_fragments
+            self.reads_per_molecule: float = self.n_reads / self.n_molecules
         except ZeroDivisionError:
             self.reads_per_molecule: float = float('nan')
 
         try:
-            self.reads_per_fragment: float = self.n_reads / self.n_molecules
+            self.reads_per_fragment: float = self.n_reads / self.n_fragments
         except ZeroDivisionError:
             self.reads_per_fragment: float = float('nan')
 
@@ -159,6 +160,9 @@ class SequenceMetricAggregator:
 
             self._genomic_reads_fraction_bases_quality_above_30.update(
                 self.quality_above_threshold(30, record.query_alignment_qualities)
+            )
+            self._genomic_read_quality.update(
+                np.mean(record.query_qualities)
             )
 
             # alignment location information
