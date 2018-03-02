@@ -162,7 +162,7 @@ class SequenceMetricAggregator:
                 self.quality_above_threshold(30, record.query_alignment_qualities)
             )
             self._genomic_read_quality.update(
-                np.mean(record.query_qualities)
+                np.mean(record.query_alignment_qualities)
             )
 
             # alignment location information
