@@ -141,15 +141,6 @@ class SequenceMetricAggregator:
             self.n_reads += 1
             # self.noise_reads += self.is_noise(record)
 
-            # need a distinction between aligned reads and unaligned reads
-            # and possibly between reads with gene ids and reads without
-
-            # get components that define a unique sequence fragment
-            position: int = record.pos
-            strand: bool = record.is_reverse
-            reference: int = record.reference_id
-            self._fragment_histogram[reference, position, strand, tags] += 1
-
             self._molecule_histogram[tags] += 1  # might also need gene here (or cell?)
 
             self._molecule_barcode_fraction_bases_above_30.update(
@@ -164,10 +155,15 @@ class SequenceMetricAggregator:
                 self.quality_above_threshold(30, record.query_alignment_qualities)
             )
 
-            # the remaining portions deal with mapped reads, so if the read is not mapped, drop it.
-            # todo verify that this does not break tests
+            # the remaining portions deal with aligned reads, so if the read is not mapped, drop it.
             if record.is_unmapped:
                 continue
+
+            # get components that define a unique sequence fragment
+            position: int = record.pos
+            strand: bool = record.is_reverse
+            reference: int = record.reference_id
+            self._fragment_histogram[reference, position, strand, tags] += 1
 
             alignment_location = record.get_tag('XF')
             if alignment_location == 'CODING':
