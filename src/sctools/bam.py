@@ -213,6 +213,7 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
     return list(files_to_names.values())
 
 
+# todo change this to throw away "None" reads instead of appending them if we are filtering them
 def iter_tag_groups(
         tag: str,
         bam_iterator: Iterator[pysam.AlignedSegment],
