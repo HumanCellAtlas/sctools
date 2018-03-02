@@ -219,10 +219,9 @@ def iter_tag_groups(
         filter_null: bool=False) -> Generator:
 
     # get first read and tag set
-    reads = []
-    read = next(bam_iterator)
+    reads = [next(bam_iterator)]
     try:
-        current_tag = read.get_tag(tag)
+        current_tag = reads[0].get_tag(tag)
     except KeyError:
         current_tag = None  # null tag is a category that gets emitted
 
