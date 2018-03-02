@@ -2,12 +2,12 @@ from io import StringIO
 import os
 import tempfile
 import pytest
-from sctools.metrics.gatherer import GatherGeneMetrics
+from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
 import pandas as pd
 
 _data_dir = os.path.split(__file__)[0] + '/data'
 _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
-_cell_sorted_bam = _data_dir + '/cell-sorted.bam'
+_cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
 
 _test_dir = tempfile.mkdtemp()
 _gene_metric_output_file = _data_dir + '/gene_metrics.csv'
@@ -41,6 +41,7 @@ _testing_knowledge = pd.read_csv(
 #               'gene_metrics_1.csv', 'gene_metrics_2.csv']
 #     )
 
+# ######################################### GENE METRICS ##########################################
 
 @pytest.fixture(scope='module')
 def gene_metrics():
@@ -156,4 +157,19 @@ def test_higher_order_metrics(gene_metrics):
         observed = gene_metrics[key].mean()
         expected = func(_testing_knowledge[key])
         assert observed == expected, '%s failed' % key
+
+# ####################################### CELL METRICS ############################################
+
+@pytest.fixture(scope='module')
+def cell_metrics():
+    """run gene metrics on the testing file and pull in the outputs"""
+    cell_gatherer = GatherCellMetrics(_cell_sorted_bam, _cell_metric_output_file)
+    cell_gatherer.extract_metrics()
+    return pd.read_csv(_cell_metric_output_file, index_col=0)
+
+
+def test_cell_metrics_file_identifies_correct_n_reads(cell_metrics):
+    reads_observed = cell_metrics['n_reads'].sum()
+    reads_expected = int(_testing_knowledge['n_reads'])
+    assert reads_expected == reads_observed
 

@@ -52,7 +52,7 @@ class GatherCellMetrics(MetricGatherer):
 
                 # write a record for each cell
                 metric_aggregator.finalize()
-                cell_metrics_output.write(cell_tag, vars(metric_aggregator.__dict__))
+                cell_metrics_output.write(cell_tag, vars(metric_aggregator))
 
 
 class GatherGeneMetrics(MetricGatherer):
