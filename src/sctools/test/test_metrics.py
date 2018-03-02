@@ -4,7 +4,7 @@ import tempfile
 import pytest
 from sctools.metrics.gatherer import GatherGeneMetrics
 import pandas as pd
-import math
+import numpy as np
 
 _data_dir = os.path.split(__file__)[0] + '/data'
 _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
@@ -138,23 +138,32 @@ def test_spliced_reads(gene_metrics):
     assert observed == expected
 
 
+def convert_array_to_pandas_series(string_array):
+    array = eval(string_array)
+    pandas_series = pd.Series(array)
+
+
 def test_higher_order_metrics_mean(gene_metrics):
-    print(gene_metrics["reads_per_fragment"])
+    print(type(gene_metrics['molecule_barcode_fraction_bases_above_30_mean']))
+    print(type(_testing_knowledge['molecule_barcode_fraction_bases_above_30_mean']))
+    print(_testing_knowledge['molecule_barcode_fraction_bases_above_30_mean'].dtypes)
     higher_order_metrics = [
-        ('molecule_barcode_fraction_bases_above_30_mean', float),
-        ('molecule_barcode_fraction_bases_above_30_variance', float),
-        # ('genomic_reads_fraction_bases_quality_above_30_mean', float),  # These four tests are commented out because
-        # ('genomic_reads_fraction_bases_quality_above_30_variance', float), # the notebook equivalent dont ignore soft clipped bases
-        # ('genomic_read_quality_mean', float),
-        # ('genomic_read_quality_variance', float)
-        ('reads_per_molecule', float),
-        ('reads_per_fragment', float),
-        ('fragments_per_molecule', float)
+        ('molecule_barcode_fraction_bases_above_30_mean', convert_array_to_pandas_series),
+        ('molecule_barcode_fraction_bases_above_30_variance', convert_array_to_pandas_series),
+        ('genomic_reads_fraction_bases_quality_above_30_mean', convert_array_to_pandas_series),  # These four tests are commented out because
+        ('genomic_reads_fraction_bases_quality_above_30_variance', convert_array_to_pandas_series), # the notebook equivalent dont ignore soft clipped bases
+        ('genomic_read_quality_mean', convert_array_to_pandas_series),
+        ('genomic_read_quality_variance', convert_array_to_pandas_series),
+        ('reads_per_molecule', convert_array_to_pandas_series),
+        ('reads_per_fragment', convert_array_to_pandas_series),
+        ('fragments_per_molecule', convert_array_to_pandas_series)
     ]
+    test_results = {}
     for (key, func) in higher_order_metrics:
-        observed = gene_metrics[key].mean()
+        observed = gene_metrics[key]
         expected = func(_testing_knowledge[key])
-        assert math.isclose(observed, expected), '%s failed' % key
+        test_results[key] = (np.all(observed, expected), observed, expected)
+    assert all(v[0] for v in test_results.values()), repr({k: v for k, v in test_results.items() if v[0] == False})
 
 
 def test_higher_order_metrics_sum(gene_metrics):
@@ -164,7 +173,10 @@ def test_higher_order_metrics_sum(gene_metrics):
         ('fragments_with_single_read_evidence', int),
         ('molecules_with_single_read_evidence', int)
     ]
+    test_results = {}
     for (key, func) in higher_order_metrics:
         observed = gene_metrics[key].sum()
         expected = func(_testing_knowledge[key])
-        assert observed == expected, '%s failed' % key
+        test_results[key] = (observed == expected, observed, expected)
+    assert all(v[0] for v in test_results.values()), repr({k: v for k, v in test_results.items() if v[0] == False})
+
