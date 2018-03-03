@@ -32,7 +32,7 @@ class GatherCellMetrics(MetricGatherer):
             # write the header
             cell_metrics_output.write_header(vars(CellBarcodeMetrics()))
 
-            # break up the bam file into sub-iterators over cells
+            # break up the bam file into sub-iterators over cell barcodes
             for cell_iterator, cell_tag in iter_cell_barcodes(bam_iterator=bam_iterator):
                 metric_aggregator = CellBarcodeMetrics()
 
@@ -67,14 +67,14 @@ class GatherGeneMetrics(MetricGatherer):
             # write the header
             gene_metrics_output.write_header(vars(GeneMetrics()))
 
-            # break up the bam file into sub-iterators over cells
+            # break up the bam file into sub-iterators over gene ids
             for gene_iterator, gene_tag in iter_genes(bam_iterator=bam_iterator):
                 metric_aggregator = GeneMetrics()
 
-                # break up cell barcodes by molecule barcodes
+                # break up gene ids by cell barcodes
                 for cell_iterator, cell_tag in iter_cell_barcodes(bam_iterator=gene_iterator):
 
-                    # break up molecule barcodes by gene ids
+                    # break up cell barcodes by molecular barcodes
                     for molecule_iterator, molecule_tag in iter_molecule_barcodes(
                             bam_iterator=cell_iterator):
 
@@ -84,6 +84,6 @@ class GatherGeneMetrics(MetricGatherer):
                             records=molecule_iterator
                         )
 
-                # write a record for each cell
+                # write a record for each gene id
                 metric_aggregator.finalize()
                 gene_metrics_output.write(gene_tag, vars(metric_aggregator))
