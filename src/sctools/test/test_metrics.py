@@ -127,7 +127,7 @@ def test_duplicate_records(gene_metrics):
     assert observed == expected
 
 
-    # todo this test currently fails because we believe our data is not deduped correctly, need to run on data run on latest optimus pipeline
+    #todo we need to further investigate why our assumption of duplicate_reads and fragments should sum to number of reads does not seem to be true in our test data
 def test_relationship_of_duplicates_and_fragments(gene_metrics):
     dup_and_fragments = gene_metrics['duplicate_reads'].sum() + gene_metrics['n_fragments'].sum()
     reads = gene_metrics['n_reads'].sum()
