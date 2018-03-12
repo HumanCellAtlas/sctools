@@ -53,43 +53,43 @@ def gene_metrics():
     return pd.read_csv(_gene_metric_output_file, index_col=0)
 
 
-def test_metrics_file_identifies_correct_n_reads(gene_metrics):
+def test_metrics_n_reads(gene_metrics):
     reads_observed = gene_metrics['n_reads'].sum()
     reads_expected = int(_testing_knowledge_scalar['n_reads'])
     assert reads_expected == reads_observed
 
 
-def test_metrics_file_identifies_correct_n_genes(gene_metrics):
+def test_metrics_n_genes(gene_metrics):
     genes_observed = gene_metrics.shape[0]
     genes_expected = int(_testing_knowledge_scalar['n_genes'])
     assert genes_expected == genes_observed
 
 
-def test_metrics_file_identifies_correct_n_molecules(gene_metrics):
+def test_metrics_n_molecules(gene_metrics):
     molecules_observed = gene_metrics['n_molecules'].sum()
     molecules_expected = int(_testing_knowledge_scalar['n_molecules'])
     assert molecules_expected == molecules_observed
 
 
-def test_metrics_file_identifies_correct_n_fragments(gene_metrics):
+def test_metrics_n_fragments(gene_metrics):
     fragments_observed = gene_metrics['n_fragments'].sum()
     fragments_expected = int(_testing_knowledge_scalar['n_fragments'])
     assert fragments_expected == fragments_observed
 
 
-def test_metrics_file_identifies_correct_highest_expression_gene(gene_metrics):
+def test_metrics_highest_expression_gene(gene_metrics):
     observed_max_gene = gene_metrics['n_reads'].idxmax()
     expected_max_gene = _testing_knowledge_scalar['most_abundant']
     assert expected_max_gene == observed_max_gene
 
 
-def test_metrics_file_identifies_correct_highest_expression_count(gene_metrics):
+def test_metrics_highest_expression_count(gene_metrics):
     observed_max_gene_reads = gene_metrics['n_reads'].max()
     expected_max_gene_reads = int(_testing_knowledge_scalar['most_abundant_gene_n_observations'])
     assert expected_max_gene_reads == observed_max_gene_reads
 
 
-def test_metrics_file_identifies_correct_number_perfect_barcodes(gene_metrics):
+def test_metrics_number_perfect_barcodes(gene_metrics):
     observed_perfect_barcodes = gene_metrics['perfect_molecule_barcodes'].sum()
     expected_perfect_barcodes = int(_testing_knowledge_scalar['perfect_molecule_barcodes'])
     assert observed_perfect_barcodes == expected_perfect_barcodes
