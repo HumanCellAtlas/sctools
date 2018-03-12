@@ -228,7 +228,7 @@ class CellBarcodeMetrics(SequenceMetricAggregator):
 
         self.cell_barcode_fraction_bases_above_30_variance: float = None
         self.cell_barcode_fraction_bases_above_30_mean: float = None
-        self.genes_detected: int = None
+        self.n_genes: int = None
         self.genes_detected_multiple_observations: int = None
 
     def finalize(self):
@@ -240,7 +240,7 @@ class CellBarcodeMetrics(SequenceMetricAggregator):
         self.cell_barcode_fraction_bases_above_30_variance: float = \
             self._cell_barcode_fraction_bases_above_30.calculate_variance()
 
-        self.genes_detected: int = \
+        self.n_genes: int = \
             len(self._genes_histogram.keys())
 
         self.genes_detected_multiple_observations: int = \
@@ -270,7 +270,7 @@ class CellBarcodeMetrics(SequenceMetricAggregator):
 
         # todo track reads_mapped_too_many_loci after multi-alignment is done
 
-        self._genes_histogram[tags[0]] += 1  # note that no gene == None
+        self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
 
 class GeneMetrics(SequenceMetricAggregator):
