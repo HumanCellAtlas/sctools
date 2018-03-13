@@ -1,63 +1,64 @@
 import os
 import tempfile
-import pytest
 import math
-from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
+
+import pytest
 import pandas as pd
 import numpy as np
 
+from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
+from sctools.platform import TenXV2
+
+
+# set the input and output directories, using a tempdir to automatically clean up generated files
 _data_dir = os.path.split(__file__)[0] + '/data'
+_test_dir = tempfile.mkdtemp()
+
+# set the input files
 _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
 _cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
 
-_test_dir = tempfile.mkdtemp()
+# specify filenames for temporary metrics outputs that are used in the following tests
 _gene_metric_output_file = _data_dir + '/gene_metrics.csv'
 _cell_metric_output_file = _data_dir + '/cell_metrics.csv'
-_testing_knowledge_scalar = pd.read_csv(
-    _data_dir + '/small-gene-sorted_testing_knowledge_scalar.csv', index_col=0, squeeze=True,
-    header=None)
-_testing_knowledge_series = pd.read_csv(
-    _data_dir + '/small-gene-sorted_testing_knowledge_series.csv')
 
-
-# def test_calculate_cell_metrics():
-#     platform.TenXV2.calculate_cell_metrics(
-#         args=['-i', _cell_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
-
-
-# def test_calculate_gene_metrics():
-#     platform.TenXV2.calculate_gene_metrics(
-#         # args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
-#         args=['-i', _gene_sorted_bam, '-o', 'gene_metrics.csv'])
-
-
-# def test_merge_cell_metrics():
-#     platform.TenXV2.merge_cell_metrics(
-#         args=['-o', _test_dir + '/merged-cell-metrics.csv',
-#               'cell_metrics_1.csv', 'cell_metrics_2.csv']
-#     )
-
-
-# def test_merge_gene_metrics():
-#     platform.TenXV2.merge_gene_metrics(
-#         args=['-o', _test_dir + '/merged-gene-metrics.csv',
-#               'gene_metrics_1.csv', 'gene_metrics_2.csv']
-#     )
-
-
+# run the gene metrics suite
 gene_gatherer = GatherGeneMetrics(_gene_sorted_bam, _gene_metric_output_file)
 gene_gatherer.extract_metrics()
 _gene_metrics = pd.read_csv(_gene_metric_output_file, index_col=0)
 
+# run the cell metrics suite
 cell_gatherer = GatherCellMetrics(_cell_sorted_bam, _cell_metric_output_file)
 cell_gatherer.extract_metrics()
 _cell_metrics = pd.read_csv(_cell_metric_output_file, index_col=0)
 
 
-# def test_metrics_n_reads(gene_metrics):
-#     reads_observed = gene_metrics['n_reads'].sum()
-#     reads_expected = int(_testing_knowledge_scalar['n_reads'])
-#     assert reads_expected == reads_observed
+def test_calculate_cell_metrics():
+    """test the sctools cell metrics CLI invocation"""
+    TenXV2.calculate_cell_metrics(
+        args=['-i', _cell_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+
+
+def test_calculate_gene_metrics():
+    """test the sctools gene metrics CLI invocation"""
+    TenXV2.calculate_gene_metrics(
+        args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+
+
+# todo fails, not yet properly set up
+def test_merge_cell_metrics():
+    """test the sctools merge cell metrics CLI invocation"""
+    TenXV2.merge_cell_metrics(
+        args=['-o', _test_dir + '/merged-cell-metrics.csv',
+              'cell_metrics_1.csv', 'cell_metrics_2.csv'])
+
+
+# todo fails, not yet properly set up
+def test_merge_gene_metrics():
+    """test the sctools merge gene metrics CLI invocation"""
+    TenXV2.merge_gene_metrics(
+        args=['-o', _test_dir + '/merged-gene-metrics.csv',
+              'gene_metrics_1.csv', 'gene_metrics_2.csv'])
 
 
 @pytest.mark.parametrize('metrics, expected_value', [
@@ -68,7 +69,6 @@ def test_metrics_n_reads(metrics, expected_value):
     assert metrics['n_reads'].sum() == expected_value
 
 
-# todo failing
 def test_cell_metrics_mean_n_genes_observed():
     genes_observed = _cell_metrics['n_genes'].mean()
     assert math.isclose(genes_observed, 1.9827, abs_tol=1e-4), '%f != %f' % (genes_observed, 1.9827)
@@ -97,10 +97,17 @@ def test_metrics_n_fragments(metrics, expected_value):
     assert fragments_observed == expected_value
 
 
-def test_metrics_highest_expression_gene():
-    observed_max_gene = _gene_metrics['n_reads'].idxmax()
-    expected_max_gene = _testing_knowledge_scalar['most_abundant']
-    assert expected_max_gene == observed_max_gene
+@pytest.mark.parametrize('metrics, expected_value', [
+    (_gene_metrics, 'AL627309.7'),
+    (_cell_metrics, 'AAACCTGGTAGAAGGA'),
+])
+def test_metrics_highest_expression_class(metrics, expected_value):
+    """
+    for gene metrics, this is the highest expression gene. For cell metrics, this is the highest
+    expression cell.
+    """
+    observed_max_gene = metrics['n_reads'].idxmax()
+    assert observed_max_gene == expected_value
 
 
 @pytest.mark.parametrize('metrics, expected_value', [
@@ -175,32 +182,13 @@ def test_spliced_reads(metrics, expected_value):
     assert observed == expected_value
 
 
-# todo we need to further investigate why our assumption of duplicate_reads and fragments should
-# sum to number of reads does not seem to be true in our test data
+# todo fails because of (1) N-base and 2-base cell barcode correction errors and (2)
+# fragment calculationes currently do not account for soft clipping. Fixing these will cause this
+# test to pass
 def test_relationship_of_duplicates_and_fragments():
     dup_and_fragments = _gene_metrics['duplicate_reads'].sum() + _gene_metrics['n_fragments'].sum()
     reads = _gene_metrics['n_reads'].sum()
     assert reads == dup_and_fragments
-
-
-# def test_higher_order_metrics_by_gene():
-#     higher_order_metrics = [
-#         ('molecule_barcode_fraction_bases_above_30_mean'),
-#         ('molecule_barcode_fraction_bases_above_30_variance'),
-#         ('genomic_reads_fraction_bases_quality_above_30_mean'),
-#         ('genomic_reads_fraction_bases_quality_above_30_variance'),
-#         ('genomic_read_quality_mean'),
-#         ('genomic_read_quality_variance'),
-#         ('reads_per_molecule'),
-#         ('reads_per_fragment'),
-#         ('fragments_per_molecule')
-#     ]
-#     test_results = {}
-#     for key in higher_order_metrics:
-#         observed = np.nan_to_num(_gene_metrics[key].values)
-#         expected = np.nan_to_num(_testing_knowledge_series[key].values)
-#         test_results[key] = (np.allclose(observed, expected), observed, expected)
-#     assert all(v[0] for v in test_results.values()), repr({k: v for k, v in test_results.items() if v[0] == False})
 
 
 @pytest.mark.parametrize('metrics, key, expected_value', [
@@ -211,7 +199,7 @@ def test_relationship_of_duplicates_and_fragments():
                1.0000, 0.9895, 1.0000, 0.9760, 1.0000, 1.0000, 1.0000, 0.9889, 1.0000, 0.9600,
                1.0000, 0.9909, 1.0000, 1.0000, 0.9556, 0.9800, 1.0000, 0.9000, 1.0000, 0.9588,
                1.0000, 1.0000, 0.9889, 0.8000, 0.9538, 0.9909, 0.9929, 0.9571])),
-    (_cell_metrics, 'molecule_barcode_fraction_bases_above_30_variance',
+    (_cell_metrics, 'molecule_barcode_fraction_bases_above_30_variance',  # todo failing, odd because mean is passing
      np.array(
          [np.nan, 0.0050, np.nan, np.nan, 0.0019, 0.0000, 0.0000, np.nan, 0.0015, np.nan, 0.0000,
           0.0000, np.nan, 0.0000, 0.0048, 0.0000, 0.0000, 0.0029, 0.0000, np.nan, 0.0000, 0.0044,
@@ -251,21 +239,21 @@ def test_relationship_of_duplicates_and_fragments():
                0.3850, 24.3135, 17.8765, 26.5847, 5.2099, np.nan, 22.5846, 48.2133, np.nan, np.nan,
                5.6775, 23.9395, np.nan, np.nan, 12.9322, np.nan, 18.1475, 29.6960, 20.7504,
                34.9055])),
-    (_cell_metrics, 'reads_per_molecule',
+    (_cell_metrics, 'reads_per_molecule',  # todo failing
      np.array([1.0000, 2.0000, np.nan, 1.0000, 9.0000, 2.4000, 2.0000, 1.0000, 3.0000, 1.0000,
                3.0000, 3.0000, 1.0000, np.nan, 2.4167, 4.3333, 1.2222, 5.8750, 1.3333, 1.0000,
                1.2000, 1.5000, 4.6000, 2.0000, 2.5000, 1.2000, 2.1429, 1.0000, 2.6364, 4.0000,
                1.0000, 2.1111, 1.7273, 6.2500, 5.0000, 1.3333, 2.0000, 2.2500, np.nan, 2.0000,
                4.3333, 3.9286, 2.2000, 1.0000, 1.5000, 1.6667, np.nan, 1.0000, 1.6667, 1.8889,
                1.0000, 1.0000, 2.2500, 1.0000, 9.7500, 11.0000, 4.0000, 1.5000])),
-    (_cell_metrics, 'reads_per_fragment',
+    (_cell_metrics, 'reads_per_fragment',  # todo failing
      np.array([1.0000, 1.0000, np.nan, 1.0000, 1.1250, 1.3333, 2.0000, 1.0000, 1.3333, 1.0000,
                1.2000, 3.0000, 1.0000, np.nan, 1.3182, 4.3333, 1.2222, 1.4688, 1.1429, 1.0000,
                1.2000, 1.2857, 1.5333, 2.0000, 1.2500, 1.2000, 1.2500, 1.0000, 1.3182, 1.0000,
                1.0000, 1.4615, 1.3571, 1.3889, 1.2500, 1.3333, 1.0000, 1.1250, np.nan, 1.1765,
                4.3333, 1.4474, 1.1000, 1.0000, 1.2857, 1.2500, np.nan, 1.0000, 1.2500, 1.3077,
                1.0000, 1.0000, 1.2857, 1.0000, 2.4375, 1.5714, 1.4737, 1.2353])),
-    (_cell_metrics, 'fragments_per_molecule',
+    (_cell_metrics, 'fragments_per_molecule',  # todo failing, probably depends on above failures
      np.array(
          [1.0000, 2.0000, np.nan, 1.0000, 8.0000, 1.8000, 1.0000, 1.0000, 2.2500, 1.0000, 2.5000,
           1.0000, 1.0000, np.nan, 1.8333, 1.0000, 1.0000, 4.0000, 1.1667, 1.0000, 1.0000, 1.1667,
