@@ -62,7 +62,6 @@ class GenericPlatform:
             args.input_bam, args.output_filestem)
         gene_metric_gatherer.extract_metrics()
 
-
     @classmethod
     def calculate_cell_metrics(cls, args: Iterable[str]=None) -> None:
         parser = argparse.ArgumentParser()
@@ -73,7 +72,9 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        raise NotImplementedError
+        cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
+            args.input_bam, args.output_filestem)
+        cell_metric_gatherer.extract_metrics()
 
     @classmethod
     def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
