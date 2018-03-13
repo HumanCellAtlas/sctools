@@ -160,7 +160,6 @@ class SequenceMetricAggregator:
             )
 
             # the remaining portions deal with aligned reads, so if the read is not mapped, drop it.
-            # todo unaligned reads are being treated below a continue call that excludes that type of read
             if record.is_unmapped:
                 continue
 
@@ -195,7 +194,7 @@ class SequenceMetricAggregator:
             cigar_stats, num_blocks = record.get_cigar_stats()
             if cigar_stats[3]:
                 self.spliced_reads += 1
-            # todo figure out antisense -- this is probably dropseqtools somewhere
+            # todo figure out antisense and make this notation clearer; info likely in dropseqtools
             self._plus_strand_reads += not record.is_reverse
 
     def parse_extra_fields(self, tags: Sequence[str], record: pysam.AlignedSegment) -> None:

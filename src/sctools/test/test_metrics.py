@@ -66,15 +66,21 @@ def test_merge_gene_metrics():
     (_cell_metrics, 656),
 ])
 def test_metrics_n_reads(metrics, expected_value):
+    """test that the metrics identify the correct read number"""
     assert metrics['n_reads'].sum() == expected_value
 
 
 def test_cell_metrics_mean_n_genes_observed():
+    """
+    test that the GatherCellMetrics method identifies the correct number of genes per cell, on
+    average.
+    """
     genes_observed = _cell_metrics['n_genes'].mean()
     assert math.isclose(genes_observed, 1.9827, abs_tol=1e-4), '%f != %f' % (genes_observed, 1.9827)
 
 
 def test_gene_metrics_n_genes():
+    """Test that GatherGeneMetrics identifies the total number of genes in the test file"""
     genes_observed = _gene_metrics.shape[0]
     assert genes_observed == 8
 
@@ -84,6 +90,10 @@ def test_gene_metrics_n_genes():
     (_cell_metrics, 249),
 ])
 def test_metrics_n_molecules(metrics, expected_value):
+    """Test that each metric identifies the total number of molecules in the test file
+
+    Molecules are defined as a unique combination of {cell barcode, molecule barcode, gene}
+    """
     molecules_observed = metrics['n_molecules'].sum()
     assert molecules_observed == expected_value
 
@@ -93,6 +103,11 @@ def test_metrics_n_molecules(metrics, expected_value):
     (_cell_metrics, 499),
 ])
 def test_metrics_n_fragments(metrics, expected_value):
+    """Test that each metric identifies the total number of fragments in the test file.
+
+    Fragments are defined as a unique combination of {cell barcode, molecule barcode, strand,
+    position, chromosome}
+    """
     fragments_observed = metrics['n_fragments'].sum()
     assert fragments_observed == expected_value
 
@@ -115,6 +130,10 @@ def test_metrics_highest_expression_class(metrics, expected_value):
     (_cell_metrics, 94),
 ])
 def test_metrics_highest_read_count(metrics, expected_value):
+    """
+    Test that each metric identifies the what the highest read count associated with any single
+    entity
+    """
     observed_max_gene_reads = metrics['n_reads'].max()
     assert observed_max_gene_reads == expected_value
 
@@ -124,6 +143,7 @@ def test_metrics_highest_read_count(metrics, expected_value):
     (_cell_metrics, 655),
 ])
 def test_metrics_number_perfect_barcodes(metrics, expected_value):
+    """Test that each metric correctly identifies the number of perfect barcodes where CB == CR"""
     observed_perfect_barcodes = metrics['perfect_molecule_barcodes'].sum()
     assert observed_perfect_barcodes == expected_value
 
@@ -133,6 +153,7 @@ def test_metrics_number_perfect_barcodes(metrics, expected_value):
     (_cell_metrics, 609),
 ])
 def test_reads_mapped_exonic(metrics, expected_value):
+    """Test that each metric identifies the number of reads mapped to an exon (XF=='CODING')"""
     observed = metrics['reads_mapped_exonic'].sum()
     assert observed == expected_value
 
@@ -142,6 +163,7 @@ def test_reads_mapped_exonic(metrics, expected_value):
     (_cell_metrics, 28),
 ])
 def test_reads_mapped_intronic(metrics, expected_value):
+    """Test that each metric identifies the number of reads mapped to an intron (XF=='INTRONIC')"""
     observed = metrics['reads_mapped_intronic'].sum()
     assert observed == expected_value
 
@@ -151,6 +173,7 @@ def test_reads_mapped_intronic(metrics, expected_value):
     (_cell_metrics, 19),
 ])
 def test_reads_mapped_utr(metrics, expected_value):
+    """Test that each metric identifies the number of reads mapped to a UTR (XF=='UTR')"""
     observed = metrics['reads_mapped_utr'].sum()
     assert observed == expected_value
 
@@ -160,6 +183,7 @@ def test_reads_mapped_utr(metrics, expected_value):
     (_cell_metrics, 656),
 ])
 def test_reads_mapped_uniquely(metrics, expected_value):
+    """Uniquely mapping reads will be tagged with NH==1"""
     observed = metrics['reads_mapped_uniquely'].sum()
     assert observed == expected_value
 
@@ -169,6 +193,7 @@ def test_reads_mapped_uniquely(metrics, expected_value):
     (_cell_metrics, 107),
 ])
 def test_duplicate_records(metrics, expected_value):
+    """Duplicate records are identified by the 1024 bit being set in the sam flag"""
     observed = metrics['duplicate_reads'].sum()
     assert observed == expected_value
 
@@ -178,17 +203,39 @@ def test_duplicate_records(metrics, expected_value):
     (_cell_metrics, 2),
 ])
 def test_spliced_reads(metrics, expected_value):
+    """
+    This pipeline defines spliced reads as containing an N segment of any length in the cigar string
+    """
     observed = metrics['spliced_reads'].sum()
     assert observed == expected_value
 
 
-# todo fails because of (1) N-base and 2-base cell barcode correction errors and (2)
-# fragment calculationes currently do not account for soft clipping. Fixing these will cause this
-# test to pass
-def test_relationship_of_duplicates_and_fragments():
-    dup_and_fragments = _gene_metrics['duplicate_reads'].sum() + _gene_metrics['n_fragments'].sum()
-    reads = _gene_metrics['n_reads'].sum()
+# todo failing
+@pytest.mark.parametrize('metrics', [_gene_metrics, _cell_metrics])
+def test_relationship_of_duplicates_and_fragments(metrics):
+    """
+    We expect the number of duplicates and fragments to add up to the total number of reads. The
+    rationale is that any read that is not a duplicate should be a distinct fragment, under our
+    definitions.
+
+    This fails because of (1) N-base and 2-base cell barcode correction errors and (2)
+    fragment calculationes currently do not account for soft clipping. Fixing these will cause this
+    test to pass
+    """
+    dup_and_fragments = metrics['duplicate_reads'].sum() + metrics['n_fragments'].sum()
+    reads = metrics['n_reads'].sum()
     assert reads == dup_and_fragments
+
+
+@pytest.mark.parametrize('metrics', [_gene_metrics, _cell_metrics])
+def test_fragments_number_is_greater_than_molecule_number(metrics):
+    """
+    There should always be more fragments than molecules, as the minimum definition of a molecule is
+    a fragment covered by a single read
+    """
+    assert np.all(metrics['n_molecules'] >= 1)
+    assert np.all(metrics['n_fragments'] >= 1)
+    assert np.all(metrics['n_fragments'] >= metrics['n_molecules'])
 
 
 @pytest.mark.parametrize('metrics, key, expected_value', [
@@ -199,7 +246,10 @@ def test_relationship_of_duplicates_and_fragments():
                1.0000, 0.9895, 1.0000, 0.9760, 1.0000, 1.0000, 1.0000, 0.9889, 1.0000, 0.9600,
                1.0000, 0.9909, 1.0000, 1.0000, 0.9556, 0.9800, 1.0000, 0.9000, 1.0000, 0.9588,
                1.0000, 1.0000, 0.9889, 0.8000, 0.9538, 0.9909, 0.9929, 0.9571])),
-    (_cell_metrics, 'molecule_barcode_fraction_bases_above_30_variance',  # todo failing, odd because mean is passing
+    # todo failing. Odd because mean is passing; catastrophic cancellation in the online method?
+    # other methods that use the variance estimator work just fine. Something about the gene issue
+    # that is identified by other methods below?
+    (_cell_metrics, 'molecule_barcode_fraction_bases_above_30_variance',
      np.array(
          [np.nan, 0.0050, np.nan, np.nan, 0.0019, 0.0000, 0.0000, np.nan, 0.0015, np.nan, 0.0000,
           0.0000, np.nan, 0.0000, 0.0048, 0.0000, 0.0000, 0.0029, 0.0000, np.nan, 0.0000, 0.0044,
@@ -239,28 +289,33 @@ def test_relationship_of_duplicates_and_fragments():
                0.3850, 24.3135, 17.8765, 26.5847, 5.2099, np.nan, 22.5846, 48.2133, np.nan, np.nan,
                5.6775, 23.9395, np.nan, np.nan, 12.9322, np.nan, 18.1475, 29.6960, 20.7504,
                34.9055])),
-    (_cell_metrics, 'reads_per_molecule',  # todo failing
-     np.array([1.0000, 2.0000, np.nan, 1.0000, 9.0000, 2.4000, 2.0000, 1.0000, 3.0000, 1.0000,
-               3.0000, 3.0000, 1.0000, np.nan, 2.4167, 4.3333, 1.2222, 5.8750, 1.3333, 1.0000,
-               1.2000, 1.5000, 4.6000, 2.0000, 2.5000, 1.2000, 2.1429, 1.0000, 2.6364, 4.0000,
-               1.0000, 2.1111, 1.7273, 6.2500, 5.0000, 1.3333, 2.0000, 2.2500, np.nan, 2.0000,
-               4.3333, 3.9286, 2.2000, 1.0000, 1.5000, 1.6667, np.nan, 1.0000, 1.6667, 1.8889,
-               1.0000, 1.0000, 2.2500, 1.0000, 9.7500, 11.0000, 4.0000, 1.5000])),
-    (_cell_metrics, 'reads_per_fragment',  # todo failing
-     np.array([1.0000, 1.0000, np.nan, 1.0000, 1.1250, 1.3333, 2.0000, 1.0000, 1.3333, 1.0000,
-               1.2000, 3.0000, 1.0000, np.nan, 1.3182, 4.3333, 1.2222, 1.4688, 1.1429, 1.0000,
-               1.2000, 1.2857, 1.5333, 2.0000, 1.2500, 1.2000, 1.2500, 1.0000, 1.3182, 1.0000,
-               1.0000, 1.4615, 1.3571, 1.3889, 1.2500, 1.3333, 1.0000, 1.1250, np.nan, 1.1765,
-               4.3333, 1.4474, 1.1000, 1.0000, 1.2857, 1.2500, np.nan, 1.0000, 1.2500, 1.3077,
-               1.0000, 1.0000, 1.2857, 1.0000, 2.4375, 1.5714, 1.4737, 1.2353])),
-    (_cell_metrics, 'fragments_per_molecule',  # todo failing, probably depends on above failures
+    # todo right now the metrics count reads that have no 'gene' towards molecules, whereas
+    # the calculations in the notebook exclude them. We should decide which method we prefer.
+    # there may be further problems.
+    (_cell_metrics, 'reads_per_molecule',
      np.array(
-         [1.0000, 2.0000, np.nan, 1.0000, 8.0000, 1.8000, 1.0000, 1.0000, 2.2500, 1.0000, 2.5000,
-          1.0000, 1.0000, np.nan, 1.8333, 1.0000, 1.0000, 4.0000, 1.1667, 1.0000, 1.0000, 1.1667,
-          3.0000, 1.0000, 2.0000, 1.0000, 1.7143, 1.0000, 2.0000, 4.0000, 1.0000, 1.4444, 1.2727,
-          4.5000, 4.0000, 1.0000, 2.0000, 2.0000, np.nan, 1.7000, 1.0000, 2.7143, 2.0000, 1.0000,
-          1.1667, 1.3333, np.nan, 1.0000, 1.3333, 1.4444, 1.0000, 1.0000, 1.7500, 1.0000, 4.0000,
-          7.0000, 2.7143, 1.2143])),
+         [1.0000, 2.0000, np.nan, 1.0000, 9.0000, 2.4000, 2.0000, 1.0000, 3.0000, 1.0000, 3.0000,
+          3.0000, 1.0000, np.nan, 2.4167, 4.3333, 1.2222, 5.8750, 1.3333, 1.0000, 1.2000, 1.5000,
+          4.6000, 2.0000, 2.5000, 1.2000, 2.1429, 1.0000, 2.6364, 4.0000, 1.0000, 2.1111, 1.7273,
+          6.2500, 5.0000, 1.3333, 2.0000, 2.2500, np.nan, 2.0000, 4.3333, 3.9286, 2.2000, 1.0000,
+          1.5000, 1.6667, np.nan, 1.0000, 1.6667, 1.8889, 1.0000, 1.0000, 2.2500, 1.0000, 9.7500,
+          11.0000, 4.0000, 1.5000])),
+    (_cell_metrics, 'reads_per_fragment',
+     np.array(
+         [1.0000, 1.0000, 1.0000, 1.0000, 1.1250, 1.3333, 2.0000, 1.0000, 1.2000, 1.0000, 1.2000,
+          3.0000, 1.0000, 2.0000, 1.3182, 1.4444, 1.1000, 1.4688, 1.1429, 1.0000, 1.2000, 1.2857,
+          1.5333, 2.0000, 1.2500, 1.0000, 1.1538, 1.0000, 1.3182, 1.0000, 1.0000, 1.4615, 1.3571,
+          1.3158, 1.2500, 1.3333, 1.0000, 1.1250, 1.0000, 1.1765, 1.0833, 1.4103, 1.1000, 1.0000,
+          1.2857, 1.2500, 1.0000, 1.0000, 1.2500, 1.3077, 1.0000, 1.0000, 1.2857, 1.0000, 1.3929,
+          1.5714, 1.4737, 1.1053])),
+    (_cell_metrics, 'fragments_per_molecule',  # todo failure depends on above reads_per_molecule
+     np.array(
+         [1.0000, 2.0000, np.nan, 1.0000, 8.0000, 1.8000, 1.0000, 1.0000, 2.5000, 1.0000, 2.5000,
+          1.0000, 1.0000, np.nan, 1.8333, 3.0000, 1.1111, 4.0000, 1.1667, 1.0000, 1.0000, 1.1667,
+          3.0000, 1.0000, 2.0000, 1.2000, 1.8571, 1.0000, 2.0000, 4.0000, 1.0000, 1.4444, 1.2727,
+          4.7500, 4.0000, 1.0000, 2.0000, 2.0000, np.nan, 1.7000, 4.0000, 2.7857, 2.0000, 1.0000,
+          1.1667, 1.3333, np.nan, 1.0000, 1.3333, 1.4444, 1.0000, 1.0000, 1.7500, 1.0000, 7.0000,
+          7.0000, 2.7143, 1.3571])),
     (_gene_metrics, 'molecule_barcode_fraction_bases_above_30_mean',
      np.array([1.0000, 1.0000, 0.8000, 0.9885, 0.9833, 0.9857, 0.7000, 0.9444])),
     (_gene_metrics, 'molecule_barcode_fraction_bases_above_30_variance',
@@ -281,22 +336,36 @@ def test_relationship_of_duplicates_and_fragments():
      np.array([1.0000, 1.0000, 1.0000, 1.8750, 2.9831, 1.2500, 1.0000, 1.3077])),
 ])
 def test_higher_order_metrics_by_gene(metrics, key, expected_value):
+    """
+    This class tests a very large number of higher-order metrics that examine the functionality of
+    the test suite across all measured instances of the metric class. E.g. for cell metrics (class),
+    each test will verify the value for each cell (instance).
+
+    :param pd.DataFrame metrics: Output from subclass of sctools.metrics.SequenceMetricAggregator
+    :param str key: the column of metrics to interrogate in the parametrized test
+    :param np.ndarray expected_value: an array of expected values
+    """
+    # need to sort, metrics are not always in same order as results.
     observed = sorted(np.nan_to_num(metrics[key].values).round(4))
     expected_value = sorted(np.nan_to_num(expected_value))
     assert observed == expected_value
 
 
 @pytest.mark.parametrize('metrics, key, expected_value', [
-    (_cell_metrics, 'n_molecules', 249),
-    (_cell_metrics, 'n_fragments', 499),
-    (_cell_metrics, 'fragments_with_single_read_evidence', 345),  # todo failing
-    (_cell_metrics, 'molecules_with_single_read_evidence', 130),  # todo failing
-    (_gene_metrics, 'n_molecules', 88),
-    (_gene_metrics, 'n_fragments', 217),
+    # todo failing; suspect related to problem with how fragments are defined
+    (_cell_metrics, 'fragments_with_single_read_evidence', 345),
+    # todo failing. Does not make sense that this would also be a fragment issue.
+    (_cell_metrics, 'molecules_with_single_read_evidence', 130),
     (_gene_metrics, 'fragments_with_single_read_evidence', 155),
     (_gene_metrics, 'molecules_with_single_read_evidence', 42),
 ])
-def test_higher_order_metrics_across_genes(metrics, key, expected_value):
+def test_single_read_evidence(metrics, key, expected_value):
+    """
+    We want to determine how many molecules and fragments are covered by only one read, as reads
+    covered by multiple reads have much lower probabilities of being the result of error processes.
+    """
     observed = metrics[key].sum()
     assert observed == expected_value
 
+
+# todo need to add cell-specific tests (from parse_extra_fields)
