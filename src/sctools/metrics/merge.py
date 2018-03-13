@@ -6,6 +6,11 @@ import numpy as np
 class MergeMetrics:
 
     def __init__(self, metric_files: Iterable[str], output_file: str):
+        """Merges multiple metrics files
+
+        :param metric_files: metrics files to merge
+        :param output_file: name for the merged output
+        """
         self._metric_files = metric_files
         self._output_file = output_file
 
@@ -15,10 +20,11 @@ class MergeMetrics:
 
 class MergeCellMetrics(MergeMetrics):
 
+    # todo test me
     def execute(self) -> None:
         """
         shutil would be more efficient, but we need a way to get rid of the header line. Bash
-        might be faster than the python solution
+        might be faster and more efficient than the python solution
         """
         metric_dataframes: List[pd.DataFrame] = [
             pd.read_csv(f, index_col=0) for f in self._metric_files
@@ -28,11 +34,12 @@ class MergeCellMetrics(MergeMetrics):
 
 
 class MergeGeneMetrics(MergeMetrics):
-    """
-    todo this class needs to do a weighted mean; this is something numpy can do.
-    """
 
+    # todo this class needs to do a weighted mean; this is something numpy can do.
     def execute(self) -> None:
+        """
+        Currently this class returns an incorrect result
+        """
         metric_dataframes: List[pd.DataFrame] = [
             pd.read_csv(f, index_col=0) for f in self._metric_files
         ]

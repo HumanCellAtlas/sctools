@@ -49,6 +49,13 @@ class GenericPlatform:
 
     @classmethod
     def calculate_gene_metrics(cls, args: Iterable[str]=None) -> None:
+        """command line entrypoint for calculating gene metrics from a sorted bamfile
+
+        writes metrics to csv
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
         parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
@@ -61,9 +68,17 @@ class GenericPlatform:
         gene_metric_gatherer = metrics.gatherer.GatherGeneMetrics(
             args.input_bam, args.output_filestem)
         gene_metric_gatherer.extract_metrics()
+        return 0
 
     @classmethod
     def calculate_cell_metrics(cls, args: Iterable[str]=None) -> None:
+        """command line entrypoint for calculating cell metrics from a sorted bamfile
+
+        writes metrics to csv
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
         parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
@@ -75,9 +90,18 @@ class GenericPlatform:
         cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
             args.input_bam, args.output_filestem)
         cell_metric_gatherer.extract_metrics()
+        return 0
 
     @classmethod
     def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
+        """command line entrypoint for merging multiple metrics files
+
+        merges multiple metrics inputs into a single metrics file that matches the shape and
+        order of the generated count matrix
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('metric_files', nargs='+', help='Input metric files')
         parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
@@ -90,6 +114,14 @@ class GenericPlatform:
 
     @classmethod
     def merge_cell_metrics(cls, args: Iterable[str]=None) -> None:
+        """command line entrypoint for merging multiple metrics files
+
+        merges multiple metrics inputs into a single metrics file that matches the shape and
+        order of the generated count matrix
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('metric_files', nargs='+', help='Input metric files')
         parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
