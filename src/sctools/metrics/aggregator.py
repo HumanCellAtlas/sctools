@@ -1,8 +1,10 @@
 from typing import Iterable, Tuple, Counter, List, Sequence
 from collections import Counter
+
 import pysam
-from sctools.stats import OnlineGaussianSufficientStatistic
 import numpy as np
+
+from sctools.stats import OnlineGaussianSufficientStatistic
 
 # note that this entire module can be rewritten with dataclass when python 3.7 stabilizes
 # see https://www.python.org/dev/peps/pep-0557/

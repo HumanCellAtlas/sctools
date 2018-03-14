@@ -1,6 +1,7 @@
-from sctools import fastq, bam, metrics
 import argparse
 from typing import Iterable
+
+from sctools import fastq, bam, metrics
 
 
 class GenericPlatform:

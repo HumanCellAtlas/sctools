@@ -23,7 +23,7 @@ setup(
     author='Ambrose J. Carr',
     author_email='mail@ambrosejcarr.com',
     package_dir={'': 'src'},
-    packages=['sctools', 'sctools/test'],
+    packages=['sctools', 'sctools/test', 'sctools/metrics'],
     test_suite='setup.sctools_test_suite',  # runs tests twice for who knows what reason
     install_requires=[
         'pysam',

@@ -1,10 +1,10 @@
 import warnings
 import os
 import math
-import pysam
 from itertools import cycle
-from typing import Iterator, Generator, List, Any
+from typing import Iterator, Generator
 
+import pysam
 """
 unlike fastq and gtf which lack flexible iterators, the pysam wrapper provides an excellent iterator 
 over sam records that would be difficult to improve upon in pure python. 

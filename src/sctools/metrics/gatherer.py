@@ -1,5 +1,7 @@
 from contextlib import closing
+
 import pysam
+
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellBarcodeMetrics, GeneMetrics
 from sctools.metrics.writer import MetricCSVWriter
