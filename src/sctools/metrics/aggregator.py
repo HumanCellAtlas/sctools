@@ -19,6 +19,9 @@ class SequenceMetricAggregator:
         files. This is an abstract class which is subclassed by GeneMetricAggregator and
         CellMetricAggregator, each of which add additional metrics specific to those two groupings.
 
+        An instance of a MetricAggregator subclass is instantiated for each grouping of reads (e.g.
+        one CellMetricAggregator instance per cell barcode found in the BAM file)
+
         A new instance of each MetricAggregator is instantiated for each instance (e.g. cell) of a
         class (e.g. cell barcodes). All reads for a molecule--those reads sharing the same
         {cell barcode (tag=CB), molecule barcode (tag=UB), and gene (tag=GE)}--are parsed together
@@ -58,6 +61,7 @@ class SequenceMetricAggregator:
         self.reads_mapped_intronic = 0
         self.reads_mapped_utr = 0
 
+        # todo implement this once we have a gene model
         # self.reads_mapped_outside_window = 0  # reads should be within 1000 bases of UTR
         # self._read_distance_from_termination_site = OnlineGaussianSufficientStatistic()
 
@@ -140,7 +144,9 @@ class SequenceMetricAggregator:
 
     @staticmethod
     def quality_above_threshold(threshold: int, quality_sequence: Sequence[int]) -> float:
-        """return the number of bases for which the (integer) quality is greater than a threshold"""
+        """
+        return the fraction of bases for which the (integer) quality is greater than a threshold
+        """
         return sum(1 for base in quality_sequence if base > threshold) / len(quality_sequence)
 
     def is_noise(self, record: pysam.AlignedSegment) -> bool:
