@@ -95,7 +95,7 @@ class GenericPlatform:
 
     @classmethod
     def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
-        """command line entrypoint for merging multiple metrics files
+        """command line entrypoint for merging multiple gene metrics files
 
         merges multiple metrics inputs into a single metrics file that matches the shape and
         order of the generated count matrix
@@ -115,7 +115,7 @@ class GenericPlatform:
 
     @classmethod
     def merge_cell_metrics(cls, args: Iterable[str]=None) -> None:
-        """command line entrypoint for merging multiple metrics files
+        """command line entrypoint for merging multiple cell metrics files
 
         merges multiple metrics inputs into a single metrics file that matches the shape and
         order of the generated count matrix

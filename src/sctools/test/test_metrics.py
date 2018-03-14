@@ -14,6 +14,9 @@ from sctools.platform import TenXV2
 _data_dir = os.path.split(__file__)[0] + '/data'
 _test_dir = tempfile.mkdtemp()
 
+# note, to inspect these testing files, please install samtools and use the following command:
+# samtools view <filename> | less
+
 # set the input files
 _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
 _cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
