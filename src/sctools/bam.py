@@ -218,6 +218,14 @@ def iter_tag_groups(
         tag: str,
         bam_iterator: Iterator[pysam.AlignedSegment],
         filter_null: bool=False) -> Generator:
+    """ This function iterates over reads and yields them grouped by the provided tag value
+
+    :param tag: BAM tag to group over
+    :param bam_iterator: open bam file that can be iterated over
+    :param filter_null: (default=False) by default, all reads that lack the requested tag are
+      yielded together. If True, all reads that lack the tag will be discarded.
+    :return Generator: this function returns a generator that yields grouped tags.
+    """
 
     # get first read and tag set
     reads = [next(bam_iterator)]
