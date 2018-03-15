@@ -1,5 +1,7 @@
 from contextlib import closing
+
 import pysam
+
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellBarcodeMetrics, GeneMetrics
 from sctools.metrics.writer import MetricCSVWriter
@@ -8,6 +10,16 @@ from sctools.metrics.writer import MetricCSVWriter
 class MetricGatherer:
 
     def __init__(self, bam_file: str, output_stem: str):
+        """
+        MetricGatherer defines an extract_metrics() function which will parse a file molecule-by-
+        molecule and write the resulting information to an output file.
+
+        Because molecules tend to have relatively small numbers of reads, the memory footprint of
+        this method is typically small (tens of megabytes)
+
+        :param bam_file: the bam file over which to compile metrics
+        :param output_stem: the file stem for the (csv formatted) metric outputs
+        """
         self._bam_file = bam_file
         self._output_stem = output_stem
 
@@ -15,13 +27,14 @@ class MetricGatherer:
     def bam_file(self) -> str:
         return self._bam_file
 
-    def extract_metrics(self):
+    def extract_metrics(self) -> None:
+        """extract metrics from the provided bam file and write the results to csv."""
         raise NotImplementedError
 
 
 class GatherCellMetrics(MetricGatherer):
 
-    # requires that bam file is sorted by GE, UB, CB tags
+    # assumes bam file is sorted by GE, UB, CB tags
 
     def extract_metrics(self, mode: str='rb') -> None:
 
@@ -40,7 +53,6 @@ class GatherCellMetrics(MetricGatherer):
                 for molecule_iterator, molecule_tag in iter_molecule_barcodes(
                         bam_iterator=cell_iterator):
 
-                    # todo there are a bunch of reads that don't have genes that this misses
                     # break up molecule barcodes by gene ids
                     for gene_iterator, gene_tag in iter_genes(bam_iterator=molecule_iterator):
 
@@ -52,12 +64,12 @@ class GatherCellMetrics(MetricGatherer):
 
                 # write a record for each cell
                 metric_aggregator.finalize()
-                cell_metrics_output.write(cell_tag, vars(metric_aggregator.__dict__))
+                cell_metrics_output.write(cell_tag, vars(metric_aggregator))
 
 
 class GatherGeneMetrics(MetricGatherer):
 
-    # assumes file is sorted by UB, CB, GE tag
+    # assumes bam file is sorted by UB, CB, GE tag
 
     def extract_metrics(self, mode: str='rb'):
         # open the files
