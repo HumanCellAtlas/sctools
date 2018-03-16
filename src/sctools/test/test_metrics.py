@@ -13,8 +13,7 @@ from sctools.platform import TenXV2
 
 # set the input and output directories, using a tempdir to automatically clean up generated files
 _data_dir = os.path.split(__file__)[0] + '/data'
-# _test_dir = tempfile.mkdtemp()
-_test_dir = './test_metrics_pytest'
+_test_dir = tempfile.mkdtemp()
 os.makedirs(_test_dir, exist_ok=True)
 
 # note, to inspect these testing files, please install samtools and use the following command:
