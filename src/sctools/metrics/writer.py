@@ -1,12 +1,26 @@
 from typing import TextIO, List, Mapping, Any
 from numbers import Number
+import gzip
 
 
 class MetricCSVWriter:
 
-    def __init__(self, output_stem: str):
-        self._filename: str = output_stem if output_stem.endswith('.csv') else output_stem + '.csv'
-        self._open_fid: TextIO = open(self._filename, 'w')
+    def __init__(self, output_stem: str, compress=True):
+
+        # check and fix extension:
+        if compress:
+            if not output_stem.endswith('.csv.gz'):
+                output_stem += '.csv.gz'
+        else:
+            if not output_stem.endswith('.csv'):
+                output_stem += '.csv'
+        self._filename: str = output_stem
+
+        # open the file
+        if compress:
+            self._open_fid: TextIO = gzip.open(self._filename, 'wt')
+        else:
+            self._open_fid: TextIO = open(self._filename, 'w')
         self._header: List[str] = None
 
     def filename(self) -> str:

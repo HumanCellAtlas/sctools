@@ -242,6 +242,6 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         seq_tag, qual_tag = extract_barcode(record, cb)
         try:
             corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
+            return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')
         except KeyError:
-            corrected_cb = seq_tag[1]  # couldn't find the right barcode!
-        return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')
+            return seq_tag, qual_tag

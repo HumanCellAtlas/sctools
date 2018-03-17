@@ -67,7 +67,7 @@ def test_split_bam():
         '--bamfile', 'test_tagged_bam.bam',
         '--output-prefix', 'test_tagged',
         '--subfile-size', '0.005',
-        '--tag', 'CB']
+        '--tags', 'CB', 'CR']
 
     return_call = platform.GenericPlatform.split_bam(split_args)
     assert return_call == 0

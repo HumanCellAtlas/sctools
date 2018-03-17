@@ -1,12 +1,14 @@
 import os
 import tempfile
 import math
+import fileinput
+from typing import Callable
 
 import pytest
 import pandas as pd
 import numpy as np
 
-from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
+from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics, MetricGatherer
 from sctools.metrics.merge import MergeCellMetrics, MergeGeneMetrics
 from sctools.platform import TenXV2
 
@@ -34,8 +36,8 @@ _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
 _cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
 
 # specify filenames for temporary metrics outputs that are used in the following tests
-_gene_metric_output_file = _test_dir + '/gene_metrics.csv'
-_cell_metric_output_file = _test_dir + '/cell_metrics.csv'
+_gene_metric_output_file = _test_dir + '/gene_metrics.csv.gz'
+_cell_metric_output_file = _test_dir + '/cell_metrics.csv.gz'
 
 # run the gene metrics suite
 gene_gatherer = GatherGeneMetrics(_gene_sorted_bam, _gene_metric_output_file)
@@ -377,23 +379,23 @@ def split_metrics_file(metrics_file):
     of the file in the first output and the last 3/4 of the file in the second output, such that
     1/2 of the metrics in the two files overlap
     """
-    with open(metrics_file, 'r') as f:
-        data = f.readlines()
+    with fileinput.FileInput([metrics_file], mode='r', openhook=fileinput.hook_compressed) as f:
+        data = [line for line in f]
 
     header, data = data[0], data[1:]
 
     low_split, high_split = round(len(data) * .25), round(len(data) * .75)
     file_1, file_2 = [_test_dir + 'metrics_for_merging_%d.csv' % i for i in (1, 2)]
 
-    with open(file_1, 'w') as f:
-        f.write(header + '\n')
+    with open(file_1, 'wb') as f:
+        f.write(header + b'\n')
         for line in data[:high_split]:
-            f.write(line + '\n')
+            f.write(line + b'\n')
 
-    with open(file_2, 'w') as f:
-        f.write(header + '\n')
+    with open(file_2, 'wb') as f:
+        f.write(header + b'\n')
         for line in data[low_split:]:
-            f.write(line + '\n')
+            f.write(line + b'\n')
 
     return file_1, file_2
 
@@ -459,3 +461,26 @@ def test_merge_gene_metrics_averages_over_multiply_detected_genes(mergeable_gene
     target_rows = len(input_genes)
 
     assert merged_data.shape == (target_rows, target_cols), '%s' % repr(merged_data)
+
+
+@pytest.mark.parametrize('bam, gatherer', [
+    (_gene_sorted_bam, GatherGeneMetrics),
+    (_cell_sorted_bam, GatherCellMetrics),
+])
+def test_gzip_compression(bam: str, gatherer: Callable):
+    """
+    gzip compression should produce a .gz file which is identical when uncompressed to the
+    uncompressed version
+    """
+
+    gz_fout = 'test_bam.csv.gz'
+    g: MetricGatherer = gatherer(bam, gz_fout, compress=True)
+    g.extract_metrics()
+    gz_metrics = pd.read_csv(gz_fout, index_col=0)
+
+    fout = 'test_bam.csv'
+    g: MetricGatherer = gatherer(bam, fout, compress=False)
+    g.extract_metrics()
+    metrics = pd.read_csv(fout, index_col=0)
+
+    assert np.allclose(gz_metrics.fillna(0).values, metrics.fillna(0).values)
