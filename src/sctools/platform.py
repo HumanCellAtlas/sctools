@@ -5,7 +5,18 @@ from sctools import fastq, bam, metrics
 
 
 class GenericPlatform:
-    """Abstract base class for platform specific metadata"""
+    """
+    Abstract base class platform-agnostic command line functions defined by sctools.
+
+    A platform is defined by a sequencing chemistry, for example 10x Genomic v2, that produces
+    fastq data with embedded cell and/or molecule barcodes in stereotyped locations.
+
+    When tools do not require information about the specific barcode locations for a platform,
+    (and are therefore generic) those command line tools are defined in this generic base class.
+
+    When platform-specific information is required, those command line tools are defined in a
+    sub-class that defines the necessary information. See e.g. the TenXV2 subclass.
+    """
 
     @classmethod
     def attach_barcodes(cls, args=None):
