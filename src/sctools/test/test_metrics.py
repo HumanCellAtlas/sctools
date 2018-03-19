@@ -40,14 +40,16 @@ _cell_metrics = pd.read_csv(_cell_metric_output_file, index_col=0)
 
 def test_calculate_cell_metrics_cli():
     """test the sctools cell metrics CLI invocation"""
-    TenXV2.calculate_cell_metrics(
+    return_call = TenXV2.calculate_cell_metrics(
         args=['-i', _cell_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+    assert return_call == 0
 
 
 def test_calculate_gene_metrics_cli():
     """test the sctools gene metrics CLI invocation"""
-    TenXV2.calculate_gene_metrics(
+    return_call = TenXV2.calculate_gene_metrics(
         args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+    assert return_call == 0
 
 
 @pytest.mark.parametrize('metrics, expected_value', [
@@ -398,14 +400,16 @@ def mergeable_gene_metrics():
 
 def test_merge_cell_metrics_cli(mergeable_cell_metrics):
     """test the sctools merge cell metrics CLI invocation"""
-    TenXV2.merge_cell_metrics(
+    return_call = TenXV2.merge_cell_metrics(
         args=['-o', _test_dir + '/merged-cell-metrics.csv'] + list(mergeable_cell_metrics))
+    assert return_call == 0
 
 
 def test_merge_gene_metrics_cli(mergeable_gene_metrics):
     """test the sctools merge gene metrics CLI invocation"""
-    TenXV2.merge_gene_metrics(
+    return_call = TenXV2.merge_gene_metrics(
         args=['-o', _test_dir + '/merged-gene-metrics.csv'] + list(mergeable_gene_metrics))
+    assert return_call == 0
 
 
 def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):

@@ -71,12 +71,12 @@ class MergeGeneMetrics(MergeMetrics):
 
         sum_operations = {c: 'sum' for c in columns_to_sum}
 
-        def weighted_average(x):
+        def weighted_average(data_frame):
             """
-            :param pd.DataFrame x: input dataframe to reduce with a weighted average
+            :param pd.DataFrame data_frame: input dataframe to reduce with a weighted average
             :return pd.Series: reduced result
             """
-            weights = x['n_reads'].values
+            weights = data_frame['n_reads'].values
 
             columns_to_average_by_read = [
                 'molecule_barcode_fraction_bases_above_30_mean',
@@ -88,7 +88,7 @@ class MergeGeneMetrics(MergeMetrics):
             ]
 
             return pd.Series(
-                {c: np.average(x[c], weights=weights) for c in columns_to_average_by_read})
+                {c: np.average(data_frame[c], weights=weights) for c in columns_to_average_by_read})
 
         def recalculate_operation(x):
             return pd.DataFrame(
