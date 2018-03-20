@@ -13,8 +13,8 @@ guaranteed to contain all data for any cell it contains
 a molecule are stored sequentially by cell (`CalculateCellMetrics`) or by gene 
 (`CalculateGeneMetrics`)
 3. For each cell or gene, parse the information by molecule, which typically loads fewer than 
-10,000 records into memory at a time
-4. Call 
+10,000 records into memory at a time. 
+4. Merge data across chunks using `MergeCellMetrics` or `MergeGeneMetrics`.
 
 This map-reduce approach is currently implemented by the 
 [HCA 3' pipeline](https://github.com/HumanCellAtlas/skylab/blob/master/pipelines/optimus/Optimus.wdl), 
