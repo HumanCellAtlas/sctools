@@ -9,14 +9,16 @@ import numpy as np
 from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
 from sctools.platform import TenXV2
 
-# ############################### Testing Ground Truth Values ################################### #
-# The data hardcoded into this file come from the two notebooks associated with these metrics:    #
-# characterize-cell-testing-data.ipynb and characterize-gene-testing-data.ipynb. In these         #
-# notebooks, the testing .bam files are loaded into memory and interrogated for each of the       #
-# metrics in question using pandas and numpy commands. These independent calculation provide the  #
-# hard-coded data found in these tests. When testing data is changed, the notebook can be updated #
-# to re-calculate the values found in this file.                                                  #
-# ############################################################################################### #
+"""
+Testing Data Definition & Acquisition
+
+The data hardcoded into this file come from the two notebooks associated with these metrics:
+characterize-cell-testing-data.ipynb and characterize-gene-testing-data.ipynb. In these
+notebooks, the testing .bam files are loaded into memory and interrogated for each of the
+metrics in question using pandas and numpy commands. These independent calculation provide the 
+hard-coded data found in these tests. When testing data is changed, the notebook can be updated 
+to re-calculate the values found in this file.
+"""
 
 # set the input and output directories, using a tempdir to automatically clean up generated files
 _data_dir = os.path.split(__file__)[0] + '/data'
