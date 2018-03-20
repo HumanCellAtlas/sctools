@@ -23,17 +23,22 @@ setup(
     author='Ambrose J. Carr',
     author_email='mail@ambrosejcarr.com',
     package_dir={'': 'src'},
-    packages=['sctools', 'sctools/test'],
+    packages=['sctools', 'sctools/test', 'sctools/metrics'],
     test_suite='setup.sctools_test_suite',  # runs tests twice for who knows what reason
     install_requires=[
         'pysam',
         'numpy',
+        'pandas',
         'pytest',
     ],
     entry_points={
             'console_scripts': [
                 'Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes',
-                'SplitBam = sctools.platform:GenericPlatform.split_bam'
+                'SplitBam = sctools.platform:GenericPlatform.split_bam',
+                'CalculateGeneMetrics = sctools.platform:GenericPlatform.calculate_gene_metrics',
+                'CalculateCellMetrics = sctools.platform:GenericPlatform.calculate_cell_metrics',
+                'MergeGeneMetrics = sctools.platform:GenericPlatform.merge_gene_metrics',
+                'MergeCellMetrics = sctools.platform:GenericPlatform.merge_cell_metrics',
             ]
     },
     classifiers=CLASSIFIERS,

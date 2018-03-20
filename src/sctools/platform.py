@@ -1,9 +1,22 @@
-from . import fastq, bam
 import argparse
+from typing import Iterable
+
+from sctools import fastq, bam, metrics
 
 
 class GenericPlatform:
-    """Abstract base class for platform specific metadata"""
+    """
+    Abstract base class platform-agnostic command line functions defined by sctools.
+
+    A platform is defined by a sequencing chemistry, for example 10x Genomic v2, that produces
+    fastq data with embedded cell and/or molecule barcodes in stereotyped locations.
+
+    When tools do not require information about the specific barcode locations for a platform,
+    (and are therefore generic) those command line tools are defined in this generic base class.
+
+    When platform-specific information is required, those command line tools are defined in a
+    sub-class that defines the necessary information. See e.g. the TenXV2 subclass.
+    """
 
     @classmethod
     def attach_barcodes(cls, args=None):
@@ -44,6 +57,95 @@ class GenericPlatform:
             args.bamfile, args.output_prefix, args.tag, args.subfile_size, args.raise_missing)
 
         print(' '.join(filenames))
+        return 0
+
+    @classmethod
+    def calculate_gene_metrics(cls, args: Iterable[str]=None) -> int:
+        """command line entrypoint for calculating gene metrics from a sorted bamfile
+
+        writes metrics to csv
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        gene_metric_gatherer = metrics.gatherer.GatherGeneMetrics(
+            args.input_bam, args.output_filestem)
+        gene_metric_gatherer.extract_metrics()
+        return 0
+
+    @classmethod
+    def calculate_cell_metrics(cls, args: Iterable[str]=None) -> int:
+        """command line entrypoint for calculating cell metrics from a sorted bamfile
+
+        writes metrics to csv
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
+            args.input_bam, args.output_filestem)
+        cell_metric_gatherer.extract_metrics()
+        return 0
+
+    @classmethod
+    def merge_gene_metrics(cls, args: Iterable[str]=None) -> int:
+        """command line entrypoint for merging multiple gene metrics files
+
+        merges multiple metrics inputs into a single metrics file that matches the shape and
+        order of the generated count matrix
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('metric_files', nargs='+', help='Input metric files')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        merge = metrics.merge.MergeGeneMetrics(args.metric_files, args.output_filestem)
+        merge.execute()
+        return 0
+
+    @classmethod
+    def merge_cell_metrics(cls, args: Iterable[str]=None) -> int:
+        """command line entrypoint for merging multiple cell metrics files
+
+        merges multiple metrics inputs into a single metrics file that matches the shape and
+        order of the generated count matrix
+
+        :param args: optional arguments, for testing (see test/test_entrypoints.py for example
+        :return int:
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('metric_files', nargs='+', help='Input metric files')
+        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        merge = metrics.merge.MergeCellMetrics(args.metric_files, args.output_filestem)
+        merge.execute()
         return 0
 
 
