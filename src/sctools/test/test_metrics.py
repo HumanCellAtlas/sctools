@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 
 from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics
+from sctools.metrics.merge import MergeCellMetrics, MergeGeneMetrics
 from sctools.platform import TenXV2
 
 """
@@ -23,6 +24,7 @@ to re-calculate the values found in this file.
 # set the input and output directories, using a tempdir to automatically clean up generated files
 _data_dir = os.path.split(__file__)[0] + '/data'
 _test_dir = tempfile.mkdtemp()
+os.makedirs(_test_dir, exist_ok=True)
 
 # note, to inspect these testing files, please install samtools and use the following command:
 # samtools view <filename> | less
@@ -32,8 +34,8 @@ _gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
 _cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
 
 # specify filenames for temporary metrics outputs that are used in the following tests
-_gene_metric_output_file = _data_dir + '/gene_metrics.csv'
-_cell_metric_output_file = _data_dir + '/cell_metrics.csv'
+_gene_metric_output_file = _test_dir + '/gene_metrics.csv'
+_cell_metric_output_file = _test_dir + '/cell_metrics.csv'
 
 # run the gene metrics suite
 gene_gatherer = GatherGeneMetrics(_gene_sorted_bam, _gene_metric_output_file)
@@ -46,32 +48,18 @@ cell_gatherer.extract_metrics()
 _cell_metrics = pd.read_csv(_cell_metric_output_file, index_col=0)
 
 
-def test_calculate_cell_metrics():
+def test_calculate_cell_metrics_cli():
     """test the sctools cell metrics CLI invocation"""
-    TenXV2.calculate_cell_metrics(
+    return_call = TenXV2.calculate_cell_metrics(
         args=['-i', _cell_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+    assert return_call == 0
 
 
-def test_calculate_gene_metrics():
+def test_calculate_gene_metrics_cli():
     """test the sctools gene metrics CLI invocation"""
-    TenXV2.calculate_gene_metrics(
+    return_call = TenXV2.calculate_gene_metrics(
         args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
-
-
-# todo fails, not yet properly set up
-def test_merge_cell_metrics():
-    """test the sctools merge cell metrics CLI invocation"""
-    TenXV2.merge_cell_metrics(
-        args=['-o', _test_dir + '/merged-cell-metrics.csv',
-              'cell_metrics_1.csv', 'cell_metrics_2.csv'])
-
-
-# todo fails, not yet properly set up
-def test_merge_gene_metrics():
-    """test the sctools merge gene metrics CLI invocation"""
-    TenXV2.merge_gene_metrics(
-        args=['-o', _test_dir + '/merged-gene-metrics.csv',
-              'gene_metrics_1.csv', 'gene_metrics_2.csv'])
+    assert return_call == 0
 
 
 @pytest.mark.parametrize('metrics, expected_value', [
@@ -380,5 +368,94 @@ def test_single_read_evidence(metrics, key, expected_value):
     observed = metrics[key].sum()
     assert observed == expected_value
 
-
 # todo need to add additional cell-metric specific tests (from parse_extra_fields)
+
+
+def split_metrics_file(metrics_file):
+    """
+    produces two mergeable on-disk metric files from a single file that contain the first 3/4
+    of the file in the first output and the last 3/4 of the file in the second output, such that
+    1/2 of the metrics in the two files overlap
+    """
+    with open(metrics_file, 'r') as f:
+        data = f.readlines()
+
+    header, data = data[0], data[1:]
+
+    low_split, high_split = round(len(data) * .25), round(len(data) * .75)
+    file_1, file_2 = [_test_dir + 'metrics_for_merging_%d.csv' % i for i in (1, 2)]
+
+    with open(file_1, 'w') as f:
+        f.write(header + '\n')
+        for line in data[:high_split]:
+            f.write(line + '\n')
+
+    with open(file_2, 'w') as f:
+        f.write(header + '\n')
+        for line in data[low_split:]:
+            f.write(line + '\n')
+
+    return file_1, file_2
+
+
+@pytest.fixture
+def mergeable_cell_metrics():
+    return split_metrics_file(_cell_metric_output_file)
+
+
+@pytest.fixture
+def mergeable_gene_metrics():
+    return split_metrics_file(_gene_metric_output_file)
+
+
+def test_merge_cell_metrics_cli(mergeable_cell_metrics):
+    """test the sctools merge cell metrics CLI invocation"""
+    return_call = TenXV2.merge_cell_metrics(
+        args=['-o', _test_dir + '/merged-cell-metrics.csv'] + list(mergeable_cell_metrics))
+    assert return_call == 0
+
+
+def test_merge_gene_metrics_cli(mergeable_gene_metrics):
+    """test the sctools merge gene metrics CLI invocation"""
+    return_call = TenXV2.merge_gene_metrics(
+        args=['-o', _test_dir + '/merged-gene-metrics.csv'] + list(mergeable_gene_metrics))
+    assert return_call == 0
+
+
+def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):
+    """
+    test takes offset cell metrics outputs and merges them. Cell metrics does not check for
+    duplication, so should return a 2x length file.
+    """
+    output_file = os.path.join(_test_dir, 'merged_metrics.csv')
+    m = MergeCellMetrics(mergeable_cell_metrics, output_file)
+    m.execute()
+
+    merged_data = pd.read_csv(output_file, index_col=0)
+
+    input_sizes = []
+    for f in mergeable_cell_metrics:
+        input_sizes.append(pd.read_csv(f, index_col=0).shape)
+    target_rows = sum(row for row, col in input_sizes)
+
+    target_cols = input_sizes[0][1]  # cols will always be the same
+
+    assert merged_data.shape == (target_rows, target_cols)
+
+
+def test_merge_gene_metrics_averages_over_multiply_detected_genes(mergeable_gene_metrics):
+    output_file = os.path.join(_test_dir, 'merged_metrics.csv')
+    m = MergeGeneMetrics(mergeable_gene_metrics, output_file)
+    m.execute()
+
+    merged_data = pd.read_csv(output_file, index_col=0)
+
+    input_data = pd.read_csv(mergeable_gene_metrics[0], index_col=0)
+    target_cols = input_data.shape[1]
+
+    input_genes = input_data.index
+    for f in mergeable_gene_metrics[1:]:
+        input_genes = input_genes.union(pd.read_csv(f, index_col=0).index)
+    target_rows = len(input_genes)
+
+    assert merged_data.shape == (target_rows, target_cols), '%s' % repr(merged_data)

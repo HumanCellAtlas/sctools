@@ -60,7 +60,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def calculate_gene_metrics(cls, args: Iterable[str]=None) -> None:
+    def calculate_gene_metrics(cls, args: Iterable[str]=None) -> int:
         """command line entrypoint for calculating gene metrics from a sorted bamfile
 
         writes metrics to csv
@@ -83,7 +83,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def calculate_cell_metrics(cls, args: Iterable[str]=None) -> None:
+    def calculate_cell_metrics(cls, args: Iterable[str]=None) -> int:
         """command line entrypoint for calculating cell metrics from a sorted bamfile
 
         writes metrics to csv
@@ -105,7 +105,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def merge_gene_metrics(cls, args: Iterable[str]=None) -> None:
+    def merge_gene_metrics(cls, args: Iterable[str]=None) -> int:
         """command line entrypoint for merging multiple gene metrics files
 
         merges multiple metrics inputs into a single metrics file that matches the shape and
@@ -122,10 +122,12 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        raise NotImplementedError
+        merge = metrics.merge.MergeGeneMetrics(args.metric_files, args.output_filestem)
+        merge.execute()
+        return 0
 
     @classmethod
-    def merge_cell_metrics(cls, args: Iterable[str]=None) -> None:
+    def merge_cell_metrics(cls, args: Iterable[str]=None) -> int:
         """command line entrypoint for merging multiple cell metrics files
 
         merges multiple metrics inputs into a single metrics file that matches the shape and
@@ -142,7 +144,9 @@ class GenericPlatform:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
-        raise NotImplementedError
+        merge = metrics.merge.MergeCellMetrics(args.metric_files, args.output_filestem)
+        merge.execute()
+        return 0
 
 
 class TenXV2(GenericPlatform):
