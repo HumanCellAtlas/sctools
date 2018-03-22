@@ -18,7 +18,9 @@ class MetricCSVWriter:
 
     def write(self, index: str, record: Mapping[str, Number]) -> None:
         ordered_fields = [str(record[k]) for k in self._header]
-        self._open_fid.write(index + ',' + ','.join(ordered_fields) + '\n')
+
+        # genes and cells can be None, include a repr() call to convert that to a string
+        self._open_fid.write(repr(index) + ',' + ','.join(ordered_fields) + '\n')
 
     def close(self) -> None:
         self._open_fid.close()
