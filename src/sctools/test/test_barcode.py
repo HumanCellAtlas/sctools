@@ -13,12 +13,12 @@ data_dir = os.path.split(__file__)[0] + '/data/'
 @pytest.fixture
 def barcode_set():
     return barcode.Barcodes.from_whitelist(
-        data_dir + '1K-august-2016.txt', barcode_length=16)
+        data_dir + '1k-august-2016.txt', barcode_length=16)
 
 
 @pytest.fixture(scope='module', params=['r', 'rb'])
 def short_barcode_set_from_iterable(request):
-    with open(data_dir + '1K-august-2016.txt', request.param) as f:
+    with open(data_dir + '1k-august-2016.txt', request.param) as f:
         barcodes = [l.strip() for l in f.readlines()[:50]]
     if isinstance(barcodes[0], bytes):
         return barcode.Barcodes.from_iterable_bytes(barcodes, barcode_length=16)
@@ -79,7 +79,7 @@ def truncated_whitelist_from_10x():
     # note that this whitelist contains 1 non-10x barcode to ensure the presence of a matching
     # target in the test data.
     error_mapping = barcode.ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
-        data_dir + '1K-august-2016.txt')
+        data_dir + '1k-august-2016.txt')
     return error_mapping
 
 
