@@ -25,10 +25,11 @@ setup(
     package_dir={'': 'src'},
     packages=['sctools', 'sctools/test', 'sctools/metrics'],
     install_requires=[
-        'pysam',
         'numpy',
         'pandas',
+        'pysam',
         'pytest',
+        'pytest-cov',
     ],
     entry_points={
             'console_scripts': [

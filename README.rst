@@ -1,6 +1,9 @@
 sctools
 =======
 
+.. image:: https://circleci.com/gh/HumanCellAtlas/sctools/tree/master.svg?style=svg
+    :target: https://circleci.com/gh/HumanCellAtlas/sctools/tree/master
+
 sctools provides utilities for manipulating sequence data formats suitable for use in distributed
 systems analyzing large biological datasets.
 
@@ -51,8 +54,8 @@ Main Package Classes
    as a lightweight, lazy-parsed python object.
 
 
-Viewing Test Coverage
----------------------
+Viewing Test Results and Coverage
+---------------------------------
 to calculate and view test coverage cd to the ``sctools`` directory and
 type the following two commands to generate the report and open it in your web browser:
 
