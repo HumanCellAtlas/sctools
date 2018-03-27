@@ -413,14 +413,14 @@ def mergeable_gene_metrics():
 def test_merge_cell_metrics_cli(mergeable_cell_metrics):
     """test the sctools merge cell metrics CLI invocation"""
     return_call = TenXV2.merge_cell_metrics(
-        args=['-o', _test_dir + '/merged-cell-metrics.csv'] + list(mergeable_cell_metrics))
+        args=['-o', _test_dir + '/merged-cell-metrics.csv.gz'] + list(mergeable_cell_metrics))
     assert return_call == 0
 
 
 def test_merge_gene_metrics_cli(mergeable_gene_metrics):
     """test the sctools merge gene metrics CLI invocation"""
     return_call = TenXV2.merge_gene_metrics(
-        args=['-o', _test_dir + '/merged-gene-metrics.csv'] + list(mergeable_gene_metrics))
+        args=['-o', _test_dir + '/merged-gene-metrics.csv.gz'] + list(mergeable_gene_metrics))
     assert return_call == 0
 
 
@@ -429,7 +429,7 @@ def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):
     test takes offset cell metrics outputs and merges them. Cell metrics does not check for
     duplication, so should return a 2x length file.
     """
-    output_file = os.path.join(_test_dir, 'merged_metrics.csv')
+    output_file = os.path.join(_test_dir, 'merged_metrics.csv.gz')
     m = MergeCellMetrics(mergeable_cell_metrics, output_file)
     m.execute()
 
@@ -446,7 +446,7 @@ def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):
 
 
 def test_merge_gene_metrics_averages_over_multiply_detected_genes(mergeable_gene_metrics):
-    output_file = os.path.join(_test_dir, 'merged_metrics.csv')
+    output_file = os.path.join(_test_dir, 'merged_metrics.csv.gz')
     m = MergeGeneMetrics(mergeable_gene_metrics, output_file)
     m.execute()
 
