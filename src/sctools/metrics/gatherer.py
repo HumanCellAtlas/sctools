@@ -9,7 +9,7 @@ from sctools.metrics.writer import MetricCSVWriter
 
 class MetricGatherer:
 
-    def __init__(self, bam_file: str, output_stem: str):
+    def __init__(self, bam_file: str, output_stem: str, compress: bool=True):
         """
         MetricGatherer defines an extract_metrics() function which will parse a file molecule-by-
         molecule and write the resulting information to an output file.
@@ -22,6 +22,7 @@ class MetricGatherer:
         """
         self._bam_file = bam_file
         self._output_stem = output_stem
+        self._compress = compress
 
     @property
     def bam_file(self) -> str:
@@ -40,7 +41,7 @@ class GatherCellMetrics(MetricGatherer):
 
         # open the files
         with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
-                closing(MetricCSVWriter(self._output_stem)) as cell_metrics_output:
+                closing(MetricCSVWriter(self._output_stem, self._compress)) as cell_metrics_output:
 
             # write the header
             cell_metrics_output.write_header(vars(CellBarcodeMetrics()))
@@ -74,7 +75,7 @@ class GatherGeneMetrics(MetricGatherer):
     def extract_metrics(self, mode: str='rb'):
         # open the files
         with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
-                closing(MetricCSVWriter(self._output_stem)) as gene_metrics_output:
+                closing(MetricCSVWriter(self._output_stem, self._compress)) as gene_metrics_output:
 
             # write the header
             gene_metrics_output.write_header(vars(GeneMetrics()))

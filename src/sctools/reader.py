@@ -3,6 +3,35 @@ import gzip
 import bz2
 from copy import copy
 from collections.abc import Iterable
+from functools import partial
+from typing import Callable
+
+
+def infer_open(file_: str, mode: str) -> Callable:
+    """
+    Helper function to infer the correct inferred_openhook, for file_ ignoring extensions
+
+    :param str file_: the file to open
+    :param str mode: options: ['r', 'rb'] the intended open mode
+    :return Callable: open function with mode pre-set through functools.partial
+    """
+    with open(file_, 'rb') as f:
+        data: bytes = f.read(3)
+
+        # gz and bzip treat 'r' = bytes, 'rt' = string
+        if data[:2] == b'\x1f\x8b':  # gzip magic number
+            inferred_openhook: Callable = gzip.open
+            inferred_mode: str = 'rt' if mode == 'r' else mode
+
+        elif data == b'BZh':  # bz2 magic number
+            inferred_openhook: Callable = bz2.open
+            inferred_mode: str = 'rt' if mode == 'r' else mode
+
+        else:
+            inferred_openhook: Callable = open
+            inferred_mode: str = mode
+
+    return partial(inferred_openhook, mode=inferred_mode)
 
 
 class Reader:
@@ -56,21 +85,7 @@ class Reader:
     def __iter__(self):
         for file_ in self._files:
 
-            # determine encoding & set correct mode; gz and bzip treat 'r' = bytes, 'rt' = string
-            with open(file_, 'rb') as f:
-                data = f.read(3)
-                if data[:2] == b'\x1f\x8b':  # gzip magic number
-                    openhook = gzip.open
-                    mode = 'rt' if self._mode == 'r' else self._mode
-                elif data == b'BZh':  # bz2 magic number
-                    openhook = bz2.open
-                    mode = 'rt' if self._mode == 'r' else self._mode
-                else:
-                    openhook = open
-                    mode = self._mode
-
-            # open file
-            f = openhook(file_, mode)
+            f = infer_open(file_, self._mode)(file_)
 
             # iterate over the file, dropping header lines if requested
             try:

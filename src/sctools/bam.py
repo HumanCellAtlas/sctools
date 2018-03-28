@@ -129,7 +129,7 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True):
+def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True):
     """
     split a bam file into subfiles by tag, calculating the number of splits so that the chunks are
     approximately approx_mb_per_split
@@ -137,14 +137,19 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
     :param str in_bam: input bam file
     :param str out_prefix:  prefix for all output files; output will be named as prefix_n where n
       is an integer equal to the chunk number.
-    :param tag: the bam tag to split on
+    :param list tags: the bam tags to split on. The tags are checked in order, and sorting is done
+      based on the first identified tag. Further tags are only checked if the first tag is missing.
+      This is useful in cases where sorting is executed over a corrected barcode, but some records
+      only have a raw barcode.
     :param float approx_mb_per_split: the target file size for each chunk in mb
     :param raise_missing: default=True, if True, raise a RuntimeError if a record is encountered
       without a tag. Else silently discard the record.
 
-
     :return [str]: output file names
     """
+
+    if len(tags) == 0:
+        raise ValueError('At least one tag must be passed')
 
     def _cleanup(files_to_counts, files_to_names, rm_all=False):
         """close files, remove any empty files.
@@ -170,7 +175,7 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
                       'exceeding fid limits' % n_subfiles)
     if n_subfiles > 1000:
         raise ValueError('Number of requested subfiles (%d) exceeds 1000; this will usually cause '
-                         'OS errors, please increase max_mb_per_split.' % n_subfiles)
+                         'OS errors, think about increasing max_mb_per_split.' % n_subfiles)
 
     # create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
@@ -187,20 +192,31 @@ def split(in_bam, out_prefix, tag, approx_mb_per_split=1000, raise_missing=True)
         # cycler over files to assign new barcodes to next file
         file_cycler = cycle(files_to_counts.keys())
 
-        # create an empty map for barcodes to files
+        # create an empty map for (tag, barcode) to files
         tags_to_files = {}
 
-        # loop over input, partitioning barcodes into files
+        # loop over input; check each tag in priority order and partition barcodes into files based
+        # on the highest priority tag that is identified
         for alignment in input_alignments:
-            try:
-                tag_content = alignment.get_tag(tag)
-            except KeyError:
+
+            for tag in tags:
+                try:
+                    tag_content = tag, alignment.get_tag(tag)
+                    break
+                except KeyError:
+                    tag_content = None
+                    continue  # move on to next tag
+
+            # No provided tag was found on the record that had a non-null value
+            if tag_content is None:
                 if raise_missing:
                     _cleanup(files_to_counts, files_to_names, rm_all=True)
                     raise RuntimeError(
-                        'alignment encountered that is missing %s tag.' % tag)
+                        'alignment encountered that is missing %s tag(s).' % repr(tags))
                 else:
-                    continue
+                    continue  # move on to next alignment
+
+            # find or set the file associated with the tag and write the record to the correct file
             try:
                 out_file = tags_to_files[tag_content]
             except KeyError:

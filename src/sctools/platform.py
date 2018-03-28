@@ -43,7 +43,10 @@ class GenericPlatform:
         parser.add_argument(
             '-s', '--subfile-size', required=False, default=1000, type=float,
             help='approximate size target for each subfile (in MB)')
-        parser.add_argument('-t', '--tag', required=True, help='tag to split bamfile over')
+        parser.add_argument('-t', '--tags', nargs='+',
+                            help='tag(s) to split bamfile over. Tags are checked sequentially, '
+                                 'and tags after the first are only checked if the first tag is '
+                                 'not present.')
         parser.set_defaults(raise_missing=True)
         parser.add_argument('--drop-missing', action='store_false',
                             help='drop records without tag specified by -t/--tag (default '
@@ -54,7 +57,8 @@ class GenericPlatform:
             args = parser.parse_args()
 
         filenames = bam.split(
-            args.bamfile, args.output_prefix, args.tag, args.subfile_size, args.raise_missing)
+            args.bamfile, args.output_prefix, *args.tags,
+            approx_mb_per_split=args.subfile_size, raise_missing=args.raise_missing)
 
         print(' '.join(filenames))
         return 0

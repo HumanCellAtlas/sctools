@@ -12,8 +12,8 @@ class MergeMetrics:
         :param output_file: name for the merged output
         """
         self._metric_files = metric_files
-        if not output_file.endswith('.csv'):
-            output_file += '.csv'
+        if not output_file.endswith('.csv.gz'):
+            output_file += '.csv.gz'
         self._output_file = output_file
 
     def execute(self) -> None:
@@ -32,7 +32,7 @@ class MergeCellMetrics(MergeMetrics):
             pd.read_csv(f, index_col=0) for f in self._metric_files
         ]
         concatenated_frame: pd.DataFrame = pd.concat(metric_dataframes, axis=0)
-        concatenated_frame.to_csv(self._output_file)
+        concatenated_frame.to_csv(self._output_file, compression='gzip')
 
 
 class MergeGeneMetrics(MergeMetrics):
@@ -123,4 +123,4 @@ class MergeGeneMetrics(MergeMetrics):
             nucleus = merged
 
         # write the data
-        nucleus.to_csv(self._output_file)
+        nucleus.to_csv(self._output_file, compression='gzip')
