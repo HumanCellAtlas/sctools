@@ -148,6 +148,9 @@ def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=Tru
     :return [str]: output file names
     """
 
+    if len(tags) == 0:
+        raise ValueError('At least one tag must be passed')
+
     def _cleanup(files_to_counts, files_to_names, rm_all=False):
         """close files, remove any empty files.
 
@@ -192,11 +195,14 @@ def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=Tru
         # create an empty map for (tag, barcode) to files
         tags_to_files = {}
 
-        # loop over input; check each tag in sequence and partition barcodes into files
+        # loop over input; check each tag in priority order and partition barcodes into files based
+        # on the highest priority tag that is identified
         for alignment in input_alignments:
+
             for tag in tags:
                 try:
                     tag_content = tag, alignment.get_tag(tag)
+                    break
                 except KeyError:
                     tag_content = None
                     continue  # move on to next tag

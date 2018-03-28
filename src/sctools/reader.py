@@ -7,7 +7,7 @@ from functools import partial
 from typing import Callable
 
 
-def infer_open(file_: str, mode: str):
+def infer_open(file_: str, mode: str) -> Callable:
     """
     Helper function to infer the correct inferred_openhook, for file_ ignoring extensions
 
