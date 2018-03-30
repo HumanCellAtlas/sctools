@@ -76,7 +76,6 @@ def test_reader_skips_header_character_raises_value_error(i7_files_compressions_
         filename,
         mode=mode,
         header_comment_char='@')
-
     with pytest.raises(ValueError):
         next(iter(rd))
 

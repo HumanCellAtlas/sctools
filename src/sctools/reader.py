@@ -1,19 +1,57 @@
+"""
+Sequence File Iterators
+=======================
+
+.. currentmodule:: sctools
+
+This module defines a general iterator and some helper functions for iterating over files
+that contain sequencing data
+
+Methods
+-------
+infer_open(file_: str, mode: str)
+    helper function that determines the compression type of a file without relying on its extension
+zip_readers(*readers, indices=None)
+    helper function that iterates over one or more readers, optionally extracting only the records
+    that correspond to indices
+
+Classes
+-------
+Reader          Basic reader that loops over one or more input files.
+
+See Also
+--------
+sctools.gtf.Reader
+sctools.fastq.Reader
+
+"""
+
 import os
 import gzip
 import bz2
 from copy import copy
-from collections.abc import Iterable
 from functools import partial
-from typing import Callable
+from typing import Callable, Iterable, Generator, Set
 
 
 def infer_open(file_: str, mode: str) -> Callable:
-    """
-    Helper function to infer the correct inferred_openhook, for file_ ignoring extensions
+    """Helper function to infer the correct compression type of an input file
 
-    :param str file_: the file to open
-    :param str mode: options: ['r', 'rb'] the intended open mode
-    :return Callable: open function with mode pre-set through functools.partial
+    Identifies files that are .gz or .bz2 compressed without requiring file extensions
+
+    Parameters
+    ----------
+    file_ : str
+        the file to open
+    mode : {'r', 'rb'}
+        the mode to open the file in. 'r' returns strings, 'rb' returns bytes
+
+    Returns
+    -------
+    open_function : Callable
+        the correct open function for the file's compression with mode pre-set through functools
+        partial
+
     """
     with open(file_, 'rb') as f:
         data: bytes = f.read(3)
@@ -35,19 +73,23 @@ def infer_open(file_: str, mode: str) -> Callable:
 
 
 class Reader:
-    """
-    Basic reader object that seamlessly loops over multiple input files
+    """Basic reader object that seamlessly loops over multiple input files.
 
-    Can be subclassed to create readers for specific file types (fastq, gtf, etc.)
+    Is subclassed to create readers for specific file types (e.g. fastq, gtf, etc.)
+
+    Parameters
+    ----------
+    files : Union[str, List], optional
+        The file(s) to read. If '-', read sys.stdin (default = '-')
+    mode : {'r', 'rb'}, optional
+        The open mode for files. If 'r', yield string data, if 'rb', yield bytes data
+        (default = 'r').
+    header_comment_char : str, optional
+        If not None, skip lines beginning with this character (default = None).
+
     """
 
     def __init__(self, files='-', mode='r', header_comment_char=None):
-        """
-        :param list|str files: file or list of files to be read. Defaults to sys.stdin
-        :param mode: (Default 'r') returns string objects. Change to 'rb' to
-          return bytes objects.
-        """
-
         if isinstance(files, str):
             self._files = [files]
         elif isinstance(files, Iterable):  # test items of iterable
@@ -74,11 +116,13 @@ class Reader:
         return self._files
 
     def __len__(self):
-        """
-        return the length of the Reader object.
+        """Return the length of the Reader object.
 
-        Note that this function requires reading the complete file, and should typically not be
+        Notes
+        -----
+        This function requires reading the complete file, and should typically not be
         used with sys.stdin, as it will consume the input.
+
         """
         return sum(1 for _ in self)
 
@@ -103,15 +147,23 @@ class Reader:
                 f.close()
 
     @property
-    def size(self):
+    def size(self) -> int:
         """return the collective size of all files being read in bytes"""
         return sum(os.stat(f).st_size for f in self._files)
 
-    def select_record_indices(self, indices):
-        """iterate over provided indices only, skipping other records.
+    def select_record_indices(self, indices: Set) -> Generator:
+        """Iterate over provided indices only, skipping other records.
 
-        :param set indices:
-        :return Iterator:
+        Parameters
+        ----------
+        indices : Set[int]
+            indices to include in the output
+
+        Yields
+        ------
+        record, str
+            records from file corresponding to indices
+
         """
         indices = copy(indices)  # passed indices is a reference, need own copy to modify
         for idx, record in enumerate(self):
@@ -125,12 +177,22 @@ class Reader:
 
 
 def zip_readers(*readers, indices=None):
-    """zip together multiple reader objects, yielding records simultaneously.
+    """Zip together multiple reader objects, yielding records simultaneously.
 
-    :param [Reader] readers:
-    :param set indices: set of indices to iterate over
+    If indices is passed, only return lines in file that correspond to indices
 
-    :return Iterator: iterator over tuples of records, one from each passed Reader object.
+    Parameters
+    ----------
+    *readers : List[Reader]
+        Reader objects to simultaneously iterate over
+    indices : Set[int], optional
+        indices to include in the output
+
+    Yields
+    ------
+    records : Tuple[str]
+        one record per reader passed
+
     """
     if indices:
         iterators = zip(*(r.select_record_indices(indices) for r in readers))

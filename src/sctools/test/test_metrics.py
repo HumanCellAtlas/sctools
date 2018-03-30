@@ -344,7 +344,7 @@ def test_higher_order_metrics_by_gene(metrics, key, expected_value):
     the test suite across all measured instances of the metric class. E.g. for cell metrics (class),
     each test will verify the value for each cell (instance).
 
-    :param pd.DataFrame metrics: Output from subclass of sctools.metrics.SequenceMetricAggregator
+    :param pd.DataFrame metrics: Output from subclass of sctools.metrics.MetricAggregator
     :param str key: the column of metrics to interrogate in the parametrized test
     :param np.ndarray expected_value: an array of expected values
     """
@@ -473,12 +473,12 @@ def test_gzip_compression(bam: str, gatherer: Callable):
     uncompressed version
     """
 
-    gz_fout = 'test_bam.csv.gz'
+    gz_fout = _test_dir + 'test_bam.csv.gz'
     g: MetricGatherer = gatherer(bam, gz_fout, compress=True)
     g.extract_metrics()
     gz_metrics = pd.read_csv(gz_fout, index_col=0)
 
-    fout = 'test_bam.csv'
+    fout = _test_dir + 'test_bam.csv'
     g: MetricGatherer = gatherer(bam, fout, compress=False)
     g.extract_metrics()
     metrics = pd.read_csv(fout, index_col=0)

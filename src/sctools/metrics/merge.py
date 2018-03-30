@@ -1,16 +1,52 @@
+"""
+Merge Sequence Metrics
+======================
+
+..currentmodule:: sctools.metrics
+
+This module defines classes to merge multiple metrics files that have been gathered from bam files
+containing disjoint sets of cells. This is a common use pattern, as sequencing datasets are often
+chunked to enable horizontal scaling using scatter-gather patterns.
+
+Classes
+-------
+MergeMetrics                    Merge Metrics base class
+MergeCellMetrics                Class to merge cell metrics
+MergeGeneMetrics                Class to merge gene metrics
+
+See Also
+--------
+sctools.metrics.gatherer
+sctools.metrics.aggregator
+sctools.metrics.writer
+
+"""
+
 from typing import List, Sequence
+
 import pandas as pd
 import numpy as np
 
 
 class MergeMetrics:
+    """Merges multiple metrics files into a single gzip compressed csv file
+
+    Parameters
+    ----------
+    metric_files : Sequence[str]
+        metrics files to merge
+    output_file : str
+        file name for the merged output
+
+    Methods
+    -------
+    execute
+        merge metrics files
+        # todo this should probably be wrapped into __init__ to make this more like a function
+
+    """
 
     def __init__(self, metric_files: Sequence[str], output_file: str):
-        """Merges multiple metrics files
-
-        :param metric_files: metrics files to merge
-        :param output_file: name for the merged output
-        """
         self._metric_files = metric_files
         if not output_file.endswith('.csv.gz'):
             output_file += '.csv.gz'
@@ -22,11 +58,12 @@ class MergeMetrics:
 
 class MergeCellMetrics(MergeMetrics):
 
-    # todo test me
     def execute(self) -> None:
-        """
-        shutil would be more efficient, but we need a way to get rid of the header line. Bash
-        might be faster and more efficient than the python solution
+        """Concatenate input cell metric files
+
+        Since bam files that metrics are calculated from contain disjoint sets of cells, cell
+        metrics can simply be concatenated together.
+
         """
         metric_dataframes: List[pd.DataFrame] = [
             pd.read_csv(f, index_col=0) for f in self._metric_files
@@ -37,19 +74,18 @@ class MergeCellMetrics(MergeMetrics):
 
 class MergeGeneMetrics(MergeMetrics):
 
-    # todo this class needs to do a weighted mean; this is something numpy can do.
     def execute(self) -> None:
+        """Merge input gene metric files
+
+        The bam files that metrics are calculated from contain disjoint sets of cells, each
+        of which can measure the same genes.
+        As a result, the metric values must be summed (count based metrics) averaged over
+        (fractional, averge, or variance metrics) or recalculated (metrics that depend on other
+        metrics).
+
         """
-        Genes are expected to be found in multiple shards. Thus, the metric values must be
-        summed or averaged over, depending on how they were originally calculated.
 
-        This function exectures the merge and writes the resulting data to self.output_file
-        """
-
-        # different columns in the gene dataset need to be merged in different ways. Count data
-        # must be summed, while averages need to have a (weighted) average taken
-
-        columns_to_sum = [
+        count_data_to_sum = [
             'n_reads',
             'noise_reads',
             'perfect_molecule_barcodes',
@@ -69,12 +105,21 @@ class MergeGeneMetrics(MergeMetrics):
             'number_cells_expressing',
         ]
 
-        sum_operations = {c: 'sum' for c in columns_to_sum}
+        sum_operations = {c: 'sum' for c in count_data_to_sum}
 
-        def weighted_average(data_frame):
-            """
-            :param pd.DataFrame data_frame: input dataframe to reduce with a weighted average
-            :return pd.Series: reduced result
+        def weighted_average(data_frame: pd.DataFrame) -> pd.Series:
+            """Calculate the average of each metric, weighted by number of reads per chunk
+
+            Parameters
+            ----------
+            data_frame : pd.DataFrame
+              chunks x metrics data frame
+
+            Returns
+            -------
+            weighted_average_metrics : pd.Series
+                The average of each metric across chunks, weighted by the number of reads per chunk
+
             """
             weights = data_frame['n_reads'].values
 
@@ -90,16 +135,29 @@ class MergeGeneMetrics(MergeMetrics):
             return pd.Series(
                 {c: np.average(data_frame[c], weights=weights) for c in columns_to_average_by_read})
 
-        def recalculate_operation(x):
+        def recalculate_operation(data_frame) -> pd.DataFrame:
+            """Recalculate metrics that are dependent on other metric values
+
+            Other metrics should be merged before this function is executed
+
+            Parameters
+            ----------
+            data_frame : pd.DataFrame
+                chunks x metrics data frame
+
+            Returns
+            -------
+            recalculated_metrics : pd.DataFrame
+                data frame containing recalculated metrics
+
+            """
             return pd.DataFrame(
                 data={
-                    'reads_per_molecule': x['n_reads'] / x['n_molecules'],
-                    'fragments_per_molecule': x['n_fragments'] / x['n_molecules'],
-                    'reads_per_fragment': x['n_reads'] / x['n_fragments']
-                }
-            )
+                    'reads_per_molecule': data_frame['n_reads'] / data_frame['n_molecules'],
+                    'fragments_per_molecule': data_frame['n_fragments'] / data_frame['n_molecules'],
+                    'reads_per_fragment': data_frame['n_reads'] / data_frame['n_fragments']})
 
-        # now merge each subsequent dataframe into the first one
+        # pick one file as a nucleus and merge each subsequent dataframe into it
         nucleus = pd.read_csv(self._metric_files[0], index_col=0)
         for filename in self._metric_files[1:]:
             leaf = pd.read_csv(filename, index_col=0)

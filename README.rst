@@ -16,7 +16,6 @@ Download and Installation
    pip3 install .
    pytest  # verify installation; run tests
 
-
 sctools Package
 ---------------
 
@@ -62,3 +61,17 @@ type the following two commands to generate the report and open it in your web b
 .. code bash
    pytest --cov-report html:cov_html --cov=sctools
    open cov_html/index.html
+
+Definitions
+-----------
+
+1. Fragment
+
+2. Molecule
+
+3. Cell Barcode
+
+4. Molecule Barcode
+
+5. Bam/Sam file: unless specified, refers to any aligned or unaligned bam/sam file
+# todo add more
