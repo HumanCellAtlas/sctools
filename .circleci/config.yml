@@ -5,6 +5,8 @@
 version: 2
 jobs:
   build:
+    environment: 
+      CC_TEST_REPORTER_ID: c21272f8218853dbced410dffc3354a3ea840458a833182c1abac84e349a2e19
     docker:
       # specify the version you desire here
       - image: circleci/python:3.6.1
@@ -37,7 +39,13 @@ jobs:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
-        
+
+      - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+
       # run tests!
       # https://pytest.org
       - run:
@@ -45,7 +53,9 @@ jobs:
           command: |
             . venv/bin/activate
             mkdir test-reports
+            ./cc-test-reporter before-build
             pytest --junitxml=test-reports/junit.xml --cov=sctools
+            ./cc-test-reporter after-build --coverage-input-type coveragepy --exit-code $?
 
       - store_artifacts:
           path: test-reports
