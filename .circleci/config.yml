@@ -55,7 +55,7 @@ jobs:
             mkdir test-reports
             ./cc-test-reporter before-build
             pytest --junitxml=test-reports/junit.xml --cov=sctools
-            ./cc-test-reporter after-build --coverage-input-type coveragepy --exit-code $?
+            ./cc-test-reporter after-build --coverage-input-type coverage.py --exit-code $?
 
       - store_artifacts:
           path: test-reports
