@@ -31,7 +31,7 @@ import gzip
 import bz2
 from copy import copy
 from functools import partial
-from typing import Callable, Iterable, Generator, Set
+from typing import Callable, Iterable, Generator, Set, List
 
 
 def infer_open(file_: str, mode: str) -> Callable:
@@ -112,7 +112,7 @@ class Reader:
             self._header_comment_char = header_comment_char
 
     @property
-    def filenames(self):
+    def filenames(self) -> List[str]:
         return self._files
 
     def __len__(self):

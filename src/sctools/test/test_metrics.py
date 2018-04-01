@@ -339,14 +339,21 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
      np.array([1.0000, 1.0000, 1.0000, 1.8750, 2.9831, 1.2500, 1.0000, 1.3077])),
 ])
 def test_higher_order_metrics_by_gene(metrics, key, expected_value):
-    """
+    """Test metrics that depend on other metrics
+
     This class tests a very large number of higher-order metrics that examine the functionality of
     the test suite across all measured instances of the metric class. E.g. for cell metrics (class),
     each test will verify the value for each cell (instance).
 
-    :param pd.DataFrame metrics: Output from subclass of sctools.metrics.MetricAggregator
-    :param str key: the column of metrics to interrogate in the parametrized test
-    :param np.ndarray expected_value: an array of expected values
+    Parameters
+    ----------
+    metrics : pd.DataFrame
+        Output from subclass of sctools.metrics.MetricAggregator
+    key : str
+        The column of metrics to interrogate in the parametrized test
+    expected_value : np.ndarray
+        An array of expected values
+
     """
     # need to sort, metrics are not always in same order as results.
     observed = sorted(np.nan_to_num(metrics[key].values).round(4))

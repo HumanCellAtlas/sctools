@@ -106,6 +106,14 @@ class GatherCellMetrics(MetricGatherer):
     __doc__ += extra_docs
 
     def extract_metrics(self, mode: str='rb') -> None:
+        """Extract cell metrics from self.bam_file
+
+        Parameters
+        ----------
+        mode : str, optional
+            Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
+
+        """
 
         # open the files
         with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
@@ -162,7 +170,15 @@ class GatherGeneMetrics(MetricGatherer):
 
     __doc__ += extra_docs
 
-    def extract_metrics(self, mode: str='rb'):
+    def extract_metrics(self, mode: str='rb') -> None:
+        """Extract gene metrics from self.bam_file
+
+        Parameters
+        ----------
+        mode : str, optional
+            Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
+
+        """
         # open the files
         with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, \
                 closing(MetricCSVWriter(self._output_stem, self._compress)) as gene_metrics_output:

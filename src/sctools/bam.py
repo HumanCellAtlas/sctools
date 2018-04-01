@@ -33,7 +33,7 @@ import warnings
 import os
 import math
 from itertools import cycle
-from typing import Iterator, Generator, List
+from typing import Iterator, Generator, List, Union, Tuple
 
 import pysam
 
@@ -81,7 +81,9 @@ class SubsetAlignments:
         self._open_mode: str = open_mode
 
     # todo figure out how to generate optional output type hints
-    def indices_by_chromosome(self, n_specific: int, chromosome: str, include_other: int=0):
+    def indices_by_chromosome(
+            self, n_specific: int, chromosome: str, include_other: int=0
+    ) -> Union[List[int], Tuple[List[int], List[int]]]:
         """Return the list of first `n_specific` indices of reads aligned to `chromosome`.
 
         Parameters
@@ -192,7 +194,7 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True):
+def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
     Parameters

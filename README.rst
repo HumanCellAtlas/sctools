@@ -71,7 +71,7 @@ Viewing Test Results and Coverage
 to calculate and view test coverage cd to the ``sctools`` directory and
 type the following two commands to generate the report and open it in your web browser:
 
-.. code bash
+.. code:: bash
    pytest --cov-report html:cov_html --cov=sctools
    open cov_html/index.html
 
