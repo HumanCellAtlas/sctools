@@ -32,20 +32,23 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
+            pip install codecov
 
       - save_cache:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
-        
+
       # run tests!
       # https://pytest.org
+      # And upload reports to codecov.io
       - run:
           name: run tests
           command: |
             . venv/bin/activate
             mkdir test-reports
             pytest --junitxml=test-reports/junit.xml --cov=sctools
+            codecov
 
       - store_artifacts:
           path: test-reports

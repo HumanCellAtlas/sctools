@@ -1,55 +1,109 @@
+"""
+Tools for Manipulating SAM/BAM format files
+===========================================
+
+.. currentmodule:: sctools
+
+This module provides functions and classes to subsample reads from bam files that correspond to
+specific chromosomes, split bam files into chunks, assign tags to bam files from paired fastq
+records, and iterate over sorted bam files by one or more tags
+
+This module makes heavy use of the pysam wrapper for HTSlib, a high-performance c-library designed
+to manipulate sam files
+
+Methods
+-------
+iter_tag_groups                     function to iterate over reads by an arbitrary tag
+iter_cell_barcodes                  wrapper for iter_tag_groups that iterates over cell barcode tags
+iter_genes                          wrapper for iter_tag_groups that iterates over gene tags
+iter_molecules                      wrapper for iter_tag_groups that iterates over molecule tags
+
+Classes
+-------
+SubsetAlignments                    class to extract reads specific to requested chromosome(s)
+Tagger                              class to add tags to sam/bam records from paired fastq records
+
+References
+----------
+htslib : https://github.com/samtools/htslib
+
+"""
+
 import warnings
 import os
 import math
 from itertools import cycle
-from typing import Iterator, Generator
+from typing import Iterator, Generator, List, Union, Tuple
 
 import pysam
-"""
-unlike fastq and gtf which lack flexible iterators, the pysam wrapper provides an excellent iterator 
-over sam records that would be difficult to improve upon in pure python. 
-
-This module provides a few additional methods that extend the functionality of pysam
-"""
 
 
 class SubsetAlignments:
-    """Wrapper for pysam/htslib that enables non-standard filtering of alignments in a bamfile
+    """Wrapper for pysam/htslib that extracts reads corresponding to requested chromosome(s)
 
-    :method indices_by_chromosome: extract reads specific to a chromosome
+    Parameters
+    ----------
+    alignment_file : str
+        sam or bam file
+    open_mode : {'r', 'rb', None}, optional
+        open mode for pysam.AlignmentFile. 'r' indicates a sam file, 'rb' indicates a bam file,
+        and None attempts to autodetect based on the file suffix (Default = None)
+
+    Methods
+    -------
+    indices_by_chromosome
+        returns indices to line numbers containing the requested number of reads for a specified
+        chromosome
+
+    Notes
+    -----
+    samtools is a good general-purpose tool for that is capable of most subsampling tasks. It is a
+    good idea to check the samtools documentation when approaching these types of tasks.
+
+    References
+    ----------
+    samtools documentation : http://www.htslib.org/doc/samtools.html
+
     """
 
-    def __init__(self, alignment_file, open_mode=None):
-        """
-        :param str alignment_file: sam or bam file.
-        :param str open_mode: optional, mode to read file. Will be autodetected by file type if
-          the file contains the correct suffix for its type.
-        """
-
+    def __init__(self, alignment_file: str, open_mode: str=None):
         if open_mode is None:
             if alignment_file.endswith('.bam'):
                 open_mode = 'rb'
             elif alignment_file.endswith('.sam'):
                 open_mode = 'r'
             else:
-                raise ValueError('could not autodetect file type for alignment_file %s '
-                                 '(detectible suffixes: .sam, .bam)' % alignment_file)
-        self._file = alignment_file
-        self._open_mode = open_mode
+                raise ValueError(
+                    'could not autodetect file type for alignment_file %s (detectible suffixes: '
+                    '.sam, .bam)' % alignment_file
+                )
+        self._file: str = alignment_file
+        self._open_mode: str = open_mode
 
-    def indices_by_chromosome(self, n_specific, chromosome, include_other=0):
-        """Return the list of first n_specific indices of reads aligned to selected chromosome.
+    # todo figure out how to generate optional output type hints
+    def indices_by_chromosome(
+            self, n_specific: int, chromosome: str, include_other: int=0
+    ) -> Union[List[int], Tuple[List[int], List[int]]]:
+        """Return the list of first `n_specific` indices of reads aligned to `chromosome`.
 
-        If desired, will also return non-specific indices in a second list (can serve as negative
-        control reads).
+        Parameters
+        ----------
+        n_specific : int
+            Number of aligned reads to return indices for
+        chromosome : str
+            Only reads from this chromosome are considered valid
+        include_other : int, optional
+            The number of reads to include that are NOT aligned to chromosome. These can be aligned
+            or unaligned reads (default = 0).
 
-        :param int n_specific: number of aligned reads to return indices for
-        :param str chromosome: only reads from this chromosome are considered valid
-        :param int include_other: optional, (default=0), the number of reads to include that are
-          NOT aligned to chromosome (could be aligned or unaligned read)
-        :return [int]: list of indices to reads aligning to chromosome
-        :return [int]: list of indices to reads NOT aligning to chromosome, only returned if
-          include_other is not 0.
+        Returns
+        -------
+        chromosome_indices : List[int]
+            list of indices to reads aligning to `chromosome`
+        other_indices : List[int], optional
+            list of indices to reads NOT aligning to chromosome, only returned if include_other is
+            not 0.
+
         """
 
         # acceptable chromosomes
@@ -95,28 +149,39 @@ class SubsetAlignments:
 
 
 class Tagger:
-    """Add tags to a bam file from tag generators
+    """Add tags to a bam file from tag generators.
 
-    :method tag: add tags from an arbitrary number of tag generators. Typical use is to extract
-      barcodes from fastq files.
+    Parameters
+    ----------
+    bam_file : str
+        Bam file that tags are to be added to.
+
+    Methods
+    -------
+    tag
+        tag bam records given tag_generators (often generated from paired bam or fastq files)
+        # todo this should probably be wrapped up in __init__ to make this more function-like
     """
 
-    def __init__(self, bam_file):
-        """
-        :param str bam_file: location of bam file
-        """
+    def __init__(self, bam_file: str) -> None:
         if not isinstance(bam_file, str):
             raise TypeError('bam_file must be type str, not %s' % type(bam_file))
         self.bam_file = bam_file
 
-    def tag(self, output_bam_name, tag_generators):
-        """
-        given a bam file and tag generators derived from files sharing the same sort order,
-        adds tags to the .bam file, writes the resulting file to output_bam_name.
+    # todo add type to tag_generators (make sure it doesn't introduce import issues
+    def tag(self, output_bam_name: str, tag_generators) -> None:
+        """Add tags to bam_file.
 
-        :param str output_bam_name: name of output tagged bam.
-        :param [fastq.TagGenerator] tag_generators: generators that yield Tag objects
-          (see fastq.Tag)
+        Given a bam file and tag generators derived from files sharing the same sort order,
+        adds tags to the .bam file, and writes the resulting file to output_bam_name.
+
+        Parameters
+        ----------
+        output_bam_name : str
+            Name of output tagged bam.
+        tag_generators : List[fastq.TagGenerator]
+            list of generators that yield fastq.Tag objects
+
         """
         with pysam.AlignmentFile(self.bam_file, 'rb', check_sq=False) as inbam, \
                 pysam.AlignmentFile(output_bam_name, 'wb', template=inbam) as outbam:
@@ -129,35 +194,57 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True):
-    """
-    split a bam file into subfiles by tag, calculating the number of splits so that the chunks are
-    approximately approx_mb_per_split
+def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True) -> List[str]:
+    """split `in_bam` by tag into files of `approx_mb_per_split`
 
-    :param str in_bam: input bam file
-    :param str out_prefix:  prefix for all output files; output will be named as prefix_n where n
-      is an integer equal to the chunk number.
-    :param list tags: the bam tags to split on. The tags are checked in order, and sorting is done
-      based on the first identified tag. Further tags are only checked if the first tag is missing.
-      This is useful in cases where sorting is executed over a corrected barcode, but some records
-      only have a raw barcode.
-    :param float approx_mb_per_split: the target file size for each chunk in mb
-    :param raise_missing: default=True, if True, raise a RuntimeError if a record is encountered
-      without a tag. Else silently discard the record.
+    Parameters
+    ----------
+    in_bam : str
+        Input bam file.
+    out_prefix : str
+        Prefix for all output files; output will be named as prefix_n where n is an integer equal
+        to the chunk number.
+    tags : list
+        The bam tags to split on. The tags are checked in order, and sorting is done based on the
+        first identified tag. Further tags are only checked if the first tag is missing. This is
+        useful in cases where sorting is executed over a corrected barcode, but some records only
+        have a raw barcode.
+    approx_mb_per_split : float
+        The target file size for each chunk in mb
+    raise_missing : bool, optional
+        if True, raise a RuntimeError if a record is encountered without a tag. Else silently
+        discard the record (default = True)
 
-    :return [str]: output file names
+    Returns
+    -------
+    output_filenames : List[str]
+        list of filenames of bam chunks
+
+    Raises
+    ------
+    ValueError
+        when `tags` is empty
+    RuntimeError
+        when `raise_missing` is true and any passed read contains no `tags`
+
     """
 
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
-    def _cleanup(files_to_counts, files_to_names, rm_all=False):
-        """close files, remove any empty files.
+    def _cleanup(files_to_counts, files_to_names, rm_all=False) -> None:
+        """Closes file handles and remove any empty files.
 
-        :param dict files_to_counts:
-        :param dict files_to_names:
-        :param bool rm_all: indicates all files should be removed, regardless of count number.
-        :return:
+        Parameters
+        ----------
+        files_to_counts : dict
+            Dictionary of file objects to the number of reads each contains.
+        files_to_names : dict
+            Dictionary of file objects to file handles.
+        rm_all : bool, optional
+            If True, indicates all files should be removed, regardless of count number, else only
+            empty files without counts are removed (default = False)
+
         """
         for bamfile, count in files_to_counts.items():
             # corner case: clean up files that were created, but didn't get data because
@@ -234,13 +321,25 @@ def iter_tag_groups(
         tag: str,
         bam_iterator: Iterator[pysam.AlignedSegment],
         filter_null: bool=False) -> Generator:
-    """ This function iterates over reads and yields them grouped by the provided tag value
+    """Iterates over reads and yields them grouped by the provided tag value
 
-    :param tag: BAM tag to group over
-    :param bam_iterator: open bam file that can be iterated over
-    :param filter_null: (default=False) by default, all reads that lack the requested tag are
-      yielded together. If True, all reads that lack the tag will be discarded.
-    :return Generator: this function returns a generator that yields grouped tags.
+    Parameters
+    ----------
+    tag : str
+        BAM tag to group over
+    bam_iterator : Iterator[pysam.AlignedSegment]
+        open bam file that can be iterated over
+    filter_null : bool, optional
+        If False, all reads that lack the requested tag are yielded together. Else, all reads
+        that lack the tag will be discarded (default = False).
+
+    Yields
+    ------
+    grouped_by_tag : Iterator[pysam.AlignedSegment]
+        reads sharing a unique value of tag
+    current_tag : str
+        the tag that reads in the group all share
+
     """
 
     # get first read and tag set
@@ -271,21 +370,57 @@ def iter_tag_groups(
 
 
 def iter_molecule_barcodes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
-    """
-    function to iterate over all the molecules of a bam file sorted by molecule
+    """Iterate over all the molecules of a bam file sorted by molecule.
+
+    Parameters
+    ----------
+    bam_iterator : Iterator[pysam.AlignedSegment]
+        open bam file that can be iterated over
+
+    Yields
+    ------
+    grouped_by_tag : Iterator[pysam.AlignedSegment]
+        reads sharing a unique molecule barcode (``UB`` tag)
+    current_tag : str
+        the molecule barcode that records in the group all share
+
     """
     return iter_tag_groups(tag='UB', bam_iterator=bam_iterator)
 
 
 def iter_cell_barcodes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
-    """
-    function to iterate over all the cells of a bam file sorted by cell
+    """Iterate over all the cells of a bam file sorted by cell.
+
+    Parameters
+    ----------
+    bam_iterator : Iterator[pysam.AlignedSegment]
+        open bam file that can be iterated over
+
+    Yields
+    ------
+    grouped_by_tag : Iterator[pysam.AlignedSegment]
+        reads sharing a unique cell barcode (``CB`` tag)
+    current_tag : str
+        the cell barcode that reads in the group all share
+
     """
     return iter_tag_groups(tag='CB', bam_iterator=bam_iterator)
 
 
 def iter_genes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
-    """
-    function to iterate over all the cells of a bam file sorted by gene
+    """Iterate over all the cells of a bam file sorted by gene.
+
+    Parameters
+    ----------
+    bam_iterator : Iterator[pysam.AlignedSegment]
+        open bam file that can be iterated over
+
+    Yields
+    ------
+    grouped_by_tag : Iterator[pysam.AlignedSegment]
+        reads sharing a unique gene id (``GE`` tag)
+    current_tag : str
+        the gene id that reads in the group all share
+
     """
     return iter_tag_groups(tag='GE', bam_iterator=bam_iterator)

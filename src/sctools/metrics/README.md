@@ -31,7 +31,7 @@ but an abbreviated WDL could be made in the future which would contain:
 This module implements 4 base classes that carry out metric processing. These are: 
 
 ```
-SequenceMetricAggregator:
+MetricAggregator:
   - CellMetricAggregator
   - GeneMetricAggregator
 
@@ -48,7 +48,7 @@ MergeMetrics:
 MetricGatherer defines generator functions to group records into molecules, the bam parsing pattern 
 necessary to process data iteratively. 
 
-SequenceMetricAggregator stores the information for a unit of the relevant data (cell, gene), 
+MetricAggregator stores the information for a unit of the relevant data (cell, gene), 
 and processses all the records with the `.parse_records()` method. 
 
 When all records of a single unit (cell, gene) have been processed, `.finalize()` is called to 
