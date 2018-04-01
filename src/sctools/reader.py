@@ -176,7 +176,7 @@ class Reader:
                     break
 
 
-def zip_readers(*readers, indices=None):
+def zip_readers(*readers, indices=None) -> Generator:
     """Zip together multiple reader objects, yielding records simultaneously.
 
     If indices is passed, only return lines in file that correspond to indices
