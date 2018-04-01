@@ -68,7 +68,7 @@ Main Package Classes
 Viewing Test Results and Coverage
 ---------------------------------
 
-to calculate and view test coverage cd to the ``sctools`` directory and
+To calculate and view test coverage cd to the ``sctools`` directory and
 type the following two commands to generate the report and open it in your web browser:
 
 .. code:: bash
