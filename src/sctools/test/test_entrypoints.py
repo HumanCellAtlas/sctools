@@ -1,5 +1,9 @@
 import os
 import glob
+import tempfile
+import scipy.sparse as sp
+import numpy as np
+
 import pysam
 from .. import platform
 
@@ -75,3 +79,15 @@ def test_split_bam():
     for f in glob.glob('test_tagged*'):
         os.remove(f)
 
+
+def test_merge_count_matrices():
+    tmp = tempfile.mkdtemp()
+    matrix = sp.coo_matrix(([], ([], [])), shape=(10, 10), dtype=np.float32).tocsr()
+    sp.save_npz(tmp + '/test_input_1.npz', matrix, compressed=True)
+    sp.save_npz(tmp + '/test_input_2.npz', matrix, compressed=True)
+    merge_args = [
+        '-o', tmp + '/test_merged_counts',
+        '-i', tmp + '/test_input_2.npz', tmp + '/test_input_1.npz'
+    ]
+    return_call = platform.GenericPlatform.merge_count_matrices(merge_args)
+    assert return_call == 0

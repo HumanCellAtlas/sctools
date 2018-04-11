@@ -13,7 +13,7 @@ CLASSIFIERS = [
 
 setup(
     name='sctools',
-    version='0.1.6',
+    version='0.1.10',
     description='Utilities for large-scale distributed single cell data processing',
     url='https://github.com/humancellatlas/sctools.git',
     author='Ambrose J. Carr',
@@ -26,6 +26,7 @@ setup(
         'pysam',
         'pytest',
         'pytest-cov',
+        'scipy>=1.0.0',
     ],
     entry_points={
             'console_scripts': [
@@ -35,6 +36,8 @@ setup(
                 'CalculateCellMetrics = sctools.platform:GenericPlatform.calculate_cell_metrics',
                 'MergeGeneMetrics = sctools.platform:GenericPlatform.merge_gene_metrics',
                 'MergeCellMetrics = sctools.platform:GenericPlatform.merge_cell_metrics',
+                'CreateCountMatrix = sctools.platform:GenericPlatform.bam_to_count_matrix',
+                'MergeCountMatrices = sctools.platform:GenericPlatform.merge_count_matrices',
             ]
     },
     classifiers=CLASSIFIERS,

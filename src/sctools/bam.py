@@ -80,7 +80,6 @@ class SubsetAlignments:
         self._file: str = alignment_file
         self._open_mode: str = open_mode
 
-    # todo figure out how to generate optional output type hints
     def indices_by_chromosome(
             self, n_specific: int, chromosome: str, include_other: int=0
     ) -> Union[List[int], Tuple[List[int], List[int]]]:

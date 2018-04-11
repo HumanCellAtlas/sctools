@@ -81,7 +81,7 @@ class Record:
 
         self._attributes: Dict[str, str] = {
             key: value.strip('"') for (key, value) in
-            [field.split() for field in fields[8].split('; ')]
+            [field.strip().split() for field in fields[8].split(';')]
         }
 
     def __repr__(self):
