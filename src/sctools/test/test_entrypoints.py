@@ -5,7 +5,7 @@ import scipy.sparse as sp
 import numpy as np
 
 import pysam
-from .. import platform
+from sctools import platform, count
 
 data_dir = os.path.split(__file__)[0] + '/data/'
 
@@ -80,14 +80,19 @@ def test_split_bam():
         os.remove(f)
 
 
-def test_merge_count_matrices():
+def test_count_merge():
     tmp = tempfile.mkdtemp()
-    matrix = sp.coo_matrix(([], ([], [])), shape=(10, 10), dtype=np.float32).tocsr()
-    sp.save_npz(tmp + '/test_input_1.npz', matrix, compressed=True)
-    sp.save_npz(tmp + '/test_input_2.npz', matrix, compressed=True)
+
+    data, ind, col = [np.arange(10)] * 3
+    matrix = sp.coo_matrix((data, (ind, col)), shape=(10, 10), dtype=np.float32).tocsr()
+    # be lazy and reuse the inds as the col and row index
+    counts = count.CountMatrix(matrix, ind, col)
+    counts.save(tmp + '/test_input_1')
+    counts.save(tmp + '/test_input_2')
+
     merge_args = [
         '-o', tmp + '/test_merged_counts',
-        '-i', tmp + '/test_input_2.npz', tmp + '/test_input_1.npz'
+        '-i', tmp + '/test_input_2', tmp + '/test_input_1'
     ]
     return_call = platform.GenericPlatform.merge_count_matrices(merge_args)
     assert return_call == 0

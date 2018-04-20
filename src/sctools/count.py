@@ -22,6 +22,7 @@ import operator
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.io import mmread
 import pysam
 import gffutils
 
@@ -213,7 +214,8 @@ class CountMatrix:
             if gene in genes_on_chromosome:
                 keep_genes_mask[i] = 1
 
-        keep_genes_index = np.where(keep_genes_mask)[0]  # todo tests didn't catch a bug here where the [0] was inside the function call
+        keep_genes_index = np.where(keep_genes_mask)[0]
+
         csc = self._matrix.tocsc()
         arr_subset = csc[:, keep_genes_index]
         col_subset = self._col_index[keep_genes_index]
@@ -221,5 +223,38 @@ class CountMatrix:
         return CountMatrix(arr_subset, self._row_index, col_subset)
 
     @classmethod
-    def from_10x_count_matrix(cls):
-        raise NotImplementedError
+    def merge_matrices(cls, input_prefixes: str):
+        col_indices = [np.load(p + '_col_index.npy') for p in input_prefixes]
+        row_indices = [np.load(p + '_row_index.npy') for p in input_prefixes]
+        matrices = [sp.load_npz(p + '.npz') for p in input_prefixes]
+
+        matrix: sp.csr_matrix = sp.vstack(matrices, format='csr')
+        # todo test that col_indices are all same shape
+        col_index = col_indices[0]
+        row_index = np.concatenate(row_indices)
+        return cls(matrix, row_index, col_index)
+
+    @classmethod
+    def from_mtx(cls, matrix_mtx: str, row_index_file: str, col_index_file: str):
+        """
+
+        Parameters
+        ----------
+        matrix_mtx : str
+            file containing count matrix in matrix market sparse format
+        row_index_file : str
+            newline delimited row index file
+        col_index_file : str
+            newline delimited column index file
+
+        Returns
+        -------
+        CountMatrix
+            instance of class
+        """
+        matrix: sp.csr_matrix = mmread(matrix_mtx).tocsr()
+        with open(row_index_file, 'r') as fin:
+            row_index = np.array(fin.readlines())
+        with open(col_index_file, 'r') as fin:
+            col_index = np.array(fin.readlines())
+        return cls(matrix, row_index, col_index)

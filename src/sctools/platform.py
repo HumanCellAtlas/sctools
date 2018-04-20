@@ -307,8 +307,10 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-i', '--input-matrices', nargs='+',
-                            help='count matrices to concatenate')
+        parser.add_argument('-i', '--input-prefixes', nargs='+',
+                            help='prefix for count matrices to be concatenated. e.g. test_counts '
+                                 'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
+                                 'row_index.npy')
         parser.add_argument('-o', '--output-stem', help='file stem for merged csr matrix',
                             required=True)
 
@@ -317,11 +319,11 @@ class GenericPlatform:
         else:
             args = parser.parse_args()
 
-        matrices = [sp.load_npz(i) for i in args.input_matrices]
-        merged: sp.csr_matrix = sp.vstack(matrices, format='csr')
-        sp.save_npz(args.output_stem + '.npz', merged, compressed=True)
+        count_matrix = count.CountMatrix.merge_matrices(args.input_prefixes)
+        count_matrix.save(args.output_stem)
 
         return 0
+
 
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
