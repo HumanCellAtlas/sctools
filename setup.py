@@ -26,6 +26,9 @@ setup(
         'pysam',
         'pytest',
         'pytest-cov',
+        'sphinx',
+        'sphinxcontrib-napoleon',
+        'sphinx_rtd_theme',
     ],
     entry_points={
             'console_scripts': [
