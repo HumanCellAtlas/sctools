@@ -274,7 +274,7 @@ class GenericPlatform:
         # assume bam file unless the file explicitly has a sam suffix
         open_mode = 'r' if args.bam_file.endswith('.sam') else 'rb'
 
-        csr_matrix = count.bam_to_count(
+        matrix = count.CountMatrix.from_bam(
             bam_file=args.bam_file,
             annotation_file=args.gtf_annotation_file,
             cell_barcode_tag=args.cell_barcode_tag,
@@ -282,8 +282,7 @@ class GenericPlatform:
             gene_id_tag=args.gene_id_tag,
             open_mode=open_mode
         )
-
-        sp.save_npz(args.output_prefix + '.npz', csr_matrix, compressed=True)
+        matrix.save(args.output_prefix)
 
         return 0
 

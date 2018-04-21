@@ -21,6 +21,7 @@ setup(
     package_dir={'': 'src'},
     packages=['sctools', 'sctools/test', 'sctools/metrics'],
     install_requires=[
+        'gffutils',
         'numpy',
         'pandas',
         'pysam',

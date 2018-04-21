@@ -12,7 +12,11 @@ Testing for Count Matrix Construction
 """
 import os
 import tempfile
-from sctools.count import bam_to_count
+
+import numpy as np
+import scipy.sparse as sp
+
+from sctools.count import CountMatrix
 
 # set the input and output directories, using a tempdir to automatically clean up generated files
 _data_dir = os.path.split(__file__)[0] + '/data'
@@ -23,8 +27,23 @@ _bam_file = _data_dir + '/test.bam'
 _gtf_file = _data_dir + '/test.gtf.gz'
 
 
-def test_construct_count_matrix():
-    count_matrix = bam_to_count(_bam_file, _gtf_file)
-    assert count_matrix.shape == (0, 16)
+def test_count_matrix():
+    count_matrix = CountMatrix.from_bam(_bam_file, _gtf_file)
+    assert count_matrix._matrix.shape == (0, 16)
+
+    # check save + load
+    count_matrix.save(_test_dir + 'test_count_matrix')
+    count_matrix_2 = CountMatrix.load(_test_dir + 'test_count_matrix')
+
+    # check matrices are the same
+    csr1: sp.csr_matrix = count_matrix._matrix
+    csr2: sp.csr_matrix = count_matrix_2._matrix
+    assert np.allclose(csr1.indices, csr2.indices)
+    assert np.allclose(csr1.indptr, csr2.indptr)
+    assert np.allclose(csr1.data, csr2.data)
+
+
+def test_filter_matrix():
+    pass # worthless to test this until the synthetic data is ready
 
 # todo need to add test data that includes counts
