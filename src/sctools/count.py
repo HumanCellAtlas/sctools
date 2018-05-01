@@ -213,7 +213,7 @@ class CountMatrix:
             if gene in genes_on_chromosome:
                 keep_genes_mask[i] = 1
 
-        keep_genes_index = np.where(keep_genes_mask[0])
+        keep_genes_index = np.where(keep_genes_mask)[0]  # todo tests didn't catch a bug here where the [0] was inside the function call
         csc = self._matrix.tocsc()
         arr_subset = csc[:, keep_genes_index]
         col_subset = self._col_index[keep_genes_index]
