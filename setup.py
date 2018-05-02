@@ -13,7 +13,8 @@ CLASSIFIERS = [
 
 setup(
     name='sctools',
-    version='0.1.6',
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     description='Utilities for large-scale distributed single cell data processing',
     url='https://github.com/humancellatlas/sctools.git',
     author='Ambrose J. Carr',
@@ -29,6 +30,7 @@ setup(
         'sphinx',
         'sphinxcontrib-napoleon',
         'sphinx_rtd_theme',
+        'setuptools_scm'
     ],
     entry_points={
             'console_scripts': [

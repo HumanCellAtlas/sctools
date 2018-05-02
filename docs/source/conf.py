@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from pkg_resources import get_distribution
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -26,7 +27,7 @@ author = 'Ambrose J. Carr'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.9'
+release = get_distribution('sctools').version
 
 
 # -- General configuration ---------------------------------------------------
