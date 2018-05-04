@@ -30,8 +30,7 @@ setup(
         'sphinx',
         'sphinxcontrib-websupport',
         'sphinx_rtd_theme',
-        'setuptools_scm',
-        'sphinx-autodoc-typehints'
+        'setuptools_scm'
     ],
     entry_points={
             'console_scripts': [
