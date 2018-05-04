@@ -164,3 +164,4 @@ texinfo_documents = [
 
 # -- Extension configuration -------------------------------------------------
 numpydoc_show_class_members = False
+autosummary_generate = True

@@ -11,6 +11,7 @@ sctools.metrics.aggregator module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.metrics.gatherer module
 -------------------------------
@@ -19,6 +20,7 @@ sctools.metrics.gatherer module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.metrics.merge module
 ----------------------------
@@ -27,6 +29,7 @@ sctools.metrics.merge module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.metrics.writer module
 -----------------------------
@@ -35,3 +38,4 @@ sctools.metrics.writer module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:

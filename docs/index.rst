@@ -4,7 +4,6 @@
 
    readme
 
-
 .. toctree::
    :maxdepth: 4
    :caption: API References

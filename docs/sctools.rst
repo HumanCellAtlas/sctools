@@ -12,6 +12,7 @@ sctools.bam module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.barcode module
 ----------------------
@@ -20,6 +21,7 @@ sctools.barcode module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.encodings module
 ------------------------
@@ -28,6 +30,7 @@ sctools.encodings module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.fastq module
 --------------------
@@ -36,6 +39,7 @@ sctools.fastq module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.gtf module
 ------------------
@@ -44,6 +48,7 @@ sctools.gtf module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.platform module
 -----------------------
@@ -52,6 +57,7 @@ sctools.platform module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.reader module
 ---------------------
@@ -60,6 +66,7 @@ sctools.reader module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 sctools.stats module
 --------------------
@@ -68,3 +75,4 @@ sctools.stats module
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
