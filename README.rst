@@ -17,7 +17,7 @@ distributed systems analyzing large biological datasets.
 Download and Installation
 -------------------------
 
-.. code bash
+.. code:: bash
 
    git clone https://github.com/humancellatlas/sctools.git
    cd sctools
