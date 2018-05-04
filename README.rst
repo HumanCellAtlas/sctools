@@ -18,6 +18,7 @@ Download and Installation
 -------------------------
 
 .. code bash
+
    git clone https://github.com/humancellatlas/sctools.git
    cd sctools
    pip3 install .
