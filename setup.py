@@ -28,7 +28,7 @@ setup(
         'pytest',
         'pytest-cov',
         'sphinx',
-        'sphinxcontrib-napoleon',
+        'sphinxcontrib-websupport',
         'sphinx_rtd_theme',
         'setuptools_scm'
     ],
