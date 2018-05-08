@@ -11,6 +11,8 @@ Methods
 -------
 extract_barcode(record, embedded_barcode)
     extract a barcode, defined by `embedded_barcode` from `record`
+mock_10x_i1(input_fastq, index_barcode, index_quality)
+    creates an i1 file that matches an r1 or r2 `input_fastq` file
 
 Classes
 -------
@@ -28,6 +30,7 @@ https://en.wikipedia.org/wiki/FASTQ_format
 
 from collections import namedtuple
 from typing import Iterable, AnyStr, Iterator, Union, Tuple
+import re
 
 from . import reader
 from .barcode import ErrorsToCorrectBarcodesMap
@@ -384,3 +387,34 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
             return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')
         except KeyError:
             return seq_tag, qual_tag
+
+def mock_10x_i1(input_fastq: str, index_barcode: str, index_quality: str) -> None:
+    """Generate a synthetic i1 file that matches the read names in input_fastq
+
+    The I1 file will be output in the same directory as the input file with a correctly
+    matched filename for a 10x experiment
+
+    Parameters
+    ----------
+    input_fastq: str
+        filename of r1 or r2 fastq file to match read names of
+    index_barcode: str
+        the sample index that will be used for all I1 reads
+    index_quality: str
+        the sample quality that will be used for all I1 reads
+
+    """
+
+    if not sample_barcode.endswith('\n'):
+        sample_barcode += '\n'
+    if not sample_quality.endswith('\n'):
+        sample_quality += '\n'
+
+    output_filename = re.sub('_[r|R][1|2]', '_I1_', input_fastq)
+    rd = sctools.fastq.Reader(input_fastq)
+    with open(output_filename, 'w') as f:
+        for record in rd:
+            record.sequence = sample_barcode
+            record.quality = sample_quality
+            f.write(str(record))
+
