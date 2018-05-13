@@ -377,7 +377,7 @@ def test_single_read_evidence(metrics, key, expected_value):
     observed = metrics[key].sum()
     assert observed == expected_value
 
-# todo need to add additional cell-metric specific tests (from parse_extra_fields)
+
 
 
 def split_metrics_file(metrics_file):

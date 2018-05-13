@@ -22,6 +22,7 @@ setup(
     package_dir={'': 'src'},
     packages=['sctools', 'sctools/test', 'sctools/metrics'],
     install_requires=[
+        'gffutils',
         'numpy',
         'pandas',
         'pysam',
@@ -31,6 +32,7 @@ setup(
         'sphinxcontrib-napoleon',
         'sphinx_rtd_theme',
         'setuptools_scm'
+        'scipy>=1.0.0',
     ],
     entry_points={
             'console_scripts': [
@@ -40,6 +42,8 @@ setup(
                 'CalculateCellMetrics = sctools.platform:GenericPlatform.calculate_cell_metrics',
                 'MergeGeneMetrics = sctools.platform:GenericPlatform.merge_gene_metrics',
                 'MergeCellMetrics = sctools.platform:GenericPlatform.merge_cell_metrics',
+                'CreateCountMatrix = sctools.platform:GenericPlatform.bam_to_count_matrix',
+                'MergeCountMatrices = sctools.platform:GenericPlatform.merge_count_matrices',
             ]
     },
     classifiers=CLASSIFIERS,

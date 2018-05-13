@@ -20,7 +20,9 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 import argparse
 from typing import Iterable, List
 
-from sctools import fastq, bam, metrics
+import scipy.sparse as sp
+
+from sctools import fastq, bam, metrics, count
 
 
 class GenericPlatform:
@@ -38,7 +40,10 @@ class GenericPlatform:
         merge multiple gene metrics files into a single output
     merge_cell_metrics()
         merge multiple cell metrics files into a single output
-
+    bam_to_count()
+        construct a compressed sparse row count file from a tagged, aligned bam file
+    merge_count_matrices()
+        merge multiple csr-format count matrices into a single csr matrix
     """
 
     @classmethod
@@ -217,6 +222,106 @@ class GenericPlatform:
             args = parser.parse_args()
         merge = metrics.merge.MergeCellMetrics(args.metric_files, args.output_filestem)
         merge.execute()
+        return 0
+
+    @classmethod
+    def bam_to_count_matrix(cls, args: Iterable[str]=None) -> int:
+        """Command line entrypoint for constructing a count matrix from a tagged bam file.
+
+        Constructs a count matrix from an aligned bam file sorted by cell barcode, molecule
+        barcode, and gene id.
+
+        Parameters
+        ----------
+        args : Iterable[str], optional
+            Arguments list, for testing (see test/test_entrypoints.py for example). The default
+            value of None, when passed to `parser.parse_args` causes the parser to
+            read `sys.argv`
+
+        Returns
+        -------
+        return_call : 0
+            return call if the program completes successfully
+
+        """
+        parser = argparse.ArgumentParser()
+        parser.set_defaults(
+            cell_barcode_tag='CB',
+            molecule_barcode_tag='UB',
+            gene_id_tag='GE'
+        )
+        parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
+        parser.add_argument(
+            '-o', '--output-prefix', help='file stem for count matrix', required=True)
+        parser.add_argument(
+            '-a', '--gtf-annotation-file', required=True,
+            help='gtf annotation file that bam_file was aligned against')
+        parser.add_argument(
+            '-c', '--cell-barcode-tag',
+            help='tag that identifies the cell barcode (default = "CB")')
+        parser.add_argument(
+            '-m', '--molecule-barcode-tag',
+            help='tag that identifies the molecule barcode (default = "UB")')
+        parser.add_argument(
+            '-g', '--gene-id-tag',
+            help='tag that identifies the gene id (default = "GE")')
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        # assume bam file unless the file explicitly has a sam suffix
+        open_mode = 'r' if args.bam_file.endswith('.sam') else 'rb'
+
+        matrix = count.CountMatrix.from_bam(
+            bam_file=args.bam_file,
+            annotation_file=args.gtf_annotation_file,
+            cell_barcode_tag=args.cell_barcode_tag,
+            molecule_barcode_tag=args.molecule_barcode_tag,
+            gene_id_tag=args.gene_id_tag,
+            open_mode=open_mode
+        )
+        matrix.save(args.output_prefix)
+
+        return 0
+
+    @classmethod
+    def merge_count_matrices(cls, args: Iterable[str]=None) -> int:
+        """Command line entrypoint for constructing a count matrix from a tagged bam file.
+
+        Constructs a count matrix from an aligned bam file sorted by cell barcode, molecule
+        barcode, and gene id.
+
+        Parameters
+        ----------
+        args : Iterable[str], optional
+            Arguments list, for testing (see test/test_entrypoints.py for example). The default
+            value of None, when passed to `parser.parse_args` causes the parser to
+            read `sys.argv`
+
+        Returns
+        -------
+        return_call : 0
+            return call if the program completes successfully
+
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', '--input-prefixes', nargs='+',
+                            help='prefix for count matrices to be concatenated. e.g. test_counts '
+                                 'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
+                                 'row_index.npy')
+        parser.add_argument('-o', '--output-stem', help='file stem for merged csr matrix',
+                            required=True)
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        count_matrix = count.CountMatrix.merge_matrices(args.input_prefixes)
+        count_matrix.save(args.output_stem)
+
         return 0
 
 

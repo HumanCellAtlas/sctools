@@ -79,10 +79,16 @@ class Record:
 
         self._fields: List[str] = fields[:8]
 
-        self._attributes: Dict[str, str] = {
-            key: value.strip('"') for (key, value) in
-            [field.split() for field in fields[8].split('; ')]
-        }
+        self._attributes: Dict[str, str] = {}
+        for field in fields[8].split(';'):
+            try:
+                key, _, value = field.strip().partition(' ')
+                self._attributes[key] = value.strip('"')
+            except:
+                print(field)
+                print(field.strip().split())
+                print(len(field.strip().split()))
+                raise
 
     def __repr__(self):
         return '<Record: %s>' % self.__str__()
