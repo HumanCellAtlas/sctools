@@ -31,7 +31,7 @@ setup(
         'sphinx',
         'sphinxcontrib-napoleon',
         'sphinx_rtd_theme',
-        'setuptools_scm'
+        'setuptools_scm',
         'scipy>=1.0.0',
     ],
     entry_points={
