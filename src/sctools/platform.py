@@ -265,6 +265,11 @@ class GenericPlatform:
         parser.add_argument(
             '-g', '--gene-id-tag',
             help='tag that identifies the gene id (default = "GE")')
+        parser.add_argument(
+            '-q', '--mapq-threshold', type=int, default=0,
+            help='if passed, reads must exceed this mapping quality to be considered for inclusion '
+                 'in the count matrix'
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -280,7 +285,8 @@ class GenericPlatform:
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
             gene_id_tag=args.gene_id_tag,
-            open_mode=open_mode
+            open_mode=open_mode,
+            mapq_threshold=args.mapq_threshold,
         )
         matrix.save(args.output_prefix)
 
