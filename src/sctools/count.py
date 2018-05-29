@@ -49,6 +49,7 @@ class CountMatrix:
             molecule_barcode_tag: str='UB',
             gene_id_tag: str='GE',
             open_mode: str='rb',
+            mapq_threshold: int=0,
             ):
         """Generate a count matrix from a sorted, tagged bam file
 
@@ -73,6 +74,9 @@ class CountMatrix:
             gtf annotation file that was used to create gene ID tags. Used to map genes to indices
         open_mode : {'r', 'rb'}, optional
             indicates that the passed file is a bam file ('rb') or sam file ('r') (default = 'rb').
+        mapq_threshold : int
+            minimum mapping quality for an alignment to be considered. Set to 255 to use
+            Cell Ranger-like multi-alingment exclusion.
 
         Returns
         -------
@@ -137,6 +141,10 @@ class CountMatrix:
                     cell: str = sam_record.get_tag(cell_barcode_tag)
                     molecule: str = sam_record.get_tag(molecule_barcode_tag)
                 except KeyError:  # if a record is missing any of these, just drop it.
+                    continue
+
+                # exclude reads with low mapping quality (default: don't exclude)
+                if sam_record.mapping_quality < mapq_threshold:
                     continue
 
                 # each molecule is counted only once
