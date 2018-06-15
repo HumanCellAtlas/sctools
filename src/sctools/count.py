@@ -8,7 +8,9 @@ for compact storage, and helper functions to convert this format into other comm
 
 Methods
 -------
-bam_to_count(bam_file, cell_barcode_tag: str='CB', molecule_barcode_tag='UB', gene_id_tag='GE')
+from_sorted_tagged_bam(bam_file: str, annotation_file: str, cell_barcode_tag: str='CB',
+                       molecule_barcode_tag: str='UB', gene_name_tag: str='GE', open_mode: str='rb')
+from_mtx(matrix_mtx: str, row_index_file: str, col_index_file: str)
 
 Notes
 -----
@@ -16,16 +18,14 @@ Memory usage of this module can be roughly approximated by the chunk_size parame
 The memory usage is equal to approximately 6*8 bytes per molecules in the file.
 """
 
-from typing import List, Dict, Tuple
-import tempfile
+import itertools
 import operator
+from typing import List, Dict, Tuple, Set, Optional, Generator
 
 import numpy as np
+import pysam
 import scipy.sparse as sp
 from scipy.io import mmread
-import pysam
-import gffutils
-
 from sctools import gtf
 
 
@@ -40,20 +40,101 @@ class CountMatrix:
     def matrix(self):
         return self._matrix
 
+    @property
+    def row_index(self):
+        return self._row_index
+
+    @property
+    def col_index(self):
+        return self._col_index
+
+    @staticmethod
+    def _get_alignments_grouped_by_query_name_generator(bam_file: str,
+                                                        cell_barcode_tag: str,
+                                                        molecule_barcode_tag: str,
+                                                        open_mode: str = 'rb') -> \
+            Generator[Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None]:
+        """Iterates through a query_name-sorted BAM file, groups all alignments with the same query name
+
+        Parameters
+        ----------
+        bam_file : str
+            input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
+            order
+        cell_barcode_tag : str
+            Tag that specifies the cell barcode for each read.
+        molecule_barcode_tag : str
+            Tag that specifies the molecule barcode for each read.
+
+        Returns
+        -------
+            a generator for tuples (query_name, cell_barcode, molecule_barcode, alignments)
+        """
+        with pysam.AlignmentFile(bam_file, mode=open_mode) as bam_records:
+            for alignment in itertools.groupby(bam_records, key=lambda record: record.query_name):
+                query_name: str = alignment[0]
+                grouper = alignment[1]
+                alignments: List[pysam.AlignedSegment] = []
+                try:
+                    while True:
+                        alignment = grouper.__next__()
+                        alignments.append(alignment)
+                except StopIteration:
+                    pass
+
+                cell_barcode: Optional[str] = None
+                try:
+                    cell_barcode = alignments[0].get_tag(cell_barcode_tag)
+                except KeyError:
+                    pass
+
+                molecule_barcode: Optional[str] = None
+                try:
+                    molecule_barcode = alignments[0].get_tag(molecule_barcode_tag)
+                except KeyError:
+                    pass
+
+                yield query_name, cell_barcode, molecule_barcode, alignments
+
+    # todo add support for generating a matrix of invalid barcodes
+    # todo add support for splitting spliced and unspliced reads
+    # todo add support for generating a map of cell barcodes
+    # todo add the option for stringent checks on the input (e.g. BAM sort order)
+    # todo once the stringent checks are in place, safely move on to the hashset-free implementation
     @classmethod
-    def from_bam(
+    def from_sorted_tagged_bam(
             cls,
             bam_file: str,
             annotation_file: str,
             cell_barcode_tag: str='CB',
             molecule_barcode_tag: str='UB',
-            gene_id_tag: str='GE',
-            open_mode: str='rb',
-            ):
+            gene_name_tag: str='GE',
+            open_mode: str='rb') -> 'CountMatrix':
         """Generate a count matrix from a sorted, tagged bam file
 
-        Input bam file must be sorted by cell, molecule, and gene (where the gene tag varies fastest).
-        This module returns reads that correspond to both spliced and unspliced reads.
+        Notes
+        -----
+        - Input bam file must be sorted by query name.
+
+        - The sort order of the input BAM file is not strictly checked. If the input BAM file not sorted
+          by query_name, the output counts will be wrong without any warnings being issued.
+
+        This method returns counts that correspond to both spliced and unspliced reads.
+
+        Description of the algorithm
+        ----------------------------
+        The implemented counting strategy is intended to closely match that of CellRanger 2.1.1
+        (see the references). The following pseudo-code describes the counting algorithm:
+
+        for each query_name (i.e. unique sequenced read):
+            - if only a single alignment exists, _consider_ the read
+            - if multiple alignments exist,
+                - if a unique gene name is associated to all alignments that have a gene name tag,
+                  _consider_ the read; otherwise, the read is useless and neglect it
+            - if the read is to be _considered_,
+                - if the triple (cell barcode, molecule barcode, gene name) is not encountered before,
+                  count it as evidence for a unique transcript; otherwise, consider the read as duplicate
+                  and neglect it
 
         Parameters
         ----------
@@ -66,8 +147,8 @@ class CountMatrix:
         molecule_barcode_tag : str, optional
             Tag that specifies the molecule barcode for each read. Reads without this tag will be
             ignored (default = 'UB')
-        gene_id_tag
-            Tag that specifies the gene for each read. Reads without this tag will be ignored
+        gene_name_tag
+            Tag that specifies the gene name for each read. Reads without this tag will be ignored
             (default = 'GE')
         annotation_file : str
             gtf annotation file that was used to create gene ID tags. Used to map genes to indices
@@ -81,8 +162,9 @@ class CountMatrix:
 
         Notes
         -----
-        Any matrices produced by this function that share the same annotation file can be concatenated
-        using the scipy sparse vstack function, for example:
+        All matrices produced by this function called on different BAM chunks that share the same annotation
+        file can be concatenated using the scipy sparse vstack function, since by definition, the cell barcodes
+        contained in different BAM chunks are mutually exclusive. for example:
 
         >>> import scipy.sparse as sp
         >>> A = sp.coo_matrix([[1, 2], [3, 4]]).tocsr()
@@ -97,105 +179,103 @@ class CountMatrix:
         samtools sort (-t parameter):
             C library that can sort files as required.
             http://www.htslib.org/doc/samtools.html#COMMANDS_AND_OPTIONS
+
         TagSortBam.CellSortBam:
             WDL task that accomplishes the sorting necessary for this module.
             https://github.com/HumanCellAtlas/skylab/blob/master/library/tasks/TagSortBam.wdl
 
+        Relevant parmalinks to the counting algorithm in CellRanger:
+        [1] https://github.com/10XGenomics/cellranger/blob/aba5d379169ff0d4bee60e3d100df35752b90383/mro/stages/counter/
+                attach_bcs_and_umis/__init__.py
+        [2] https://github.com/10XGenomics/cellranger/blob/aba5d379169ff0d4bee60e3d100df35752b90383/lib/rust/
+                annotate_reads/src/main.rs
         """
 
-        # create input arrays
+        # map the gene from reach record to an index in the sparse matrix
+        gene_name_to_index: Dict[str, int] = gtf.extract_gene_names(annotation_file)
+        n_genes = len(gene_name_to_index)
+
+        # track which tuples (cell_barcode, molecule_barcode, gene_name) we've encountered so far
+        observed_cell_molecule_gene_set: Set[Tuple[str, str, str]] = set()
+
+        # COO sparse matrix entries
         data: List[int] = []
         cell_indices: List[int] = []
         gene_indices: List[int] = []
 
-        gene_id_to_index: Dict[str, int] = {}
-        gtf_reader = gtf.Reader(annotation_file)
-
-        # map the gene from reach record to an index in the sparse matrix
-        for gene_index, record in enumerate(gtf_reader.filter(retain_types=['gene'])):
-            gene_id = record.get_attribute('gene_name')
-            if gene_id is None:
-                raise ValueError(
-                    'malformed GTF file detected. Record is of type gene but does not have a '
-                    '"gene_name" field: %s' % repr(record))
-            gene_id_to_index[gene_id] = gene_index
-
         # track which cells we've seen, and what the current cell number is
         n_cells = 0
-        cell_id_to_index: Dict[str, int] = {}
+        cell_barcode_to_index: Dict[str, int] = {}
 
-        # process the data
-        current_molecule: Tuple[str, str, str] = tuple()
+        grouped_records_generator = cls._get_alignments_grouped_by_query_name_generator(
+            bam_file, cell_barcode_tag, molecule_barcode_tag, open_mode=open_mode)
 
-        with pysam.AlignmentFile(bam_file, mode=open_mode) as f:
+        for query_name, cell_barcode, molecule_barcode, alignments in grouped_records_generator:
 
-            for sam_record in f:
+            if cell_barcode is None or molecule_barcode is None:  # only keep queries w/ well-formed UMIs
+                continue
 
-                # get the tags that define the record's molecular identity
-                try:
-                    gene: str = sam_record.get_tag(gene_id_tag)
-                    cell: str = sam_record.get_tag(cell_barcode_tag)
-                    molecule: str = sam_record.get_tag(molecule_barcode_tag)
-                except KeyError:  # if a record is missing any of these, just drop it.
-                    continue
+            if len(alignments) == 1:
+                primary_alignment = alignments[0]
+                if primary_alignment.has_tag(gene_name_tag):
+                    gene_name = primary_alignment.get_tag(gene_name_tag)
+                else:
+                    continue  # drop query
+            else:  # multi-map
+                implicated_gene_names: Set[str] = set()
+                for alignment in alignments:
+                    if alignment.has_tag(gene_name_tag):
+                        implicated_gene_names.add(alignment.get_tag(gene_name_tag))
+                if len(implicated_gene_names) == 1:  # only one gene
+                    gene_name = implicated_gene_names.__iter__().__next__()
+                else:
+                    continue  # drop query
 
-                # each molecule is counted only once
-                if current_molecule == (gene, cell, molecule):
-                    continue
+            if (cell_barcode, molecule_barcode, gene_name) in observed_cell_molecule_gene_set:
+                continue  # optical/PCR duplicate -> drop query
+            else:
+                observed_cell_molecule_gene_set.add((cell_barcode, molecule_barcode, gene_name))
 
-                # find the indices that this molecule should correspond to
-                gene_index = gene_id_to_index[gene]
+            # find the indices that this molecule should correspond to
+            gene_index = gene_name_to_index[gene_name]
 
-                # if we've seen this cell before, get its index, else set it
-                try:
-                    cell_index = cell_id_to_index[cell]
-                except KeyError:
-                    cell_index = n_cells
-                    cell_id_to_index[cell] = n_cells
-                    n_cells += 1
+            # if we've seen this cell before, get its index, else set it
+            try:
+                cell_index = cell_barcode_to_index[cell_barcode]
+            except KeyError:
+                cell_index = n_cells
+                cell_barcode_to_index[cell_barcode] = n_cells
+                n_cells += 1
 
-                # record the molecule data
-                data.append(1)  # one count of this molecule
-                cell_indices.append(cell_index)
-                gene_indices.append(gene_index)
-
-                # set the current molecule
-                current_molecule = (gene, cell, molecule)
-
-        # get shape
-        gene_number = len(gene_id_to_index)
-        cell_number = len(cell_indices)
-        shape = (cell_number, gene_number)
+            # record the molecule data
+            data.append(1)  # one count of this molecule
+            cell_indices.append(cell_index)
+            gene_indices.append(gene_index)
 
         # convert into coo_matrix
-        coordinate_matrix = sp.coo_matrix((data, (cell_indices, gene_indices)),
-                                          shape=shape, dtype=np.uint32)
+        coordinate_matrix = sp.coo_matrix(
+            (data, (cell_indices, gene_indices)), shape=(n_cells, n_genes), dtype=np.uint32)
 
-        # convert into csr matrix and return
-        col_iterable = [k for k, v in sorted(gene_id_to_index.items(), key=operator.itemgetter(1))]
-        row_iterable = [k for k, v in sorted(cell_id_to_index.items(), key=operator.itemgetter(1))]
-        col_index = np.array(col_iterable)
-        row_index = np.array(row_iterable)
+        # convert to a csr sparse matrix and return
+        col_index = np.asarray([k for k, v in sorted(gene_name_to_index.items(), key=operator.itemgetter(1))])
+        row_index = np.asarray([k for k, v in sorted(cell_barcode_to_index.items(), key=operator.itemgetter(1))])
+
         return cls(coordinate_matrix.tocsr(), row_index, col_index)
 
-    # todo add support for generating a matrix of invalid barcodes
-    # todo add support for splitting spliced and unspliced reads
-    # todo add support for generating a map of cell barcodes
-
-    def save(self, prefix: str):
+    def save(self, prefix: str) -> None:
         sp.save_npz(prefix + '.npz', self._matrix, compressed=True)
         np.save(prefix + '_row_index.npy', self._row_index)
         np.save(prefix + '_col_index.npy', self._col_index)
 
     @classmethod
-    def load(cls, prefix: str):
+    def load(cls, prefix: str) -> 'CountMatrix':
         matrix = sp.load_npz(prefix + '.npz')
         row_index = np.load(prefix + '_row_index.npy')
         col_index = np.load(prefix + '_col_index.npy')
         return cls(matrix, row_index, col_index)
 
     @classmethod
-    def merge_matrices(cls, input_prefixes: str):
+    def merge_matrices(cls, input_prefixes: str) -> 'CountMatrix':
         col_indices = [np.load(p + '_col_index.npy') for p in input_prefixes]
         row_indices = [np.load(p + '_row_index.npy') for p in input_prefixes]
         matrices = [sp.load_npz(p + '.npz') for p in input_prefixes]
@@ -207,7 +287,7 @@ class CountMatrix:
         return cls(matrix, row_index, col_index)
 
     @classmethod
-    def from_mtx(cls, matrix_mtx: str, row_index_file: str, col_index_file: str):
+    def from_mtx(cls, matrix_mtx: str, row_index_file: str, col_index_file: str) -> 'CountMatrix':
         """
 
         Parameters

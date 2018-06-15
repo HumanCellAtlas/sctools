@@ -20,8 +20,6 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 import argparse
 from typing import Iterable, List
 
-import scipy.sparse as sp
-
 from sctools import fastq, bam, metrics, count
 
 
@@ -248,7 +246,7 @@ class GenericPlatform:
         parser.set_defaults(
             cell_barcode_tag='CB',
             molecule_barcode_tag='UB',
-            gene_id_tag='GE'
+            gene_name_tag='GE'
         )
         parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
         parser.add_argument(
@@ -274,12 +272,12 @@ class GenericPlatform:
         # assume bam file unless the file explicitly has a sam suffix
         open_mode = 'r' if args.bam_file.endswith('.sam') else 'rb'
 
-        matrix = count.CountMatrix.from_bam(
+        matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
             annotation_file=args.gtf_annotation_file,
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
-            gene_id_tag=args.gene_id_tag,
+            gene_name_tag=args.gene_name_tag,
             open_mode=open_mode
         )
         matrix.save(args.output_prefix)

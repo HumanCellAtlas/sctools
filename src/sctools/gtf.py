@@ -16,10 +16,13 @@ References
 https://useast.ensembl.org/info/website/upload/gff.html
 """
 
+import logging
 import string
 from typing import List, Dict, Generator, Iterable
 
 from . import reader
+
+_logger = logging.getLogger(__name__)
 
 
 class Record:
@@ -244,3 +247,44 @@ class Reader(reader.Reader):
         for record in self:
             if record.feature in retain_types:
                 yield record
+
+
+# todo this lenient behavior is deemed to change in the future (warning -> exception)
+def _resolve_multiple_gene_names(gene_name: str):
+    _logger.warning(f'Multiple entries encountered for "{gene_name}". Please validate the input GTF file(s). '
+                    f'Skipping the record for now; in the future, this will be considered as a '
+                    f'malformed GTF file.')
+
+
+def extract_gene_names(files='-', mode='r', header_comment_char='#') -> Dict[str, int]:
+    """Extract gene names from GTF file(s) and returns a map from gene names to their corresponding
+    occurrence orders in the given file(s).
+
+    Parameters
+    ----------
+    files : Union[str, List], optional
+        File(s) to read. If '-', read sys.stdin (default = '-')
+    mode : {'r', 'rb'}, optional
+        Open mode. If 'r', read strings. If 'rb', read bytes (default = 'r').
+    header_comment_char : str, optional
+        lines beginning with this character are skipped (default = '#')
+
+    Returns
+    -------
+    Dict[str, int]
+        A map from gene names to their linear index
+    """
+    gene_name_to_index: Dict[str, int] = dict()
+    gene_index = 0
+    for record in Reader(files, mode, header_comment_char).filter(retain_types=['gene']):
+        gene_name = record.get_attribute('gene_name')
+        if gene_name is None:
+            raise ValueError(
+                'Malformed GTF file detected. Record is of type gene but does not have a '
+                '"gene_name" field: %s' % repr(record))
+        if gene_name in gene_name_to_index:
+            _resolve_multiple_gene_names(gene_name)
+            continue
+        gene_name_to_index[gene_name] = gene_index
+        gene_index += 1
+    return gene_name_to_index
