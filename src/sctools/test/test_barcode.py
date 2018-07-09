@@ -1,9 +1,10 @@
 import os
-import numpy as np
-import pytest
-import pysam
-from .. import barcode, encodings, platform
 
+import numpy as np
+import pysam
+import pytest
+
+from .. import barcode, encodings, platform, consts
 
 data_dir = os.path.split(__file__)[0] + '/data/'
 
@@ -136,7 +137,7 @@ def test_correct_bam_produces_cb_tags(tagged_bamfile, truncated_whitelist_from_1
     with pysam.AlignmentFile(outbam, 'rb') as f:
         for record in f:
             try:
-                success = record.get_tag('CB')
+                success = record.get_tag(consts.CELL_BARCODE_TAG_KEY)
             except KeyError:
                 continue
     assert success

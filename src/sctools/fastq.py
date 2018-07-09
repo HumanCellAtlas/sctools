@@ -29,7 +29,7 @@ https://en.wikipedia.org/wiki/FASTQ_format
 from collections import namedtuple
 from typing import Iterable, AnyStr, Iterator, Union, Tuple
 
-from . import reader
+from . import reader, consts
 from .barcode import ErrorsToCorrectBarcodesMap
 
 
@@ -75,9 +75,9 @@ class Record:
     def name(self, value):
         """fastq record name"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('fastq name must be bytes')
+            raise TypeError('FASTQ name must be bytes')
         elif not value.startswith(b'@'):
-            raise ValueError('fastq name must start with @')
+            raise ValueError('FASTQ name must start with @')
         else:
             self._name = value
 
@@ -87,9 +87,9 @@ class Record:
 
     @sequence.setter
     def sequence(self, value):
-        """fastq nucleotide sequence"""
+        """FASTQ nucleotide sequence"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('fastq sequence must be str or bytes')
+            raise TypeError('FASTQ sequence must be str or bytes')
         else:
             self._sequence = value
 
@@ -99,9 +99,9 @@ class Record:
 
     @name2.setter
     def name2(self, value):
-        """second fastq record name field (rarely used)"""
+        """second FASTQ record name field (rarely used)"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('fastq name2 must be str or bytes')
+            raise TypeError('FASTQ name2 must be str or bytes')
         else:
             self._name2 = value
 
@@ -111,9 +111,9 @@ class Record:
 
     @quality.setter
     def quality(self, value):
-        """fastq record base call quality scores"""
+        """FASTQ record base call quality scores"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('fastq quality must be str or bytes')
+            raise TypeError('FASTQ quality must be str or bytes')
         else:
             self._quality = value
 
@@ -142,23 +142,23 @@ class StrRecord(Record):
     Parameters
     ----------
     record : Iterable[str]
-        Iterable of 4 bytes strings that comprise a fastq record
+        Iterable of 4 bytes strings that comprise a FASTQ record
 
     Attributes
     ----------
     name : str
-        fastq record name
+        FASTQ record name
     sequence : str
-        fastq nucleotide sequence
+        FASTQ nucleotide sequence
     name2 : str
-        second fastq record name field (rarely used)
+        second FASTQ record name field (rarely used)
     quality : str
         base call quality for each nucleotide in sequence
 
     Methods
     -------
     average_quality()
-        The average quality of the fastq record
+        The average quality of the FASTQ record
 
     """
 
@@ -175,11 +175,11 @@ class StrRecord(Record):
 
     @name.setter
     def name(self, value):
-        """fastq record name"""
+        """FASTQ record name"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('fastq name must be str or bytes')
+            raise TypeError('FASTQ name must be str or bytes')
         if not value.startswith('@'):
-            raise ValueError('fastq name must start with @')
+            raise ValueError('FASTQ name must start with @')
         else:
             self._name = value
 
@@ -190,7 +190,7 @@ class StrRecord(Record):
 
 
 class Reader(reader.Reader):
-    """Fastq Reader that defines some special methods for reading and summarizing fastq data.
+    """Fastq Reader that defines some special methods for reading and summarizing FASTQ data.
 
     Simple reader class that exposes an __iter__ and __len__  method
 
@@ -225,12 +225,12 @@ class Reader(reader.Reader):
         return zip(*args)
 
     def __iter__(self) -> Iterator[Tuple[str]]:
-        """Iterate over a fastq file, returning records
+        """Iterate over a FASTQ file, returning records
 
         Yields
         ------
         fastq_record : Tuple[str]
-            tuple of length 4 containing the name, sequence, name2, and quality for a fastq record
+            tuple of length 4 containing the name, sequence, name2, and quality for a FASTQ record
 
         """
         record_type = StrRecord if self._mode == 'r' else Record
@@ -244,7 +244,7 @@ EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_ta
 
 
 def extract_barcode(record, embedded_barcode) -> Tuple[Tuple[str, str, str], Tuple[str, str, str]]:
-    """Extracts barcodes from a fastq record at positions defined by an EmbeddedBarcode object.
+    """Extracts barcodes from a FASTQ record at positions defined by an EmbeddedBarcode object.
 
     Parameters
     ----------
@@ -269,7 +269,7 @@ def extract_barcode(record, embedded_barcode) -> Tuple[Tuple[str, str, str], Tup
 
 # todo the reader subclasses need better docs
 class EmbeddedBarcodeGenerator(Reader):
-    """Generate barcodes from a fastq file(s) from positions defined by EmbeddedBarcode(s)
+    """Generate barcodes from a FASTQ file(s) from positions defined by EmbeddedBarcode(s)
 
     Extracted barcode objects are produced in a form that is consumable by pysam's bam and sam
     set_tag methods.
@@ -280,9 +280,9 @@ class EmbeddedBarcodeGenerator(Reader):
         tag objects defining start and end of the sequence containing the tag, and the tag
         identifiers for sequence and quality tags
     fastq_files : str | List, optional
-        fastq file or files to be read. (default = sys.stdin)
+        FASTQ file or files to be read. (default = sys.stdin)
     mode : {'r', 'rb'}, optional
-        open mode for fastq files. If 'r', return string. If 'rb', return bytes (default = 'r')
+        open mode for FASTQ files. If 'r', return string. If 'rb', return bytes (default = 'r')
 
     """
 
@@ -291,7 +291,7 @@ class EmbeddedBarcodeGenerator(Reader):
         self.embedded_barcodes = embedded_barcodes
 
     def __iter__(self):
-        """iterates over barcodes extracted from fastq"""
+        """iterates over barcodes extracted from FASTQ"""
         for record in super().__iter__():  # iterates records; we extract barcodes.
             barcodes = []
             for barcode in self.embedded_barcodes:
@@ -301,7 +301,7 @@ class EmbeddedBarcodeGenerator(Reader):
 
 # todo the reader subclasses need better docs
 class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
-    """Generate barcodes from fastq file(s) from positions defined by EmbeddedBarcode(s)
+    """Generate barcodes from FASTQ file(s) from positions defined by EmbeddedBarcode(s)
 
     Extracted barcode objects are produced in a form that is consumable by pysam's bam and sam
     set_tag methods. In this class, one EmbeddedBarcode must be defined as an
@@ -311,7 +311,7 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
     Parameters
     ----------
     fastq_files : str | List, optional
-        fastq file or files to be read. (default = sys.stdin)
+        FASTQ file or files to be read. (default = sys.stdin)
     mode : {'r', 'rb'}, optional
         open mode for fastq files. If 'r', return string. If 'rb', return bytes (default = 'r')
     whitelist : str
@@ -381,6 +381,6 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         seq_tag, qual_tag = extract_barcode(record, cb)
         try:
             corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
-            return seq_tag, qual_tag, ('CB', corrected_cb, 'Z')
+            return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, 'Z')
         except KeyError:
             return seq_tag, qual_tag

@@ -29,7 +29,7 @@ class Record:
     """Data class for storing and interacting with GTF records
 
     Subclassed to produce exon, transcript, and gene-specific record types.
-    A gtf record has 8 fixed fields which are followed by optional fields separated by ;\t, which
+    A GTF record has 8 fixed fields which are followed by optional fields separated by ;\t, which
     are stored by this class in the attributes field and accessible by get_attribute. Fixed fields
     are accessible by name.
 
@@ -87,11 +87,8 @@ class Record:
             try:
                 key, _, value = field.strip().partition(' ')
                 self._attributes[key] = value.strip('"')
-            except:
-                print(field)
-                print(field.strip().split())
-                print(len(field.strip().split()))
-                raise
+            except Exception:
+                raise RuntimeError(f'Error parsing field "{field}" of GTF record "{record}"')
 
     def __repr__(self):
         return '<Record: %s>' % self.__str__()
@@ -148,7 +145,7 @@ class Record:
     def size(self) -> int:
         size = self.end - self.start
         if size < 0:
-            raise ValueError('invalid record: negative size %d (start > end)' % size)
+            raise ValueError(f'Invalid record: negative size {size} (start > end)')
         else:
             return size
 
@@ -210,9 +207,9 @@ class Reader(reader.Reader):
     Methods
     -------
     filter(retain_types: Iterable[str])
-        Iterate over a gtf file, only yielding records in `retain_types`.
+        Iterate over a GTF file, only yielding records in `retain_types`.
     __iter__()
-        iterate over gtf records in file, yielding `Record` objects
+        iterate over GTF records in file, yielding `Record` objects
 
     See Also
     --------
@@ -228,7 +225,7 @@ class Reader(reader.Reader):
             yield Record(line)
 
     def filter(self, retain_types: Iterable[str]) -> Generator:
-        """Iterate over a gtf file, returning only record whose feature type is in retain_types.
+        """Iterate over a GTF file, returning only record whose feature type is in retain_types.
 
         Features are stored in GTF field 2.
 
@@ -280,8 +277,8 @@ def extract_gene_names(files='-', mode='r', header_comment_char='#') -> Dict[str
         gene_name = record.get_attribute('gene_name')
         if gene_name is None:
             raise ValueError(
-                'Malformed GTF file detected. Record is of type gene but does not have a '
-                '"gene_name" field: %s' % repr(record))
+                f'Malformed GTF file detected. Record is of type gene but does not have a '
+                f'"gene_name" field: {record}')
         if gene_name in gene_name_to_index:
             _resolve_multiple_gene_names(gene_name)
             continue

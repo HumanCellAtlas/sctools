@@ -1,11 +1,12 @@
-import os
 import glob
+import os
 import tempfile
-import scipy.sparse as sp
-import numpy as np
 
+import numpy as np
 import pysam
-from sctools import platform, count
+import scipy.sparse as sp
+
+from sctools import platform, count, consts
 
 data_dir = os.path.split(__file__)[0] + '/data/'
 
@@ -22,12 +23,12 @@ def test_Attach10XBarcodes_entrypoint():
     with pysam.AlignmentFile('test_tagged_bam.bam', 'rb', check_sq=False) as f:
         for alignment in f:
             # each alignment should now have a tag, and that tag should be a string
-            assert isinstance(alignment.get_tag('CY'), str)
-            assert isinstance(alignment.get_tag('CR'), str)
-            assert isinstance(alignment.get_tag('UY'), str)
-            assert isinstance(alignment.get_tag('UR'), str)
-            assert isinstance(alignment.get_tag('SY'), str)
-            assert isinstance(alignment.get_tag('SR'), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.RAW_SAMPLE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_SAMPLE_BARCODE_TAG_KEY), str)
     os.remove('test_tagged_bam.bam')  # clean up
 
 
@@ -44,15 +45,15 @@ def test_Attach10XBarcodes_entrypoint_with_whitelist():
     success = False
     with pysam.AlignmentFile('test_tagged_bam.bam', 'rb', check_sq=False) as f:
         for alignment in f:
-            if alignment.has_tag('CB'):
+            if alignment.has_tag(consts.CELL_BARCODE_TAG_KEY):
                 success = True
             # each alignment should now have a tag, and that tag should be a string
-            assert isinstance(alignment.get_tag('CY'), str)
-            assert isinstance(alignment.get_tag('CR'), str)
-            assert isinstance(alignment.get_tag('UY'), str)
-            assert isinstance(alignment.get_tag('UR'), str)
-            assert isinstance(alignment.get_tag('SY'), str)
-            assert isinstance(alignment.get_tag('SR'), str)
+            assert isinstance(alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.RAW_SAMPLE_BARCODE_TAG_KEY), str)
+            assert isinstance(alignment.get_tag(consts.QUALITY_SAMPLE_BARCODE_TAG_KEY), str)
     assert success
     os.remove('test_tagged_bam.bam')  # clean up
 
@@ -71,7 +72,7 @@ def test_split_bam():
         '--bamfile', 'test_tagged_bam.bam',
         '--output-prefix', 'test_tagged',
         '--subfile-size', '0.005',
-        '--tags', 'CB', 'CR']
+        '--tags', consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY]
 
     return_call = platform.GenericPlatform.split_bam(split_args)
     assert return_call == 0

@@ -22,6 +22,7 @@ from typing import Mapping, Iterator, List, Tuple, Iterable
 import numpy as np
 import pysam
 
+from . import consts
 from .encodings import TwoBit
 from .stats import base4_entropy
 
@@ -47,11 +48,11 @@ class Barcodes:
     """
     def __init__(self, barcodes: Mapping[str, int], barcode_length: int):
         if not isinstance(barcodes, Mapping):
-            raise TypeError('barcode set must be a dict-like object mapping barcodes to counts')
+            raise TypeError('The argument "barcodes" must be a dict-like object mapping barcodes to counts')
         self._mapping: Mapping[str, int] = barcodes
 
         if not isinstance(barcode_length, int) and barcode_length > 0:
-            raise ValueError('barcode length must be a positive integer')
+            raise ValueError('The argument "barcode_length" must be a positive integer')
         self._barcode_length: int = barcode_length
 
     def __contains__(self, item) -> bool:
@@ -257,10 +258,9 @@ class ErrorsToCorrectBarcodesMap:
     """
 
     def __init__(self, errors_to_barcodes: Mapping[str, str]):
-
         if not isinstance(errors_to_barcodes, Mapping):
-            raise TypeError('errors_to_barcodes must be a mapping of erroneous barcodes to correct '
-                            'barcodes, not %a' % type(errors_to_barcodes))
+            raise TypeError(f'The argument "errors_to_barcodes" must be a mapping of erroneous barcodes to correct '
+                            f'barcodes, not {type(errors_to_barcodes)}')
         self._map = errors_to_barcodes
 
     def get_corrected_barcode(self, barcode: str) -> str:
@@ -349,6 +349,6 @@ class ErrorsToCorrectBarcodesMap:
                 try:
                     tag = self.get_corrected_barcode(alignment.get_tag('CR'))
                 except KeyError:  # pass through the uncorrected barcode.
-                    tag = alignment.get_tag('CR')
-                alignment.set_tag(tag='CB', value=tag, value_type='Z')
+                    tag = alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY)
+                alignment.set_tag(tag=consts.CELL_BARCODE_TAG_KEY, value=tag, value_type='Z')
                 fout.write(alignment)

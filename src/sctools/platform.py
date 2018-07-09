@@ -20,7 +20,7 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 import argparse
 from typing import Iterable, List
 
-from sctools import fastq, bam, metrics, count
+from sctools import fastq, bam, metrics, count, consts
 
 
 class GenericPlatform:
@@ -244,9 +244,9 @@ class GenericPlatform:
         """
         parser = argparse.ArgumentParser()
         parser.set_defaults(
-            cell_barcode_tag='CB',
-            molecule_barcode_tag='UB',
-            gene_name_tag='GE'
+            cell_barcode_tag=consts.CELL_BARCODE_TAG_KEY,
+            molecule_barcode_tag=consts.MOLECULE_BARCODE_TAG_KEY,
+            gene_name_tag=consts.GENE_NAME_TAG_KEY
         )
         parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
         parser.add_argument(
@@ -256,13 +256,13 @@ class GenericPlatform:
             help='gtf annotation file that bam_file was aligned against')
         parser.add_argument(
             '-c', '--cell-barcode-tag',
-            help='tag that identifies the cell barcode (default = "CB")')
+            help=f'tag that identifies the cell barcode (default = {consts.CELL_BARCODE_TAG_KEY})')
         parser.add_argument(
             '-m', '--molecule-barcode-tag',
-            help='tag that identifies the molecule barcode (default = "UB")')
+            help=f'tag that identifies the molecule barcode (default = {consts.MOLECULE_BARCODE_TAG_KEY})')
         parser.add_argument(
             '-g', '--gene-id-tag',
-            help='tag that identifies the gene id (default = "GE")')
+            help=f'tag that identifies the gene name (default = {consts.GENE_NAME_TAG_KEY})')
 
         if args is not None:
             args = parser.parse_args(args)
@@ -351,9 +351,21 @@ class TenXV2(GenericPlatform):
     # 10x contains three barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
     # GA4GH standard tags that the extracted barcodes should be labeled with in the BAM file.
-    cell_barcode = fastq.EmbeddedBarcode(start=0, end=16, quality_tag='CY', sequence_tag='CR')
-    molecule_barcode = fastq.EmbeddedBarcode(start=16, end=26, quality_tag='UY', sequence_tag='UR')
-    sample_barcode = fastq.EmbeddedBarcode(start=0, end=8, quality_tag='SY', sequence_tag='SR')
+    cell_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=16,
+        quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+    molecule_barcode = fastq.EmbeddedBarcode(
+        start=16,
+        end=26,
+        quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+    sample_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=8,
+        quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY)
 
     @classmethod
     def _tag_bamfile(
