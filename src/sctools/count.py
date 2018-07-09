@@ -8,8 +8,10 @@ for compact storage, and helper functions to convert this format into other comm
 
 Methods
 -------
-from_sorted_tagged_bam(bam_file: str, annotation_file: str, cell_barcode_tag: str='CB',
-                       molecule_barcode_tag: str='UB', gene_name_tag: str='GE', open_mode: str='rb')
+from_sorted_tagged_bam(
+    bam_file: str, annotation_file: str, cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
+    molecule_barcode_tag: str=consts.MOLECULE_BARCODE_TAG_KEY,
+    gene_name_tag: str=consts.GENE_NAME_TAG_KEY, open_mode: str='rb')
 from_mtx(matrix_mtx: str, row_index_file: str, col_index_file: str)
 
 Notes
@@ -26,7 +28,8 @@ import numpy as np
 import pysam
 import scipy.sparse as sp
 from scipy.io import mmread
-from sctools import gtf
+
+from sctools import gtf, consts, bam
 
 
 class CountMatrix:
@@ -49,10 +52,8 @@ class CountMatrix:
         return self._col_index
 
     @staticmethod
-    def _get_alignments_grouped_by_query_name_generator(bam_file: str,
-                                                        cell_barcode_tag: str,
-                                                        molecule_barcode_tag: str,
-                                                        open_mode: str = 'rb') -> \
+    def _get_alignments_grouped_by_query_name_generator(
+            bam_file: str, cell_barcode_tag: str, molecule_barcode_tag: str, open_mode: str = 'rb') -> \
             Generator[Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None]:
         """Iterates through a query_name-sorted BAM file, groups all alignments with the same query name
 
@@ -71,29 +72,10 @@ class CountMatrix:
             a generator for tuples (query_name, cell_barcode, molecule_barcode, alignments)
         """
         with pysam.AlignmentFile(bam_file, mode=open_mode) as bam_records:
-            for alignment in itertools.groupby(bam_records, key=lambda record: record.query_name):
-                query_name: str = alignment[0]
-                grouper = alignment[1]
-                alignments: List[pysam.AlignedSegment] = []
-                try:
-                    while True:
-                        alignment = grouper.__next__()
-                        alignments.append(alignment)
-                except StopIteration:
-                    pass
-
-                cell_barcode: Optional[str] = None
-                try:
-                    cell_barcode = alignments[0].get_tag(cell_barcode_tag)
-                except KeyError:
-                    pass
-
-                molecule_barcode: Optional[str] = None
-                try:
-                    molecule_barcode = alignments[0].get_tag(molecule_barcode_tag)
-                except KeyError:
-                    pass
-
+            for (query_name, grouper) in itertools.groupby(bam_records, key=lambda record: record.query_name):
+                alignments: List[pysam.AlignedSegment] = list(grouper)
+                cell_barcode: Optional[str] = bam.get_tag_or_default(alignments[0], cell_barcode_tag)
+                molecule_barcode: Optional[str] = bam.get_tag_or_default(alignments[0], molecule_barcode_tag)
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
     # todo add support for generating a matrix of invalid barcodes
@@ -106,9 +88,9 @@ class CountMatrix:
             cls,
             bam_file: str,
             annotation_file: str,
-            cell_barcode_tag: str='CB',
-            molecule_barcode_tag: str='UB',
-            gene_name_tag: str='GE',
+            cell_barcode_tag: str=consts.CELL_BARCODE_TAG_KEY,
+            molecule_barcode_tag: str=consts.MOLECULE_BARCODE_TAG_KEY,
+            gene_name_tag: str=consts.GENE_NAME_TAG_KEY,
             open_mode: str='rb') -> 'CountMatrix':
         """Generate a count matrix from a sorted, tagged bam file
 
@@ -143,13 +125,13 @@ class CountMatrix:
             order
         cell_barcode_tag : str, optional
             Tag that specifies the cell barcode for each read. Reads without this tag will be ignored
-            (default = 'CB')
+            (default = consts.CELL_BARCODE_TAG_KEY)
         molecule_barcode_tag : str, optional
             Tag that specifies the molecule barcode for each read. Reads without this tag will be
-            ignored (default = 'UB')
+            ignored (default = consts.MOLECULE_BARCODE_TAG_KEY)
         gene_name_tag
             Tag that specifies the gene name for each read. Reads without this tag will be ignored
-            (default = 'GE')
+            (default = consts.GENE_NAME_TAG_KEY)
         annotation_file : str
             gtf annotation file that was used to create gene ID tags. Used to map genes to indices
         open_mode : {'r', 'rb'}, optional
