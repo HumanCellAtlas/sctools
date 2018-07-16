@@ -37,7 +37,7 @@ import os
 import warnings
 from abc import abstractmethod
 from itertools import cycle
-from typing import Iterator, Generator, List, Union, Tuple, Callable, Any, Optional
+from typing import Iterator, Generator, List, Dict, Union, Tuple, Callable, Any, Optional
 
 import pysam
 
@@ -198,7 +198,7 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=True) -> List[str]:
+def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_missing=True) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
     Parameters
@@ -208,7 +208,7 @@ def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=Tru
     out_prefix : str
         Prefix for all output files; output will be named as prefix_n where n is an integer equal
         to the chunk number.
-    tags : list
+    tags : tuple
         The bam tags to split on. The tags are checked in order, and sorting is done based on the
         first identified tag. Further tags are only checked if the first tag is missing. This is
         useful in cases where sorting is executed over a corrected barcode, but some records only
@@ -236,7 +236,9 @@ def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=Tru
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
-    def _cleanup(_files_to_counts, _files_to_names, rm_all=False) -> None:
+    def _cleanup(
+            _files_to_counts: Dict[pysam.AlignmentFile, int], _files_to_names: Dict[pysam.AlignmentFile, str],
+            rm_all: bool=False) -> None:
         """Closes file handles and remove any empty files.
 
         Parameters
@@ -261,19 +263,20 @@ def split(in_bam, out_prefix, *tags, approx_mb_per_split=1000, raise_missing=Tru
     # find correct number of subfiles to spawn
     bam_mb = os.path.getsize(in_bam) * 1e-6
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
-    if n_subfiles > 500:
-        warnings.warn('Number of requested subfiles (%d) exceeds 500; this may cause OS errors by '
-                      'exceeding fid limits' % n_subfiles)
-    if n_subfiles > 1000:
-        raise ValueError(f'Number of requested subfiles ({ n_subfiles}) exceeds 1000; this will usually cause '
-                         f'OS errors, think about increasing max_mb_per_split.')
+    if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN:
+        warnings.warn(f'Number of requested subfiles ({n_subfiles}) exceeds '
+                      f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN}; this may cause OS errors by exceeding fid limits')
+    if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE:
+        raise ValueError(f'Number of requested subfiles ({n_subfiles}) exceeds '
+                         f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE}; this will usually cause OS errors, '
+                         f'think about increasing max_mb_per_split.')
 
     # create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
 
         # map files to counts
-        files_to_counts = {}
-        files_to_names = {}
+        files_to_counts: Dict[pysam.AlignmentFile, int] = {}
+        files_to_names: Dict[pysam.AlignmentFile, str] = {}
         for i in range(n_subfiles):
             out_bam_name = out_prefix + '_%d.bam' % i
             open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)

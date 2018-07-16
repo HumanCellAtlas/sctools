@@ -18,9 +18,9 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 """
 
 import argparse
-from typing import Iterable, List
+from typing import Iterable, List, Dict
 
-from sctools import fastq, bam, metrics, count, consts
+from sctools import fastq, bam, metrics, count, consts, gtf
 
 
 class GenericPlatform:
@@ -272,9 +272,12 @@ class GenericPlatform:
         # assume bam file unless the file explicitly has a sam suffix
         open_mode = 'r' if args.bam_file.endswith('.sam') else 'rb'
 
+        # load gene names from the annotation file
+        gene_name_to_index: Dict[str, int] = gtf.extract_gene_names(args.gtf_annotation_file)
+
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
-            annotation_file=args.gtf_annotation_file,
+            gene_name_to_index=gene_name_to_index,
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
             gene_name_tag=args.gene_name_tag,

@@ -16,7 +16,7 @@ def files(request):
 def test_opens_file_reads_first_line(files):
     rd = gtf.Reader(files, 'r', header_comment_char='#')
     record = next(iter(rd))
-    assert isinstance(record, gtf.Record)
+    assert isinstance(record, gtf.GTFRecord)
 
 
 def test_opens_file_populates_fields_properly(files):

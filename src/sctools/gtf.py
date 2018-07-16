@@ -18,14 +18,14 @@ https://useast.ensembl.org/info/website/upload/gff.html
 
 import logging
 import string
-from typing import List, Dict, Generator, Iterable
+from typing import List, Dict, Generator, Iterable, Union
 
 from . import reader
 
 _logger = logging.getLogger(__name__)
 
 
-class Record:
+class GTFRecord:
     """Data class for storing and interacting with GTF records
 
     Subclassed to produce exon, transcript, and gene-specific record types.
@@ -222,7 +222,7 @@ class Reader(reader.Reader):
 
     def __iter__(self):
         for line in super().__iter__():
-            yield Record(line)
+            yield GTFRecord(line)
 
     def filter(self, retain_types: Iterable[str]) -> Generator:
         """Iterate over a GTF file, returning only record whose feature type is in retain_types.
@@ -253,7 +253,8 @@ def _resolve_multiple_gene_names(gene_name: str):
                     f'malformed GTF file.')
 
 
-def extract_gene_names(files='-', mode='r', header_comment_char='#') -> Dict[str, int]:
+def extract_gene_names(
+        files: Union[str, List[str]]='-', mode: str='r', header_comment_char: str='#') -> Dict[str, int]:
     """Extract gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence orders in the given file(s).
 

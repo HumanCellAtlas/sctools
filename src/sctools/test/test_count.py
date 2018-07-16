@@ -28,7 +28,7 @@ Notes
     * molecule barcode quality tag,
     * raw cell and molecule barcodes,
 
-  since at the moment of writing, the counting algorithm **only** relies on the tags.
+  At the time of writing, the counting algorithm **only** relies on the BAM tags.
 
 - SyntheticTaggedBAMGenerator generates four types of alignment records:
 
@@ -53,7 +53,7 @@ Notes
 import operator
 import os
 import tempfile
-from typing import Optional, List, Set, Tuple, Generator
+from typing import Optional, List, Set, Tuple, Dict, Generator
 
 import numpy as np
 import pysam
@@ -64,16 +64,21 @@ from sctools.count import CountMatrix
 
 # set the input and output directories
 _test_data_dir = os.path.join(os.path.split(__file__)[0], 'data')
-_test_annotation_file = os.path.join(_test_data_dir, 'chr1.gtf.gz')
+_test_annotation_file = os.path.join(_test_data_dir, 'chr1.30k_records.gtf.gz')
 
 # constants
-_test_num_cells = 100
-_test_max_genes = 50
+_test_num_cells = 50
+_test_max_genes = 20
 _test_gene_expression_rate = 5.0
-_test_num_duplicates = 100
-_test_num_missing_some_tags = 100
-_test_num_multiple_gene_alignments = 100
-_test_max_gene_hits_per_multiple_gene_alignments = 10
+_test_num_duplicates = 20
+_test_num_missing_some_tags = 20
+_test_num_multiple_gene_alignments = 20
+_test_max_gene_hits_per_multiple_gene_alignments = 5
+
+
+@pytest.fixture(scope='module')
+def gene_name_to_index() -> Dict[str, int]:
+    return gtf.extract_gene_names(_test_annotation_file)
 
 
 class AlignmentRecordTags:
@@ -105,8 +110,8 @@ class SyntheticTaggedBAMGenerator:
         number of real cells
     max-genes : int
         maximum number of genes to use to generate synthetic counts
-    annotation_file : str
-        annotation GTF file to fetch gene names from
+    gene_name_to_index : dict
+        a map from gene name to their count matrix index
     gene_expression_rate : float
         poisson rate at which each gene is expressed
     rng_seed : int
@@ -136,7 +141,7 @@ class SyntheticTaggedBAMGenerator:
     col_index_output_filename = OUTPUT_PREFIX + '_col_index.npy'
 
     def __init__(
-            self, num_cells: int, max_genes: int, annotation_file: str,
+            self, num_cells: int, max_genes: int, gene_name_to_index: Dict[str, int],
             gene_expression_rate: float, rng_seed: int = 777) -> None:
         self.num_cells = num_cells
         self.gene_expression_rate = gene_expression_rate
@@ -145,7 +150,7 @@ class SyntheticTaggedBAMGenerator:
         self.rng: np.random.RandomState = np.random.RandomState(seed=rng_seed)
 
         # generate gene names
-        self.all_gene_names = self._load_gene_names(annotation_file)
+        self.all_gene_names = [k for k, v in sorted(gene_name_to_index.items(), key=operator.itemgetter(1))]
         self.num_genes = len(self.all_gene_names)
         self.max_genes = max_genes
         assert max_genes <= self.num_genes, \
@@ -420,7 +425,8 @@ class SyntheticTaggedBAMGenerator:
                 return alignment
 
     def _generate_duplicate_alignment_tags(
-            self, num_duplicates: int, necessary_alignments_list: List[AlignmentRecordTags]) -> List[AlignmentRecordTags]:
+            self, num_duplicates: int, necessary_alignments_list: List[AlignmentRecordTags]) \
+            -> List[AlignmentRecordTags]:
         return self.rng.choice(necessary_alignments_list, size=num_duplicates).tolist()
 
     def _generate_incomplete_alignment_tags(self, num_missing_some_tags: int) -> List[AlignmentRecordTags]:
@@ -469,10 +475,6 @@ class SyntheticTaggedBAMGenerator:
                 [AlignmentRecordTags(random_necessary_cell_barcode, novel_molecule_barcode, gene_name)
                  for gene_name in gene_name_hits])
         return multiple_gene_alignment_tags_list
-
-    @staticmethod
-    def _load_gene_names(annotation_file: str) -> List[str]:
-        return [k for k, v in sorted(gtf.extract_gene_names(annotation_file).items(), key=operator.itemgetter(1))]
 
     def _generate_random_cell_barcode(self, length: int = 16):
         return self._generate_random_genomic_sequences(length)
@@ -562,13 +564,15 @@ def _get_sorted_count_matrix(count_matrix: np.ndarray, row_index: np.ndarray, co
 
 
 @pytest.mark.parametrize(
-    'alignment_sort_order', [bam.QueryNameSortOrder(), bam.CellMoleculeGeneQueryNameSortOrder()])
-def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder):
+    'alignment_sort_order',
+    [bam.QueryNameSortOrder(), bam.CellMoleculeGeneQueryNameSortOrder()],
+    ids=['query_name_sort_order', 'cell_molecule_gene_query_name_sort_order'])
+def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index):
     # instantiate a test data generator
     synthetic_data_generator = SyntheticTaggedBAMGenerator(
         _test_num_cells,
         _test_max_genes,
-        _test_annotation_file,
+        gene_name_to_index,
         _test_gene_expression_rate)
 
     _test_temp_dir = tempfile.TemporaryDirectory()
@@ -593,7 +597,7 @@ def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder):
             _test_temp_dir.name, SyntheticTaggedBAMGenerator.col_index_output_filename)
 
         # create CountMatrix from the synthetic bam
-        count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(test_bam_path, _test_annotation_file)
+        count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(test_bam_path, gene_name_to_index)
 
         # load the test counts matrix
         count_matrix_data_expected = np.load(test_count_matrix_path)

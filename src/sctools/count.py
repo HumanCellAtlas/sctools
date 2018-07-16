@@ -29,7 +29,7 @@ import pysam
 import scipy.sparse as sp
 from scipy.io import mmread
 
-from sctools import gtf, consts, bam
+from sctools import consts, bam
 
 
 class CountMatrix:
@@ -87,7 +87,7 @@ class CountMatrix:
     def from_sorted_tagged_bam(
             cls,
             bam_file: str,
-            annotation_file: str,
+            gene_name_to_index: Dict[str, int],
             cell_barcode_tag: str=consts.CELL_BARCODE_TAG_KEY,
             molecule_barcode_tag: str=consts.MOLECULE_BARCODE_TAG_KEY,
             gene_name_tag: str=consts.GENE_NAME_TAG_KEY,
@@ -132,8 +132,8 @@ class CountMatrix:
         gene_name_tag
             Tag that specifies the gene name for each read. Reads without this tag will be ignored
             (default = consts.GENE_NAME_TAG_KEY)
-        annotation_file : str
-            gtf annotation file that was used to create gene ID tags. Used to map genes to indices
+        gene_name_to_index : dict
+            A map from gene names to their counts matrix column index
         open_mode : {'r', 'rb'}, optional
             indicates that the passed file is a bam file ('rb') or sam file ('r') (default = 'rb').
 
@@ -174,7 +174,6 @@ class CountMatrix:
         """
 
         # map the gene from reach record to an index in the sparse matrix
-        gene_name_to_index: Dict[str, int] = gtf.extract_gene_names(annotation_file)
         n_genes = len(gene_name_to_index)
 
         # track which tuples (cell_barcode, molecule_barcode, gene_name) we've encountered so far
