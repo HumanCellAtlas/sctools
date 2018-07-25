@@ -1,11 +1,10 @@
-import os
-import pytest
 import glob
+import os
 
 import pysam
+import pytest
 
-from .. import bam, platform
-
+from .. import bam, platform, consts
 
 data_dir = os.path.split(__file__)[0] + '/data/'
 
@@ -86,7 +85,7 @@ def bamfile(request):
 def test_split_bam_raises_value_error_when_passed_bam_without_barcodes(bamfile):
     split_size = 0.02  # our test data is very small, 0.01mb = ~10kb, which should yield 5 files.
     with pytest.raises(RuntimeError):
-        bam.split(bamfile, 'test_output', 'CB', approx_mb_per_split=split_size)
+        bam.split(bamfile, 'test_output', consts.CELL_BARCODE_TAG_KEY, approx_mb_per_split=split_size)
 
 
 @pytest.fixture
@@ -103,7 +102,9 @@ def tagged_bam():
 
 def test_split_on_tagged_bam(tagged_bam):
     split_size = 0.005  # our test data is very small, this value should yield 3 files
-    outputs = bam.split(tagged_bam, 'test_output', 'CB', 'CR', approx_mb_per_split=split_size)
+    outputs = bam.split(
+        tagged_bam, 'test_output', consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY,
+        approx_mb_per_split=split_size)
     assert len(outputs) == 3
 
     # cleanup
@@ -114,7 +115,9 @@ def test_split_on_tagged_bam(tagged_bam):
 
 def test_split_with_large_chunk_size_generates_one_file(tagged_bam):
     split_size = 1024  # our test data is very small, this value should yield 1 file
-    outputs = bam.split(tagged_bam, 'test_output', 'CB', 'CR', approx_mb_per_split=split_size)
+    outputs = bam.split(
+        tagged_bam, 'test_output', consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY,
+        approx_mb_per_split=split_size)
     assert len(outputs) == 1
 
     # the file should be full size
@@ -130,8 +133,8 @@ def test_split_with_large_chunk_size_generates_one_file(tagged_bam):
 def test_split_with_raise_missing_true_raises_warning_without_cr_barcode_passed(tagged_bam):
     split_size = 1024  # our test data is very small, this value should yield 1 file
     with pytest.raises(RuntimeError):
-        outputs = bam.split(tagged_bam, 'test_output', 'CB', approx_mb_per_split=split_size,
-                            raise_missing=True)
+        outputs = bam.split(
+            tagged_bam, 'test_output', consts.CELL_BARCODE_TAG_KEY, approx_mb_per_split=split_size, raise_missing=True)
 
     # cleanup
     os.remove(tagged_bam)  # clean up
@@ -141,8 +144,8 @@ def test_split_with_raise_missing_true_raises_warning_without_cr_barcode_passed(
 
 def test_split_succeeds_with_raise_missing_false_and_no_cr_barcode_passed(tagged_bam):
     split_size = 1024  # our test data is very small, this value should yield 1 file
-    outputs = bam.split(tagged_bam, 'test_output', 'CB', approx_mb_per_split=split_size,
-                        raise_missing=False)
+    outputs = bam.split(
+        tagged_bam, 'test_output', consts.CELL_BARCODE_TAG_KEY, approx_mb_per_split=split_size, raise_missing=False)
 
     assert len(outputs) == 1
 

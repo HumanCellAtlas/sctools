@@ -97,13 +97,13 @@ class Reader:
             if all(isinstance(f, str) for f in files):
                 self._files = files
             else:
-                raise TypeError('all passed files must be type str')
+                raise TypeError('All passed files must be type str')
         else:
-            raise TypeError('files must be a string filename or a list of such names.')
+            raise TypeError('Files must be a string filename or a list of such names.')
 
         # set open mode:
         if mode not in {'r', 'rb'}:
-            raise ValueError('mode must be one of r, rb')
+            raise ValueError("Mode must be one of 'r', 'rb'")
         self._mode = mode
 
         if isinstance(header_comment_char, str) and mode == 'rb':

@@ -1,13 +1,12 @@
+import fileinput
+import math
 import os
 import tempfile
-import math
-import fileinput
 from typing import Callable
 
-import pytest
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+import pytest
 from sctools.metrics.gatherer import GatherGeneMetrics, GatherCellMetrics, MetricGatherer
 from sctools.metrics.merge import MergeCellMetrics, MergeGeneMetrics
 from sctools.platform import TenXV2
@@ -376,8 +375,6 @@ def test_single_read_evidence(metrics, key, expected_value):
     """
     observed = metrics[key].sum()
     assert observed == expected_value
-
-
 
 
 def split_metrics_file(metrics_file):

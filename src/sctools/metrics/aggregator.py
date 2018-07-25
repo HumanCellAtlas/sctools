@@ -33,12 +33,13 @@ sctools.metrics.writer
 
 """
 
-from typing import Iterable, Tuple, Counter, List, Sequence
 from collections import Counter
+from typing import Iterable, Tuple, Counter, List, Sequence
 
-import pysam
 import numpy as np
+import pysam
 
+from sctools import consts
 from sctools.stats import OnlineGaussianSufficientStatistic
 
 
@@ -59,8 +60,7 @@ class MetricAggregator:
         Number of reads that are categorized by 10x genomics cellranger as "noise". Refers to
         long polymers, or reads with high numbers of N (ambiguous) nucleotides
     perfect_molecule_barcodes : int
-        The number of reads with molecule barcodes that have no errors (cell barcode tag ``CB`` ==
-        raw barcode tag ``UB``)
+        The number of reads with molecule barcodes that have no errors (cell barcode tag == raw barcode tag)
     reads_mapped_exonic : int
         The number of reads for this entity that are mapped to exons
     reads_mapped_intronic : int
@@ -254,9 +254,10 @@ class MetricAggregator:
 
             self._molecule_barcode_fraction_bases_above_30.update(
                 self._quality_above_threshold(
-                    30, self._quality_string_to_numeric(record.get_tag('UY'))))
+                    30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY))))
 
-            self.perfect_molecule_barcodes += record.get_tag('UR') == record.get_tag('UB')
+            self.perfect_molecule_barcodes += (
+                record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
 
             self._genomic_reads_fraction_bases_quality_above_30.update(
                 self._quality_above_threshold(30, record.query_alignment_qualities))
@@ -275,19 +276,19 @@ class MetricAggregator:
             reference: int = record.reference_id
             self._fragment_histogram[reference, position, strand, tags] += 1
 
-            alignment_location = record.get_tag('XF')
-            if alignment_location == 'CODING':
+            alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
+            if alignment_location == consts.CODING_ALIGNMENT_LOCATION_TAG_VALUE:
                 self.reads_mapped_exonic += 1
-            elif alignment_location == 'INTRONIC':
+            elif alignment_location == consts.INTRONIC_ALIGNMENT_LOCATION_TAG_VALUE:
                 self.reads_mapped_intronic += 1
-            elif alignment_location == 'UTR':
+            elif alignment_location == consts.UTR_ALIGNMENT_LOCATION_TAG_VALUE:
                 self.reads_mapped_utr += 1
 
             # todo check if read maps outside window (needs gene model)
             # todo create distances from terminate side (needs gene model)
 
             # uniqueness
-            number_mappings = record.get_tag('NH')
+            number_mappings = record.get_tag(consts.NUMBER_OF_HITS_TAG_KEY)
             if number_mappings == 1:
                 self.reads_mapped_uniquely += 1
             else:
@@ -452,13 +453,14 @@ class CellMetrics(MetricAggregator):
         """
         self._cell_barcode_fraction_bases_above_30.update(
             self._quality_above_threshold(
-                30, self._quality_string_to_numeric(record.get_tag('CY'))))
+                30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY))))
 
-        self.perfect_cell_barcodes += record.get_tag('UR') == record.get_tag('UB')
+        self.perfect_cell_barcodes += (
+            record.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY) == record.get_tag(consts.CELL_BARCODE_TAG_KEY))
 
         try:
-            alignment_location = record.get_tag('XF')
-            if alignment_location == 'INTERGENIC':
+            alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
+            if alignment_location == consts.INTERGENIC_ALIGNMENT_LOCATION_TAG_VALUE:
                 self.reads_mapped_intergenic += 1
         except KeyError:
             self.reads_unmapped += 1

@@ -1,11 +1,12 @@
-from itertools import product
-from functools import partial
-import string
 import os
-import pytest
-from .. import fastq
-from ..reader import zip_readers
+import string
+from functools import partial
+from itertools import product
 
+import pytest
+
+from .. import fastq, consts
+from ..reader import zip_readers
 
 # set some useful globals for testing
 data_dir = os.path.split(__file__)[0] + '/data/'
@@ -193,19 +194,34 @@ def test_fields_populate_properly(reader_all_compressions):
 
 @pytest.fixture(scope='function')
 def embedded_barcode_generator():
-    cell_barcode = fastq.EmbeddedBarcode(start=0, end=16, quality_tag='CY', sequence_tag='CR')
-    molecule_barcode = fastq.EmbeddedBarcode(start=16, end=26, quality_tag='UY', sequence_tag='UR')
-    return fastq.EmbeddedBarcodeGenerator(data_dir + 'test_r1.fastq.gz',
-                                          [cell_barcode, molecule_barcode])
+    cell_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=16,
+        quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+    molecule_barcode = fastq.EmbeddedBarcode(
+        start=16,
+        end=26,
+        quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+    return fastq.EmbeddedBarcodeGenerator(
+        data_dir + 'test_r1.fastq.gz', [cell_barcode, molecule_barcode])
 
 
 @pytest.fixture(scope='function')
 def barcode_generator_with_corrected_cell_barcodes():
-    cell_barcode = fastq.EmbeddedBarcode(start=0, end=16, quality_tag='CY', sequence_tag='CR')
-    molecule_barcode = fastq.EmbeddedBarcode(start=16, end=26, quality_tag='UY', sequence_tag='UR')
+    cell_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=16,
+        quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+    molecule_barcode = fastq.EmbeddedBarcode(
+        start=16,
+        end=26,
+        quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
     return fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
-        data_dir + 'test_r1.fastq.gz', cell_barcode, data_dir + '1k-august-2016.txt',
-        [molecule_barcode])
+        data_dir + 'test_r1.fastq.gz', cell_barcode, data_dir + '1k-august-2016.txt', [molecule_barcode])
 
 
 def test_embedded_barcode_generator_produces_outputs_of_expected_size(embedded_barcode_generator):
@@ -218,21 +234,21 @@ def test_embedded_barcode_generator_produces_outputs_of_expected_size(embedded_b
         # note that all barcodes are strings and therefore should get 'Z' values
 
         # test cell tags
-        assert cell_seq[0] == 'CR'
+        assert cell_seq[0] == consts.RAW_CELL_BARCODE_TAG_KEY
         assert len(cell_seq[1]) == correct_cell_barcode_length
         assert all(v in 'ACGTN' for v in cell_seq[1])
         assert cell_seq[2] == 'Z'
-        assert cell_qual[0] == 'CY'
+        assert cell_qual[0] == consts.QUALITY_CELL_BARCODE_TAG_KEY
         assert len(cell_qual[1]) == correct_cell_barcode_length
         assert all(v in string.printable for v in cell_qual[1])
         assert cell_seq[2] == 'Z'
 
         # test umi tags
-        assert umi_seq[0] == 'UR'
+        assert umi_seq[0] == consts.RAW_MOLECULE_BARCODE_TAG_KEY
         assert len(umi_seq[1]) == correct_umi_length
         assert all(v in 'ACGTN' for v in umi_seq[1])
         assert umi_seq[2] == 'Z'
-        assert umi_qual[0] == 'UY'
+        assert umi_qual[0] == consts.QUALITY_MOLECULE_BARCODE_TAG_KEY
         assert len(umi_qual[1]) == correct_umi_length
         assert all(v in string.printable for v in umi_qual[1])
         assert umi_seq[2] == 'Z'
@@ -244,7 +260,7 @@ def test_corrects_barcodes(barcode_generator_with_corrected_cell_barcodes):
     success = False
     for barcode_sets in barcode_generator_with_corrected_cell_barcodes:
         for barcode_set in barcode_sets:
-            if barcode_set[0] == 'CB':
+            if barcode_set[0] == consts.CELL_BARCODE_TAG_KEY:
                 success = True
                 break
     assert success

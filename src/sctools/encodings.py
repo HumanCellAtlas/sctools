@@ -160,7 +160,7 @@ class TwoBit(Encoding):
                 return self.map_[byte]
             except KeyError:
                 if byte not in self.iupac_ambiguous:
-                    raise KeyError('%s is not a valid IUPAC nucleotide code' % chr(byte))
+                    raise KeyError(f'{chr(byte)} is not a valid IUPAC nucleotide code')
                 return random.randint(0, 3)
 
     encoding_map: TwoBitEncodingMap = TwoBitEncodingMap()
