@@ -17,6 +17,8 @@ iter_tag_groups                         function to iterate over reads by an arb
 iter_cell_barcodes                      wrapper for iter_tag_groups that iterates over cell barcode tags
 iter_genes                              wrapper for iter_tag_groups that iterates over gene tags
 iter_molecules                          wrapper for iter_tag_groups that iterates over molecule tags
+sort_by_tags_and_queryname              sort bam by given list of zero or more tags, followed by query name
+verify_sort                             verifies whether bam is correctly sorted by given list of tags, then query name
 
 Classes
 -------
@@ -24,7 +26,8 @@ SubsetAlignments                        class to extract reads specific to reque
 Tagger                                  class to add tags to sam/bam records from paired fastq records
 AlignmentSortOrder                      abstract class to represent alignment sort orders
 QueryNameSortOrder                      alignment sort order by query name
-CellMoleculeGeneQueryNameSortOrder      alignment sort order hierarchically cell > molecule > gene > query name
+TagSortableRecord                       class to facilitate sorting of pysam.AlignedSegments
+SortError                               error raised when sorting is incorrect
 
 References
 ----------
@@ -32,12 +35,13 @@ htslib : https://github.com/samtools/htslib
 
 """
 
+import functools
 import math
 import os
 import warnings
 from abc import abstractmethod
 from itertools import cycle
-from typing import Iterator, Generator, List, Dict, Union, Tuple, Callable, Any, Optional
+from typing import Iterator, Iterable, Generator, List, Dict, Union, Tuple, Callable, Any, Optional
 
 import pysam
 
@@ -464,29 +468,87 @@ class QueryNameSortOrder(AlignmentSortOrder):
         return 'query_name'
 
 
-class CellMoleculeGeneQueryNameSortOrder(AlignmentSortOrder):
-    """Hierarchical alignment record sort order (cell barcode >= molecule barcode >= gene name >= query name)."""
+@functools.total_ordering
+class TagSortableRecord(object):
+    """Wrapper for pysam.AlignedSegment that facilitates sorting by tags and query name."""
+
     def __init__(
             self,
-            cell_barcode_tag_key: str = consts.CELL_BARCODE_TAG_KEY,
-            molecule_barcode_tag_key: str = consts.MOLECULE_BARCODE_TAG_KEY,
-            gene_name_tag_key: str = consts.GENE_NAME_TAG_KEY) -> None:
-        assert cell_barcode_tag_key, "Cell barcode tag key can not be None"
-        assert molecule_barcode_tag_key, "Molecule barcode tag key can not be None"
-        assert gene_name_tag_key, "Gene name tag key can not be None"
-        self.cell_barcode_tag_key = cell_barcode_tag_key
-        self.molecule_barcode_tag_key = molecule_barcode_tag_key
-        self.gene_name_tag_key = gene_name_tag_key
+            tag_keys: Iterable[str],
+            tag_values: Iterable[str],
+            query_name: str,
+            record: pysam.AlignedSegment = None) -> None:
+        self.tag_keys = tag_keys
+        self.tag_values = tag_values
+        self.query_name = query_name
+        self.record = record
 
-    def _get_sort_key(self, alignment: pysam.AlignedSegment) -> Tuple[str, str, str, str]:
-        return (get_tag_or_default(alignment, self.cell_barcode_tag_key, default='N'),
-                get_tag_or_default(alignment, self.molecule_barcode_tag_key, default='N'),
-                get_tag_or_default(alignment, self.gene_name_tag_key, default='N'),
-                alignment.query_name)
+    @classmethod
+    def from_aligned_segment(cls, record: pysam.AlignedSegment, tag_keys: Iterable[str]) -> 'TagSortableRecord':
+        """Create a TagSortableRecord from a pysam.AlignedSegment and list of tag keys"""
+        assert record is not None
+        tag_values = [get_tag_or_default(record, key, '') for key in tag_keys]
+        query_name = record.query_name
+        return cls(tag_keys, tag_values, query_name, record)
 
-    @property
-    def key_generator(self) -> Callable[[pysam.AlignedSegment], Tuple[str, str, str, str]]:
-        return self._get_sort_key
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, TagSortableRecord):
+            return NotImplemented
+        self.__verify_tag_keys_match(other)
+        for (self_tag_value, other_tag_value) in zip(self.tag_values, other.tag_values):
+            if self_tag_value < other_tag_value:
+                return True
+            elif self_tag_value > other_tag_value:
+                return False
+        return self.query_name < other.query_name
+
+    def __eq__(self, other: object) -> bool:
+        # TODO: Add more error checking
+        if not isinstance(other, TagSortableRecord):
+            return NotImplemented
+        self.__verify_tag_keys_match(other)
+        for (self_tag_value, other_tag_value) in zip(self.tag_values, other.tag_values):
+            if self_tag_value != other_tag_value:
+                return False
+        return self.query_name == other.query_name
+
+    def __verify_tag_keys_match(self, other) -> None:
+        if self.tag_keys != other.tag_keys:
+            format_str = 'Cannot compare records using different tag lists: {0}, {1}'
+            raise ValueError(format_str.format(self.tag_keys, other.tag_keys))
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
     def __repr__(self) -> str:
-        return 'hierarchical__cell_molecule_gene_query_name'
+        format_str = 'TagSortableRecord(tags: {0}, tag_values: {1}, query_name: {2}'
+        return format_str.format(self.tag_keys, self.tag_values, self.query_name)
+
+
+def sort_by_tags_and_queryname(
+        records: Iterable[pysam.AlignedSegment],
+        tag_keys: Iterable[str]) -> Iterable[pysam.AlignedSegment]:
+    """Sorts the given bam records by the given tags, followed by query name.
+    If no tags are given, just sorts by query name.
+    """
+    tag_sortable_records = (TagSortableRecord.from_aligned_segment(r, tag_keys) for r in records)
+    sorted_records = sorted(tag_sortable_records)
+    aligned_segments = (r.record for r in sorted_records)
+    return aligned_segments
+
+
+def verify_sort(records: Iterable[TagSortableRecord], tag_keys: Iterable[str]) -> None:
+    """Raise AssertionError if the given records are not correctly sorted by the given tags and query name"""
+    # Setting tag values and query name to empty string ensures first record will never be less than old_record
+    old_record = TagSortableRecord(tag_keys=tag_keys, tag_values=['' for _ in tag_keys], query_name='', record=None)
+    i = 0
+    for record in records:
+        i += 1
+        if not record >= old_record:
+            msg = 'Records {0} and {1} are not in correct order:\n{1}:{2} \nis less than \n{0}:{3}'
+            raise SortError(msg.format(i - 1, i, record, old_record))
+        old_record = record
+
+
+class SortError(Exception):
+    pass

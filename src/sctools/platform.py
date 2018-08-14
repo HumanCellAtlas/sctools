@@ -18,8 +18,10 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 """
 
 import argparse
-from typing import Iterable, List, Dict
+from typing import Iterable, List, Dict, Optional, Sequence
+from itertools import chain
 
+import pysam
 from sctools import fastq, bam, metrics, count, consts, gtf
 
 
@@ -28,6 +30,10 @@ class GenericPlatform:
 
     Platform-Agnostic Methods
     -------------------------
+    tag_sort_bam():
+        sort a bam file by zero or more tags and then by queryname
+    verify_bam_sort():
+        verifies whether bam file is correctly sorted by given list of zero or more tags, then queryname
     split_bam()
         split a bam file into subfiles of equal size
     calculate_gene_metrics()
@@ -43,6 +49,94 @@ class GenericPlatform:
     merge_count_matrices()
         merge multiple csr-format count matrices into a single csr matrix
     """
+
+    @classmethod
+    def tag_sort_bam(cls, args: Iterable=None) -> int:
+        """Command line entrypoint for sorting a bam file by zero or more tags, followed by queryname.
+
+        Parameters
+        ----------
+        args : Iterable[str], optional
+            arguments list, for testing (see test/test_entrypoints.py for example). The default
+            value of None, when passed to `parser.parse_args` causes the parser to
+            read `sys.argv`
+
+        Returns
+        -------
+        return_call : 0
+            return call if the program completes successfully
+
+        """
+        description = 'Sorts bam by list of zero or more tags, followed by query name'
+        parser = argparse.ArgumentParser(description=description)
+        parser.add_argument(
+            '-i', '--input_bam', required=True,
+            help='input bamfile')
+        parser.add_argument(
+            '-o', '--output_bam', required=True,
+            help='output bamfile')
+        parser.add_argument('-t', '--tags', nargs='+', action='append',
+                            help='tag(s) to sort by, separated by space, e.g. -t CB GE UB')
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        tags = cls.get_tags(args.tags)
+        with pysam.AlignmentFile(args.input_bam, 'rb') as f:
+            header = f.header
+            records = f.fetch(until_eof=True)
+            sorted_records = bam.sort_by_tags_and_queryname(records, tags)
+        with pysam.AlignmentFile(args.output_bam, 'wb', header=header) as f:
+            for record in sorted_records:
+                f.write(record)
+
+        return 0
+
+    @classmethod
+    def verify_bam_sort(cls, args: Iterable=None) -> int:
+        """Command line entrypoint for verifying bam is properly sorted by zero or more tags, followed by queryname.
+
+        Parameters
+        ----------
+        args : Iterable[str], optional
+            arguments list, for testing (see test/test_entrypoints.py for example). The default
+            value of None, when passed to `parser.parse_args` causes the parser to
+            read `sys.argv`
+
+        Returns
+        -------
+        return_call : 0
+            return call if the program completes successfully
+
+        """
+        description = 'Verifies whether bam is sorted by the list of zero or more tags, followed by query name'
+        parser = argparse.ArgumentParser(description=description)
+        parser.add_argument(
+            '-i', '--input_bam', required=True,
+            help='input bamfile')
+        parser.add_argument('-t', '--tags', nargs='+', action='append',
+                            help='tag(s) to use to verify sorting, separated by space, e.g. -t CB GE UB')
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        tags = cls.get_tags(args.tags)
+        with pysam.AlignmentFile(args.input_bam, 'rb') as f:
+            aligned_segments = f.fetch(until_eof=True)
+            sortable_records = (bam.TagSortableRecord.from_aligned_segment(r, tags) for r in aligned_segments)
+            bam.verify_sort(sortable_records, tags)
+
+        print('{0} is correctly sorted by {1} and query name'.format(args.input_bam, tags))
+        return 0
+
+    @classmethod
+    def get_tags(cls, raw_tags: Optional[Sequence[str]]) -> Iterable[str]:
+        if raw_tags is None:
+            raw_tags = []
+        # Flattens into single list when tags specified like -t A -t B -t C
+        return [t for t in chain.from_iterable(raw_tags)]
 
     @classmethod
     def split_bam(cls, args: Iterable=None) -> int:

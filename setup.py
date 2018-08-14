@@ -44,6 +44,8 @@ setup(
                 'MergeCellMetrics = sctools.platform:GenericPlatform.merge_cell_metrics',
                 'CreateCountMatrix = sctools.platform:GenericPlatform.bam_to_count_matrix',
                 'MergeCountMatrices = sctools.platform:GenericPlatform.merge_count_matrices',
+                'TagSortBam = sctools.platform:GenericPlatform.tag_sort_bam',
+                'VerifyBamSort = sctools.platform:GenericPlatform.verify_bam_sort'
             ]
     },
     classifiers=CLASSIFIERS,

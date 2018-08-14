@@ -4,9 +4,10 @@ import tempfile
 
 import numpy as np
 import pysam
+import pytest
 import scipy.sparse as sp
 
-from sctools import platform, count, consts
+from sctools import bam, platform, count, consts
 
 data_dir = os.path.split(__file__)[0] + '/data/'
 
@@ -79,6 +80,92 @@ def test_split_bam():
 
     for f in glob.glob('test_tagged*'):
         os.remove(f)
+
+
+def test_tag_sort_bam():
+    args = [
+        '-i', data_dir + 'unsorted.bam',
+        '-o', 'test_sorted.bam',
+        '-t',
+        consts.CELL_BARCODE_TAG_KEY,
+        consts.GENE_NAME_TAG_KEY,
+        consts.MOLECULE_BARCODE_TAG_KEY]
+
+    return_call = platform.GenericPlatform.tag_sort_bam(args)
+    assert return_call == 0
+
+    tag_keys = [consts.CELL_BARCODE_TAG_KEY, consts.GENE_NAME_TAG_KEY, consts.MOLECULE_BARCODE_TAG_KEY]
+    with pysam.AlignmentFile('test_sorted.bam', 'rb') as f:
+        segments = f.fetch(until_eof=True)
+        tag_sortable_records = (bam.TagSortableRecord.from_aligned_segment(s, tag_keys) for s in segments)
+        bam.verify_sort(tag_sortable_records, tag_keys)
+
+    for f in glob.glob('test_sorted*'):
+        os.remove(f)
+
+
+def test_tag_sort_bam_dash_t_specified_multiple_times():
+    args = [
+        '-i', data_dir + 'unsorted.bam',
+        '-o', 'test_sorted.bam',
+        '-t', consts.CELL_BARCODE_TAG_KEY,
+        '-t', consts.GENE_NAME_TAG_KEY,
+        '-t', consts.MOLECULE_BARCODE_TAG_KEY]
+
+    return_call = platform.GenericPlatform.tag_sort_bam(args)
+    assert return_call == 0
+
+    tag_keys = [consts.CELL_BARCODE_TAG_KEY, consts.GENE_NAME_TAG_KEY, consts.MOLECULE_BARCODE_TAG_KEY]
+    with pysam.AlignmentFile('test_sorted.bam', 'rb') as f:
+        segments = f.fetch(until_eof=True)
+        tag_sortable_record_generator = (bam.TagSortableRecord.from_aligned_segment(s, tag_keys) for s in segments)
+        bam.verify_sort(tag_sortable_record_generator, tag_keys)
+
+    for f in glob.glob('test_sorted*'):
+        os.remove(f)
+
+
+def test_tag_sort_bam_no_tags():
+    args = [
+        '-i', data_dir + 'unsorted.bam',
+        '-o', 'test_sorted.bam']
+
+    return_call = platform.GenericPlatform.tag_sort_bam(args)
+    assert return_call == 0
+
+    tag_keys = []
+    with pysam.AlignmentFile('test_sorted.bam', 'rb') as f:
+        segments = f.fetch(until_eof=True)
+        tag_sortable_records = (bam.TagSortableRecord.from_aligned_segment(s, tag_keys) for s in segments)
+        bam.verify_sort(tag_sortable_records, tag_keys)
+
+    for f in glob.glob('test_sorted*'):
+        os.remove(f)
+
+
+def test_verify_bam_sort():
+    args = [
+        '-i', data_dir + 'cell-gene-umi-queryname-sorted.bam',
+        '-t',
+        consts.CELL_BARCODE_TAG_KEY,
+        consts.GENE_NAME_TAG_KEY,
+        consts.MOLECULE_BARCODE_TAG_KEY]
+
+    return_call = platform.GenericPlatform.verify_bam_sort(args)
+    assert return_call == 0
+
+
+def test_verify_bam_sort_raises_error_on_unsorted():
+    args = [
+        '-i', data_dir + 'unsorted.bam',
+        '-t',
+        consts.CELL_BARCODE_TAG_KEY,
+        consts.GENE_NAME_TAG_KEY,
+        consts.MOLECULE_BARCODE_TAG_KEY]
+
+    with pytest.raises(bam.SortError) as e:
+        platform.GenericPlatform.verify_bam_sort(args)
+    assert 'are not in correct order' in str(e)
 
 
 def test_count_merge():
