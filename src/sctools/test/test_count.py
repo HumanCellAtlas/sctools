@@ -53,7 +53,7 @@ Notes
 import operator
 import os
 import tempfile
-from typing import Optional, List, Set, Tuple, Dict, Generator
+from typing import Callable, Optional, List, Set, Tuple, Dict, Generator
 
 import numpy as np
 import pysam
@@ -98,6 +98,34 @@ class AlignmentRecordTags:
         return f'{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, ' \
                f'{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, ' \
                f'{consts.GENE_NAME_TAG_KEY}: {self.gene_name}'
+
+
+class CellMoleculeGeneQueryNameSortOrder(bam.AlignmentSortOrder):
+    """Hierarchical alignment record sort order (cell barcode >= molecule barcode >= gene name >= query name)."""
+    def __init__(
+            self,
+            cell_barcode_tag_key: str = consts.CELL_BARCODE_TAG_KEY,
+            molecule_barcode_tag_key: str = consts.MOLECULE_BARCODE_TAG_KEY,
+            gene_name_tag_key: str = consts.GENE_NAME_TAG_KEY) -> None:
+        assert cell_barcode_tag_key, "Cell barcode tag key can not be None"
+        assert molecule_barcode_tag_key, "Molecule barcode tag key can not be None"
+        assert gene_name_tag_key, "Gene name tag key can not be None"
+        self.cell_barcode_tag_key = cell_barcode_tag_key
+        self.molecule_barcode_tag_key = molecule_barcode_tag_key
+        self.gene_name_tag_key = gene_name_tag_key
+
+    def _get_sort_key(self, alignment: pysam.AlignedSegment) -> Tuple[str, str, str, str]:
+        return (bam.get_tag_or_default(alignment, self.cell_barcode_tag_key, default='N'),
+                bam.get_tag_or_default(alignment, self.molecule_barcode_tag_key, default='N'),
+                bam.get_tag_or_default(alignment, self.gene_name_tag_key, default='N'),
+                alignment.query_name)
+
+    @property
+    def key_generator(self) -> Callable[[pysam.AlignedSegment], Tuple[str, str, str, str]]:
+        return self._get_sort_key
+
+    def __repr__(self) -> str:
+        return 'hierarchical__cell_molecule_gene_query_name'
 
 
 class SyntheticTaggedBAMGenerator:
@@ -162,7 +190,7 @@ class SyntheticTaggedBAMGenerator:
     def generate_synthetic_bam_and_counts_matrix(
             self, output_path: str, num_duplicates: int, num_missing_some_tags: int,
             num_multiple_gene_alignments: int, max_gene_hits_per_multiple_gene_alignments: int,
-            alignment_sort_order: bam.AlignmentSortOrder = bam.CellMoleculeGeneQueryNameSortOrder()):
+            alignment_sort_order: bam.AlignmentSortOrder = CellMoleculeGeneQueryNameSortOrder()):
         """Generates synthetic count matrix and BAM file and writes them to disk.
 
         Parameters
@@ -565,7 +593,7 @@ def _get_sorted_count_matrix(count_matrix: np.ndarray, row_index: np.ndarray, co
 
 @pytest.mark.parametrize(
     'alignment_sort_order',
-    [bam.QueryNameSortOrder(), bam.CellMoleculeGeneQueryNameSortOrder()],
+    [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
     ids=['query_name_sort_order', 'cell_molecule_gene_query_name_sort_order'])
 def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index):
     # instantiate a test data generator
