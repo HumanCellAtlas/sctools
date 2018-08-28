@@ -22,7 +22,7 @@ from typing import Iterable, List, Dict, Optional, Sequence
 from itertools import chain
 
 import pysam
-from sctools import fastq, bam, metrics, count, consts, gtf
+from sctools import fastq, bam, metrics, count, consts, gtf, groups
 
 
 class GenericPlatform:
@@ -48,6 +48,8 @@ class GenericPlatform:
         construct a compressed sparse row count file from a tagged, aligned bam file
     merge_count_matrices()
         merge multiple csr-format count matrices into a single csr matrix
+    group_qc_outputs()
+        aggregate Picard, HISAT2 and RSME QC statisitics
     """
 
     @classmethod
@@ -418,8 +420,53 @@ class GenericPlatform:
         count_matrix.save(args.output_stem)
 
         return 0
-
-
+    
+    def group_qc_outputs() :
+        """Commandline entrypoint for parsing picard metrics files, hisat2 and rsem statistics log files.
+        Parameters
+        ----------
+        args:
+            
+        Returns
+        ----------
+        return: 0 
+            return if the program completes successfully.
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+                "-f",
+                "--file_names",
+                dest="file_names",
+                nargs='+',
+                required=True,
+                help="a list of files to be parsed out.")
+        
+        parser.add_argument(
+                "-o",
+                "--output_name",
+                dest="output_name",
+                required=True,
+                help="The output file name")
+        parser.add_argument(
+                "-t",
+                "--metrics-type",
+                dest="mtype",
+                required=True,
+                help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
+        args = parser.parse_args()
+        if args.mtype == "Picard":
+            AggregatePicardMetricsRow(args.file_names, args.output_name)
+        elif args.mtype == "PicardTable":
+            AggregatePicardMetricsTable(args.file_names, args.output_name)
+        elif args.mtype == "Core":
+            AggregateQCMetrics(args.file_names, args.output_name)
+        elif args.mtype == "HISAT2":
+            ParseHISATStats(args.file_names, args.output_name)
+        elif args.mtype == "RSEM":
+            ParseRSENStats(args.file_names, args.output_name)
+        else:
+            return 0
+    
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
 
