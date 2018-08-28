@@ -34,7 +34,12 @@ def AggregatePicardMetricsRow(filenames, output_name):
         # but only output PAIRED-READS/third line
         if class_name == "AlignmentSummaryMetrics":
             # only parse out pair reads
-            met = parsed['metrics']['contents'][2]
+            y = {}
+            x = parsed['metrics']['contents']
+            for m in x:
+                cat = m['CATEGORY']
+                y.update({k + '.' + cat: v for k, v in m.items() if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']})
+            met = y
         # sometimes(very rare), insertion metrics also return multiple lines
         # results to include TANDEM repeats. but we only output the first line.
         elif class_name == "InsertSizeMetrics":
@@ -49,7 +54,7 @@ def AggregatePicardMetricsRow(filenames, output_name):
             met = parsed['metrics']['contents']
         mets[cell_id].update({
                 k: met[k] for k in met if k not in
-                ['SAMPLE', 'LIBRARY', 'READ_GROUP']
+                ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
                 })
         df = pd.DataFrame.from_dict(mets, orient='columns')
         df.insert(0, 'Class', class_name)
