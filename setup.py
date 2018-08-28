@@ -48,7 +48,7 @@ setup(
                 'MergeCountMatrices = sctools.platform:GenericPlatform.merge_count_matrices',
                 'TagSortBam = sctools.platform:GenericPlatform.tag_sort_bam',
                 'VerifyBamSort = sctools.platform:GenericPlatform.verify_bam_sort',
-                'GroupQCs = sctools.platform.GenericPlatform.group_qc_outputs'
+                'GroupQCs = sctools.platform:GenericPlatform.group_qc_outputs'
             ]
     },
     classifiers=CLASSIFIERS,
