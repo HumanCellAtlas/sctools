@@ -426,7 +426,9 @@ class GenericPlatform:
         Parameters
         ----------
         args:
-            
+            file_names: array of files
+            output_name: prefix of output file name.
+            metrics_type: Picard, PicardTable, HISAT2, RSEM and Core.
         Returns
         ----------
         return: 0 
@@ -449,23 +451,23 @@ class GenericPlatform:
         parser.add_argument(
                 "-t",
                 "--metrics-type",
-                dest="mtype",
+                dest="metrics_type",
                 required=True,
                 help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
         args = parser.parse_args()
-        if args.mtype == "Picard":
-            groups.AggregatePicardMetricsRow(args.file_names, args.output_name)
-        elif args.mtype == "PicardTable":
-            groups.AggregatePicardMetricsTable(args.file_names, args.output_name)
-        elif args.mtype == "Core":
-            groups.AggregateQCMetrics(args.file_names, args.output_name)
-        elif args.mtype == "HISAT2":
-            groups.ParseHISATStats(args.file_names, args.output_name)
-        elif args.mtype == "RSEM":
-            groups.ParseRSENStats(args.file_names, args.output_name)
-        else:
-            return 0
+        if args.metrics_type == "Picard":
+            groups.aggregate_picard_metrics_by_row(args.file_names, args.output_name)
+        elif args.metrics_type == "PicardTable":
+            groups.aggregate_picard_metrics_by_table(args.file_names, args.output_name)
+        elif args.metrics_type == "Core":
+            groups.aggregate_qc_metrics(args.file_names, args.output_name)
+        elif args.metrics_type == "HISAT2":
+            groups.parse_hisat2_log(args.file_names, args.output_name)
+        elif args.metrics_type == "RSEM":
+            groups.parse_rsem_cnt(args.file_names, args.output_name)
+        return 0
 
+  
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
 
