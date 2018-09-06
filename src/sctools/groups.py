@@ -29,28 +29,27 @@ def aggregate_picard_metrics_by_row(file_names, output_name):
         class_name = parsed['metrics']['class'].split('.')[2]
         # Aignment metrics return multiple lines,
         # but only output PAIRED-READS/third line
+        contents = parsed['metrics']['contents']
         if class_name == "AlignmentSummaryMetrics":
             # parse out PE, R1 and R2
             rows = {}
-            contents = parsed['metrics']['contents']
             for m in contents:
                 cat = m['CATEGORY']
                 rows.update({k + '.' + cat: v for k, v in m.items() if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']})
-            met = rows
         # sometimes(very rare), insertion metrics also return multiple lines
         # results to include TANDEM repeats. but we only output the first line.
         elif class_name == "InsertSizeMetrics":
             # if the elemnet counts is less than 21,
             # it means insertion metrics returns multiple line results.
             if len(contents) < 21:
-                met = contents[0]
+                rows = contents[0]
             else:
-                met = contents
+                rows = contents
         else:
             # other metrics(so far) only return one line results.
-            met = contents
+            rows = contents
         metrics[cell_id].update({
-                k: met[k] for k in met if k not in
+                k: rows[k] for k in rows if k not in
                 ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
                 })
         df = pd.DataFrame.from_dict(metrics, orient='columns')
