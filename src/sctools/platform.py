@@ -450,7 +450,7 @@ class GenericPlatform:
                 help="The output file name")
         parser.add_argument(
                 "-t",
-                "--metrics-type",
+                "--metrics_type",
                 dest="metrics_type",
                 required=True,
                 help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
