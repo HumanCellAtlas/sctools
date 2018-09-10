@@ -78,7 +78,7 @@ def aggregate_picard_metrics_by_table(file_names, output_name):
 def aggregate_qc_metrics(file_names, output_name):
     """
     Append several metrics into one file. 
-    :param file_names: list of files, such as Pciard row metric, hisat2 metric
+    :param file_names: list of files, such as Picard row metric, hisat2 metric
     and rsem metric
     :param output_name: output file name without suffix.
     """
