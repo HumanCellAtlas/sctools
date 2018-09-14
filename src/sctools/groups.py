@@ -95,6 +95,9 @@ def parse_hisat2_log(file_names, output_name):
     to parse the hisat2 log file to return a set of alignment statistics, such as
     total reads as input, total alignments, total paired alignments, total unpaired
     alignments. 
+    The input file should have _qc or _rsem as suffix to indicate reference
+    used in alignment. _qc means HISAT2 alignment is genome reference based
+    _rsem indicates HISAT2 alignment is transcriptome based. 
     :param file_names: hisat2 log files
     :param output_name: output file name without suffix
     """
