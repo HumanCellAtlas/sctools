@@ -467,7 +467,7 @@ class GenericPlatform:
             groups.parse_rsem_cnt(args.file_names, args.output_name)
         return 0
 
-  
+
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
 
