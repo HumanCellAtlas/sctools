@@ -452,15 +452,16 @@ class GenericPlatform:
                 "-t",
                 "--metrics_type",
                 dest="metrics_type",
+                choices=['Picard', 'PicardTable', 'Core', 'HISAT2', 'RSEM'],
                 required=True,
                 help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
         args = parser.parse_args()
         if args.metrics_type == "Picard":
-            groups.aggregate_picard_metrics_by_row(args.file_names, args.output_name)
+            groups.write_aggregated_picard_metrics_by_row(args.file_names, args.output_name)
         elif args.metrics_type == "PicardTable":
-            groups.aggregate_picard_metrics_by_table(args.file_names, args.output_name)
+            groups.write_aggregated_picard_metrics_by_table(args.file_names, args.output_name)
         elif args.metrics_type == "Core":
-            groups.aggregate_qc_metrics(args.file_names, args.output_name)
+            groups.write_aggregated_qc_metrics(args.file_names, args.output_name)
         elif args.metrics_type == "HISAT2":
             groups.parse_hisat2_log(args.file_names, args.output_name)
         elif args.metrics_type == "RSEM":
