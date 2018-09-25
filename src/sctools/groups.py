@@ -13,8 +13,8 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of files
-        output_name: prefix of output file name.
+        file_names: array of files. the basename of inputs should be formated as 'samplename_qc'
+        output_name: prefix of output file name without extension.
     Returns
     ----------
         return: 0
@@ -65,8 +65,9 @@ def write_aggregated_picard_metrics_by_table(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of files.
-        output_name: prefix of output file name.
+        file_names: array of files.the basename of inputs should be formated as 'samplename_qc'
+        output_name: prefix of output file name. the basename of outputs include the Pciard
+        metrics class name.
     Returns
     ----------
         return: 0
@@ -106,8 +107,9 @@ def parse_hisat2_log(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of HISAT2 log files
-        output_name: prefix of output file name.
+        file_names: array of HISAT2 log files. Basename of file indicates the alignment references
+        '_qc' indicates the genome reference and '_rsem' indicates the transcriptome reference alignment.
+        output_name: prefix of output file name. 
     Returns
     ----------
         return: 0
@@ -139,7 +141,7 @@ def parse_rsem_cnt(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of RSEM cnt files
+        file_names: array of RSEM cnt files. The basename of inputs should be '_rsem'
         output_name: prefix of output file name.
     Returns
     ----------
