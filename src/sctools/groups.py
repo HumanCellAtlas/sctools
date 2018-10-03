@@ -66,7 +66,8 @@ def write_aggregated_picard_metrics_by_table(file_names, output_name):
     ----------
     args:
         file_names: array of files.the basename of inputs should be formated as 'samplename_qc'
-        output_name: prefix of output file name. the basename of outputs include the Pciard
+        output_name: prefix of output file name. the basename of outputs
+        includes the Pciard
         metrics class name.
     Returns
     ----------
