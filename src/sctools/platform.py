@@ -420,8 +420,9 @@ class GenericPlatform:
         count_matrix.save(args.output_stem)
 
         return 0
-    
-    def group_qc_outputs():
+
+    @classmethod
+    def group_qc_outputs(cls, args: Iterable[str]=None) -> int:
         """Commandline entrypoint for parsing picard metrics files, hisat2 and rsem statistics log files.
         Parameters
         ----------
@@ -455,7 +456,12 @@ class GenericPlatform:
                 choices=['Picard', 'PicardTable', 'Core', 'HISAT2', 'RSEM'],
                 required=True,
                 help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
-        args = parser.parse_args()
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
         if args.metrics_type == "Picard":
             groups.write_aggregated_picard_metrics_by_row(args.file_names, args.output_name)
         elif args.metrics_type == "PicardTable":

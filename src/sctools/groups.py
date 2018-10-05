@@ -28,7 +28,7 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
         metrics[cell_id] = {}
         parsed = picard.parse(file_name)
         class_name = parsed['metrics']['class'].split('.')[2]
-        # Aignment metrics return multiple lines,
+        # Alignment metrics return multiple lines,
         # but only output PAIRED-READS/third line
         contents = parsed['metrics']['contents']
         if class_name == "AlignmentSummaryMetrics":
@@ -67,8 +67,7 @@ def write_aggregated_picard_metrics_by_table(file_names, output_name):
     args:
         file_names: array of files.the basename of inputs should be formated as 'samplename_qc'
         output_name: prefix of output file name. the basename of outputs
-        includes the Pciard
-        metrics class name.
+        includes the Picard metrics class name.
     Returns
     ----------
         return: 0

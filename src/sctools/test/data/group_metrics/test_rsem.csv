@@ -1,0 +1,3 @@
+,alignable reads,filtered reads,multiple mapped,strand,total alignments,total reads,unalignable reads,uncertain reads,unique aligned
+Class,RSEM,RSEM,RSEM,RSEM,RSEM,RSEM,RSEM,RSEM,RSEM
+test,1844,0,192,3,6599,5479,3635,1484,1652
