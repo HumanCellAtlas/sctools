@@ -22,7 +22,7 @@ from typing import Iterable, List, Dict, Optional, Sequence
 from itertools import chain
 
 import pysam
-from sctools import fastq, bam, metrics, count, consts, gtf
+from sctools import fastq, bam, metrics, count, consts, gtf, groups
 
 
 class GenericPlatform:
@@ -48,6 +48,8 @@ class GenericPlatform:
         construct a compressed sparse row count file from a tagged, aligned bam file
     merge_count_matrices()
         merge multiple csr-format count matrices into a single csr matrix
+    group_qc_outputs()
+        aggregate Picard, HISAT2 and RSME QC statisitics
     """
 
     @classmethod
@@ -417,6 +419,59 @@ class GenericPlatform:
         count_matrix = count.CountMatrix.merge_matrices(args.input_prefixes)
         count_matrix.save(args.output_stem)
 
+        return 0
+
+    @classmethod
+    def group_qc_outputs(cls, args: Iterable[str]=None) -> int:
+        """Commandline entrypoint for parsing picard metrics files, hisat2 and rsem statistics log files.
+        Parameters
+        ----------
+        args:
+            file_names: array of files
+            output_name: prefix of output file name.
+            metrics_type: Picard, PicardTable, HISAT2, RSEM and Core.
+        Returns
+        ----------
+        return: 0 
+            return if the program completes successfully.
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+                "-f",
+                "--file_names",
+                dest="file_names",
+                nargs='+',
+                required=True,
+                help="a list of files to be parsed out.")
+        parser.add_argument(
+                "-o",
+                "--output_name",
+                dest="output_name",
+                required=True,
+                help="The output file name")
+        parser.add_argument(
+                "-t",
+                "--metrics_type",
+                dest="metrics_type",
+                choices=['Picard', 'PicardTable', 'Core', 'HISAT2', 'RSEM'],
+                required=True,
+                help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
+
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+
+        if args.metrics_type == "Picard":
+            groups.write_aggregated_picard_metrics_by_row(args.file_names, args.output_name)
+        elif args.metrics_type == "PicardTable":
+            groups.write_aggregated_picard_metrics_by_table(args.file_names, args.output_name)
+        elif args.metrics_type == "Core":
+            groups.write_aggregated_qc_metrics(args.file_names, args.output_name)
+        elif args.metrics_type == "HISAT2":
+            groups.parse_hisat2_log(args.file_names, args.output_name)
+        elif args.metrics_type == "RSEM":
+            groups.parse_rsem_cnt(args.file_names, args.output_name)
         return 0
 
 

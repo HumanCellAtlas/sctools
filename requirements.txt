@@ -5,3 +5,4 @@ pandas>=0.22.0
 pytest>=3.4.2
 pytest-cov>=2.5.1
 scipy>=1.0.1
+crimson>=0.3.0

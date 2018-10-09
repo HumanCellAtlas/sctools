@@ -8,6 +8,7 @@ from . import reader
 from . import metrics
 from . import platform
 from . import consts
+from . import groups
 from pkg_resources import get_distribution, DistributionNotFound
 
 

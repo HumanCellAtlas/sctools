@@ -33,6 +33,8 @@ setup(
         'sphinx_rtd_theme',
         'setuptools_scm',
         'scipy>=1.0.0',
+        'crimson>=0.3.0',
+
     ],
     entry_points={
             'console_scripts': [
@@ -45,7 +47,8 @@ setup(
                 'CreateCountMatrix = sctools.platform:GenericPlatform.bam_to_count_matrix',
                 'MergeCountMatrices = sctools.platform:GenericPlatform.merge_count_matrices',
                 'TagSortBam = sctools.platform:GenericPlatform.tag_sort_bam',
-                'VerifyBamSort = sctools.platform:GenericPlatform.verify_bam_sort'
+                'VerifyBamSort = sctools.platform:GenericPlatform.verify_bam_sort',
+                'GroupQCs = sctools.platform:GenericPlatform.group_qc_outputs'
             ]
     },
     classifiers=CLASSIFIERS,
