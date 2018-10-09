@@ -1,0 +1,3 @@
+,Aligned 0 time,Aligned 1 time,Aligned >1 times,Aligned concordantly 1 time,Aligned concordantly >1 times,Aligned concordantly or discordantly 0 time,Aligned discordantly 1 time,Overall alignment rate,Total pairs,Total unpaired reads
+Class,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G,HISAT2G
+test,478,240,106,4414,652,412,1,95.64%,5479,824
