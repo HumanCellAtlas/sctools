@@ -38,7 +38,8 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
             rows = {}
             for m in contents:
                 cat = m['CATEGORY']
-                rows.update({k + '.' + cat: v for k, v in m.items() if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']})
+                rows.update({k + '.' + cat: v for k, v in m.items() if k not in 
+                             ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']})
         # sometimes(very rare), insertion metrics also return multiple lines
         # results to include TANDEM repeats. but we only output the first line.
         elif class_name == "InsertSizeMetrics":
@@ -109,8 +110,9 @@ def parse_hisat2_log(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of HISAT2 log files. Basename of file indicates the alignment references
-        '_qc' indicates the genome reference and '_rsem' indicates the transcriptome reference alignment.
+        file_names: array of HISAT2 log files. Basename of file indicates 
+        the alignment references 'samplename_qc.log' indicates the genome reference and
+        'samplename_rsem.log' indicates the transcriptome reference alignment.
         output_name: prefix of output file name. 
     Returns
     ----------
@@ -143,7 +145,8 @@ def parse_rsem_cnt(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of RSEM cnt files. The basename of inputs should be '_rsem'
+        file_names: array of RSEM cnt files. The basename of inputs should be
+        'samplename_rsem.cnt'
         output_name: prefix of output file name.
     Returns
     ----------
