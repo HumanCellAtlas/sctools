@@ -13,7 +13,9 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of files. the basename of inputs should be formated as 'samplename_qc'
+        file_names: array of files. the basename of inputs should be formated
+        as 'samplename_qc',such as
+        "samplename_qc.alignment_summary_metrics.txt" and "samplename_qc.insert_size_metrics.txt"
         output_name: prefix of output file name without extension.
     Returns
     ----------
