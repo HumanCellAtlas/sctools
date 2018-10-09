@@ -1,9 +1,11 @@
 import os
 import csv
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from sctools import platform
 
+
 data_dir = os.path.split(__file__)[0] + '/data/group_metrics/'
+
 
 def check_parsed_metrics_csv(file_name, cell_id, class_name, expected_metrics):
     with open(file_name) as f:
@@ -18,6 +20,7 @@ def check_parsed_metrics_csv(file_name, cell_id, class_name, expected_metrics):
                 if idx > 0:
                     metric_name = column_headers[idx]
                     assert metrics[idx] == expected_metrics[metric_name]
+
 
 def test_write_aggregated_picard_metrics_by_row():
     args = [
