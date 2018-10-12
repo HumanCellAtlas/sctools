@@ -365,8 +365,8 @@ class CellMetrics(MetricAggregator):
     Aggregator that captures metric information about a cell by parsing all of the molecules in
     an experiment that were annotated with a specific cell barcode, as recorded in the ``CB`` tag.
 
-    Cell-specific Attributes
-    ------------------------
+    Attributes
+    ----------
     perfect_cell_barcodes : int
         The number of reads whose cell barcodes contain no errors (tag ``CB`` == ``CR``)
     reads_mapped_intergenic : int
@@ -391,7 +391,7 @@ class CellMetrics(MetricAggregator):
     Examples
     --------
     # todo implement me
-    
+
     See Also
     --------
     GeneMetrics
@@ -476,8 +476,8 @@ class GeneMetrics(MetricAggregator):
     Aggregator that captures metric information about a gene by parsing all of the molecules in
     an experiment that were annotated with a specific gene ID, as recorded in the ``GE`` tag.
 
-    Gene-specific Attributes
-    ------------------------
+    Attributes
+    ----------
     number_cells_detected_multiple : int
         The number of cells which observe more than one read of this gene
     number_cells_expressing : int
@@ -489,11 +489,11 @@ class GeneMetrics(MetricAggregator):
     Examples
     --------
     # todo implement me
-    
+
     See Also
     --------
     CellMetrics
-    
+
     """
 
     __doc__ += MetricAggregator.__doc__ + extra_docs
