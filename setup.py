@@ -32,6 +32,7 @@ setup(
         'sphinxcontrib-napoleon',
         'sphinx_rtd_theme',
         'setuptools_scm>=3.1.0',
+        'setuptools>=40.4.3',
         'scipy>=1.0.0',
         'crimson>=0.3.0',
 
