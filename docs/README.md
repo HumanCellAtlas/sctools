@@ -1,16 +1,23 @@
 # Build Docs 
-from the repository root, type: 
+
+1. Make sure you have [Sphinx](http://www.sphinx-doc.org/en/stable/) installed.
+2. Install the sctools package in advance following the instructions.
+3. From the current directory (/docs/), type:
 
 ```bash
-sphinx-apidoc -f -o docs/source/ ./
-sphinx-apidoc -f -o docs/source/ src/sctools
-sphinx-build -b html docs/source/ docs/build/
+make target
 ```
+where `target` is one of {html, epub, latex, ...}. For more details about the sphinx builders, check [here](http://www.sphinx-doc.org/en/master/man/sphinx-build.html)
 
 Note that there are still some bugs to be worked out. 
-- `autosummary` is not a known directive
-- `modules.rst` is not included in any toctree
-- `setup` module cannot be imported
-- `sctools.rst` is not included in any toctree
-- /Users/ajc/projects/humancellatlas/sctools/src/sctools/reader.py:docstring of sctools.reader.zip_readers:: WARNING: more than one target found for cross-reference 'Reader': sctools.fastq.Reader, sctools.gtf.Reader, sctools.reader.Reader
-- there are a bunch of unexpected section titles
+- There are warnings about: 
+```
+WARNING: [autosummary] failed to import 'sctools.metrics.CellMetrics': no module named sctools.metrics.CellMetrics
+WARNING: [autosummary] failed to import 'sctools.metrics.GeneMetrics': no module named sctools.metrics.GeneMetrics
+WARNING: [autosummary] failed to import 'sctools.metrics.MetricAggregatorBase': no module named sctools.metrics.MetricAggregatorBase
+```
+
+- There are a bunch of warnings: `WARNING: Unexpected section title.`
+- There are a bunch of warnings: `WARNING: toctree contains reference to nonexisting document`
+
+Most of the warnings can be solved by refactoring the docstrings and standardize the usages of `autosummary` later.
