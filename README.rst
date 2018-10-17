@@ -7,6 +7,10 @@ Single Cell Tools
 .. image:: https://codecov.io/gh/HumanCellAtlas/sctools/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/HumanCellAtlas/sctools
 
+.. image:: https://readthedocs.org/projects/sctools/badge/?version=latest
+  :target: https://sctools.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
 Single Cell Tools provides utilities for manipulating sequence data formats suitable for use in
 distributed systems analyzing large biological datasets.
 
