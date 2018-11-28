@@ -19,7 +19,7 @@ _Please ensure the following when opening a PR:_
 
 - [ ] This PR added or updated tests.
 - [ ] This PR updated docstrings or documentation.
-- [ ] This PR applied (WDL/Python) style guidelines, specifically followed NumPy style for this repo.
+- [ ] This PR applied Python style guidelines, specifically followed [NumPy style docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html) for this repo.
 - [ ] This PR considered generalizability beyond our own use case.
 
 ---
