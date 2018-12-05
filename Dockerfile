@@ -12,7 +12,7 @@ RUN pip3 install \
     pandas==0.20.3 \
     pysam==0.12.0.1 \
     requests==2.18.4 \
-    scipy==0.18.1 \
+    scipy==1.1.0 \
     tables==3.4.2
 
 WORKDIR usr/local/bin/sctools
