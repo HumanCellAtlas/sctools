@@ -31,14 +31,14 @@ os.makedirs(_test_dir, exist_ok=True)
 # samtools view <filename> | less
 
 # set the input files
-_gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
-_cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
-_cell_sorted_bam_missing_cell_barcodes = _data_dir + '/cell-sorted-missing-cb.bam'
+_gene_sorted_bam = os.path.join(_data_dir, 'small-gene-sorted.bam')
+_cell_sorted_bam = os.path.join(_data_dir, 'small-cell-sorted.bam')
+_cell_sorted_bam_missing_cell_barcodes = os.path.join(_data_dir, 'cell-sorted-missing-cb.bam')
 
 # specify filenames for temporary metrics outputs that are used in the following tests
-_gene_metric_output_file = _test_dir + '/gene_metrics.csv.gz'
-_cell_metric_output_file = _test_dir + '/cell_metrics.csv.gz'
-_cell_metric_output_file_missing_cell_barcodes = _test_dir + '/cell_metrics_missing_cb.csv.gz'
+_gene_metric_output_file = os.path.join(_test_dir, 'gene_metrics.csv.gz')
+_cell_metric_output_file = os.path.join(_test_dir, 'cell_metrics.csv.gz')
+_cell_metric_output_file_missing_cell_barcodes = os.path.join(_test_dir, 'cell_metrics_missing_cb.csv.gz')
 
 # run the gene metrics suite
 gene_gatherer = GatherGeneMetrics(_gene_sorted_bam, _gene_metric_output_file)
@@ -58,15 +58,17 @@ _cell_metrics_missing_cbs = pd.read_csv(_cell_metric_output_file_missing_cell_ba
 
 def test_calculate_cell_metrics_cli():
     """test the sctools cell metrics CLI invocation"""
+    cell_metrics_csv = os.path.join(_test_dir, 'cell_metrics.csv')
     return_call = TenXV2.calculate_cell_metrics(
-        args=['-i', _cell_sorted_bam, '-o', _test_dir + '/cell_metrics.csv'])
+        args=['-i', _cell_sorted_bam, '-o', cell_metrics_csv])
     assert return_call == 0
 
 
 def test_calculate_gene_metrics_cli():
     """test the sctools gene metrics CLI invocation"""
+    gene_metrics_csv = os.path.join(_test_dir, 'gene_metrics.csv')
     return_call = TenXV2.calculate_gene_metrics(
-        args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+        args=['-i', _gene_sorted_bam, '-o', gene_metrics_csv])
     assert return_call == 0
 
 
