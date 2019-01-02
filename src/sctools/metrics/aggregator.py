@@ -455,12 +455,11 @@ class CellMetrics(MetricAggregator):
             self._quality_above_threshold(
                 30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY))))
 
-        try:
-            self.perfect_cell_barcodes += (
-                record.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY) == record.get_tag(consts.CELL_BARCODE_TAG_KEY))
-        except KeyError:
-            # Exclude reads that do not have a CB tag from the perfect_cell_barcodes count
-            pass
+        # Exclude reads that do not have a CB tag from the perfect_cell_barcodes count
+        if record.has_tag(consts.CELL_BARCODE_TAG_KEY):
+            raw_cell_barcode_tag = record.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY)
+            cell_barcode_tag = record.get_tag(consts.CELL_BARCODE_TAG_KEY)
+            self.perfect_cell_barcodes += (raw_cell_barcode_tag == cell_barcode_tag)
 
         try:
             alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
