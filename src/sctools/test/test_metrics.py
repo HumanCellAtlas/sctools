@@ -31,12 +31,14 @@ os.makedirs(_test_dir, exist_ok=True)
 # samtools view <filename> | less
 
 # set the input files
-_gene_sorted_bam = _data_dir + '/small-gene-sorted.bam'
-_cell_sorted_bam = _data_dir + '/small-cell-sorted.bam'
+_gene_sorted_bam = os.path.join(_data_dir, 'small-gene-sorted.bam')
+_cell_sorted_bam = os.path.join(_data_dir, 'small-cell-sorted.bam')
+_cell_sorted_bam_missing_cell_barcodes = os.path.join(_data_dir, 'cell-sorted-missing-cb.bam')
 
 # specify filenames for temporary metrics outputs that are used in the following tests
-_gene_metric_output_file = _test_dir + '/gene_metrics.csv.gz'
-_cell_metric_output_file = _test_dir + '/cell_metrics.csv.gz'
+_gene_metric_output_file = os.path.join(_test_dir, 'gene_metrics.csv.gz')
+_cell_metric_output_file = os.path.join(_test_dir, 'cell_metrics.csv.gz')
+_cell_metric_output_file_missing_cell_barcodes = os.path.join(_test_dir, 'cell_metrics_missing_cb.csv.gz')
 
 # run the gene metrics suite
 gene_gatherer = GatherGeneMetrics(_gene_sorted_bam, _gene_metric_output_file)
@@ -48,18 +50,25 @@ cell_gatherer = GatherCellMetrics(_cell_sorted_bam, _cell_metric_output_file)
 cell_gatherer.extract_metrics()
 _cell_metrics = pd.read_csv(_cell_metric_output_file, index_col=0)
 
+# run the cell metrics suite
+cell_gatherer_missing_cbs = GatherCellMetrics(_cell_sorted_bam_missing_cell_barcodes, _cell_metric_output_file_missing_cell_barcodes)
+cell_gatherer_missing_cbs.extract_metrics()
+_cell_metrics_missing_cbs = pd.read_csv(_cell_metric_output_file_missing_cell_barcodes, index_col=0)
+
 
 def test_calculate_cell_metrics_cli():
     """test the sctools cell metrics CLI invocation"""
+    cell_metrics_csv = os.path.join(_test_dir, 'cell_metrics.csv')
     return_call = TenXV2.calculate_cell_metrics(
-        args=['-i', _cell_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+        args=['-i', _cell_sorted_bam, '-o', cell_metrics_csv])
     assert return_call == 0
 
 
 def test_calculate_gene_metrics_cli():
     """test the sctools gene metrics CLI invocation"""
+    gene_metrics_csv = os.path.join(_test_dir, 'gene_metrics.csv')
     return_call = TenXV2.calculate_gene_metrics(
-        args=['-i', _gene_sorted_bam, '-o', _test_dir + '/gene_metrics.csv'])
+        args=['-i', _gene_sorted_bam, '-o', gene_metrics_csv])
     assert return_call == 0
 
 
@@ -144,10 +153,20 @@ def test_metrics_highest_read_count(metrics, expected_value):
     (_gene_metrics, 300),  # todo this is 100%, we should mangle a few in the testing data
     (_cell_metrics, 655),
 ])
-def test_metrics_number_perfect_barcodes(metrics, expected_value):
-    """Test that each metric correctly identifies the number of perfect barcodes where CB == CR"""
+def test_metrics_number_perfect_molecule_barcodes(metrics, expected_value):
+    """Test that each metric correctly identifies the number of perfect molecule barcodes where UB == UR"""
     observed_perfect_barcodes = metrics['perfect_molecule_barcodes'].sum()
     assert observed_perfect_barcodes == expected_value
+
+
+@pytest.mark.parametrize('metrics, expected_value', [
+    (_cell_metrics, 650),
+    (_cell_metrics_missing_cbs, 12861)
+])
+def test_metrics_number_perfect_cell_barcodes(metrics, expected_value):
+    """Test that each metric correctly identifies the number of perfect cell barcodes where CB == CR"""
+    observed_perfect_cell_barcodes = metrics['perfect_cell_barcodes'].sum()
+    assert observed_perfect_cell_barcodes == expected_value
 
 
 @pytest.mark.parametrize('metrics, expected_value', [
