@@ -477,10 +477,8 @@ class GenericPlatform:
 
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
-
     This class defines several methods that are created as CLI tools when sctools is installed
     (see setup.py)
-
     Attributes
     ----------
     cell_barcode : fastq.EmbeddedBarcode
@@ -492,13 +490,11 @@ class TenXV2(GenericPlatform):
     sample_barcode : fastq.EmbeddedBarcode
         A data class that defines the start and end position of the sample barcode and the tags
         to assign the sequence and quality of the sample barcode
-
     Methods
     -------
     attach_barcodes()
         Attach barcodes from the forward (r1) and optionally index (i1) fastq files to the reverse
         (r2) bam file
-
     """
     # 10x contains three barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
@@ -526,10 +522,8 @@ class TenXV2(GenericPlatform):
             output_bamfile_name: str,
             tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator]) -> None:
         """Adds tags from fastq file(s) to a bam file.
-
         Attaches tags extracted from fastq files by `tag_generators`, attaches them to records from
         `input_bamfile_name`, and writes the result to `output_bamfile_name`
-
         Parameters
         ----------
         input_bamfile_name : str
@@ -538,20 +532,17 @@ class TenXV2(GenericPlatform):
             output bam
         tag_generators : Iterable[fastq.EmbeddedBarcodeGenerator]
             Iterable of generators that yield barcodes from fastq files
-
         """
         bam_tagger = bam.Tagger(input_bamfile_name)
         bam_tagger.tag(output_bamfile_name, tag_generators)
 
     @classmethod
     def _make_tag_generators(
-            cls, r1, i1=None, whitelist=None, no_cell_barcode=False, no_molecule_barcode=False) -> List[fastq.EmbeddedBarcodeGenerator]:
+            cls, r1, i1=None, whitelist=None) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
-
         Tag generators are iterators that run over fastq records, they extract and yield all of the
         barcodes embedded in each fastq record. For 10x, this means extracting the cell, umi, and
         optionally, the sample barcode.
-
         Parameters
         ----------
         r1 : str
@@ -560,56 +551,44 @@ class TenXV2(GenericPlatform):
             index fastq file
         whitelist : str, optional
             A file that contains a list of acceptable cell barcodes
-
         Returns
         -------
         tag_generators, List[EmbeddedBarcodeGenerator]
             EmbeddedBarcodeGenerators containing barcodes from 10x fastq records
-
         """
-
         tag_generators = []
-        barcode_args = {"fastq_files": r1}
+
+        # generator for cell and molecule barcodes
+        if whitelist is not None:
+            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+                fastq_files=r1,
+                embedded_cell_barcode=cls.cell_barcode,
+                whitelist=whitelist,
+                other_embedded_barcodes=[cls.molecule_barcode],
+            ))
+        else:
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
+                fastq_files=r1, embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode]))
 
         # generator for sample barcodes
         if i1 is not None:
-            barcode_args["embedded_barcodes"] = [cls.sample_barcode]
-            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
-        # generator for cell and molecule barcodes
-        if whitelist is not None:
-            barcode_args["whitelist"] = whitelist
-            if not no_cell_barcode:
-                barcode_args["embedded_cell_barcode"] = cls.cell_barcode
-            if not no_molecule_barcode:
-                barcode_args["other_embedded_barcodes"] = [cls.molecule_barcode]
-            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(**barcode_args))
-        else:
-            if not no_cell_barcode:
-                barcode_args["embedded_barcodes"] = [cls.cell_barcode]
-            if not no_molecule_barcode:
-                if not no_cell_barcode:
-                    barcode_args["embedded_barcodes"].append(cls.molecule_barcode)
-                else:
-                    barcode_args["embedded_barcodes"] = [cls.molecule_barcode]
-            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
+                fastq_files=i1, embedded_barcodes=[cls.sample_barcode]))
         return tag_generators
 
     @classmethod
     def attach_barcodes(cls, args=None):
         """Command line entrypoint for attaching barcodes to a bamfile.
-
         Parameters
         ----------
         args : Iterable[str], optional
             arguments list, for testing (see test/test_entrypoints.py for example). The default
             value of None, when passed to `parser.parse_args` causes the parser to
             read `sys.argv`
-
         Returns
         -------
         return_call : 0
             return call if the program completes successfully
-
         """
         parser = argparse.ArgumentParser()
         parser.add_argument(
@@ -639,150 +618,182 @@ class TenXV2(GenericPlatform):
 
 
 class Attach(GenericPlatform):
-    """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
 
-    This class defines several methods that are created as CLI tools when sctools is installed
-    (see setup.py)
-
-    Attributes
-    ----------
-    cell_barcode : fastq.EmbeddedBarcode
-        A data class that defines the start and end position of the cell barcode and the tags to
-        assign the sequence and quality of the cell barcode
-    molecule_barcode : fastq.EmbeddedBarcode
-        A data class that defines the start and end position of the molecule barcode and the tags
-        to assign the sequence and quality of the molecule barcode
-    sample_barcode : fastq.EmbeddedBarcode
-        A data class that defines the start and end position of the sample barcode and the tags
-        to assign the sequence and quality of the sample barcode
-
-    Methods
-    -------
-    attach_barcodes()
-        Attach barcodes from the forward (r1) and optionally index (i1) fastq files to the reverse
-        (r2) bam file
-
-    """
-
-
-    attach = TenXV2
-    @classmethod
-    def update_barcode_positions(cls, cell_barcode_start_pos, cell_barcode_length,
-                                 molecule_barcode_start_pos, molecule_barcode_length,
-                                 sample_barcode_start_pos, sample_barcode_length):
-        cls.attach.cell_barcode = fastq.EmbeddedBarcode(
-            start=cell_barcode_start_pos,
-            end=cell_barcode_start_pos + cell_barcode_length,
-            quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-            sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
-        cls.attach.molecule_barcode = fastq.EmbeddedBarcode(
-            start=cls.validate_barcode_input(molecule_barcode_start_pos, cell_barcode_start_pos + cell_barcode_length),
-            end=molecule_barcode_start_pos + molecule_barcode_length,
-            quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
-            sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY)
-        cls.attach.sample_barcode = fastq.EmbeddedBarcode(
-            start=sample_barcode_start_pos,
-            end=sample_barcode_start_pos + sample_barcode_length,
-            quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-            sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+    cell_barcode = {"start": 0,
+                     "end": 16,
+                     "quality_tag": consts.QUALITY_CELL_BARCODE_TAG_KEY,
+                     "sequence_tag": consts.RAW_CELL_BARCODE_TAG_KEY}
+    molecule_barcode = {"start": 16,
+                        "end": 26,
+                        "quality_tag": consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+                        "sequence_tag": consts.RAW_MOLECULE_BARCODE_TAG_KEY}
+    sample_barcode = {"start": 0,
+                     "end": 8,
+                     "quality_tag": consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
+                     "sequence_tag": consts.RAW_SAMPLE_BARCODE_TAG_KEY}
 
     @classmethod
-    def validate_barcode_input(cls, given_value, min_value):
+    def _get_embedded_barcode(cls, barcode):
+        return fastq.EmbeddedBarcode(**barcode)
+
+    @classmethod
+    def _update_barcode(cls,  barcode, barcode_start_pos=None, barcode_length=None):
+        if barcode_start_pos is not None:
+            cls._validate_barcode_start_pos(barcode_start_pos)
+            barcode["start"] = int(barcode_start_pos)
+
+        if barcode_length is not None:
+            cls._validate_barcode_length(barcode_length)
+            barcode["end"] =  barcode["start"] + int(barcode_length)
+
+        cls._validate_barcode_input(cls.molecule_barcode["start"], cls.cell_barcode["end"])
+
+    @classmethod
+    def _validate_barcode_input(cls, given_value, min_value):
         if given_value < min_value:
-            raise argparse.ArgumentTypeError("The value must be a number >= " + str(min_value))
+            raise argparse.ArgumentTypeError("Invalid barcode lenght/position")
         return given_value
 
     @classmethod
-    def validate_barcode_start_pos(cls, given_value):
-        return cls.validate_barcode_input(int(given_value), 0)
+    def _validate_barcode_start_pos(cls, given_value):
+        return cls._validate_barcode_input(int(given_value), 0)
 
     @classmethod
-    def validate_barcode_length(cls, given_value):
-        return cls.validate_barcode_input(int(given_value), 1)
+    def _validate_barcode_length(cls, given_value):
+        return cls._validate_barcode_input(int(given_value), 1)
+
+    @classmethod
+    def _tag_bamfile(cls,
+                     input_bamfile_name: str,
+                     output_bamfile_name: str,
+                     tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator]) -> None:
+        bam_tagger = bam.Tagger(input_bamfile_name)
+        bam_tagger.tag(output_bamfile_name, tag_generators)
+
+    @classmethod
+    def _make_tag_generators(cls,
+                             r1,
+                             i1=None,
+                             whitelist=None,
+                             no_cell_barcode=None,
+                             no_molecule_barcode=None) -> List[fastq.EmbeddedBarcodeGenerator]:
+        tag_generators = []
+        barcode_args = {"fastq_files": r1}
+
+        if i1 is not None:
+            barcode_args["embedded_barcodes"] = [cls._get_embedded_barcode(cls.sample_barcode)]
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
+
+        if whitelist is not None:
+            barcode_args["whitelist"] = whitelist
+            if no_cell_barcode is None:
+                barcode_args["embedded_cell_barcode"] = cls._get_embedded_barcode(cls.cell_barcode)
+            if no_molecule_barcode is None:
+                barcode_args["other_embedded_barcodes"] = cls._get_embedded_barcode(cls.molecule_barcode)
+
+        else:
+            if no_cell_barcode is None and no_molecule_barcode is None:
+                barcode_args["embedded_barcodes"] = [cls._get_embedded_barcode(cls.cell_barcode),
+                                                     cls._get_embedded_barcode(cls.molecule_barcode)]
+            elif no_cell_barcode is None:
+                barcode_args["embedded_barcodes"] = [cls._get_embedded_barcode(cls.cell_barcode)]
+            elif no_molecule_barcode is None:
+                barcode_args["embedded_barcodes"] = [cls._get_embedded_barcode(cls.molecule_barcode)]
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
+
+        return tag_generators
 
     @classmethod
     def attach_barcodes(cls, args=None):
-        """Command line entrypoint for attaching barcodes to a bamfile.
 
-        Parameters
-        ----------
-        args : Iterable[str], optional
-            arguments list, for testing (see test/test_entrypoints.py for example). The default
-            value of None, when passed to `parser.parse_args` causes the parser to
-            read `sys.argv`
-
-        Returns
-        -------
-        return_call : 0
-            return call if the program completes successfully
-
-        """
         parser = argparse.ArgumentParser()
-        parser.add_argument(
-            '--r1', required=True,
-            help='read 1 fastq file for a 10x genomics v2 experiment')
-        parser.add_argument(
-            '--u2', required=True,
-            help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
-                 'using picard FastqToSam')
-        parser.add_argument(
-            '--i1', default=None,
-            help='(optional) i7 index fastq file for a 10x genomics experiment')
-        parser.add_argument('-o', '--output-bamfile', required=True,
+        parser.add_argument('--r1',
+                            required=True,
+                            help='read 1 fastq file for a 10x genomics v2 experiment')
+        parser.add_argument('--u2',
+                            required=True,
+                            help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
+                                 'using picard FastqToSam')
+        parser.add_argument('-o',
+                            '--output-bamfile',
+                            required=True,
                             help='filename for tagged bam')
-        parser.add_argument('-w', '--whitelist', default=None,
+        parser.add_argument('-w',
+                            '--whitelist',
+                            default=None,
                             help='optional cell barcode whitelist. If provided, corrected barcodes '
                                  'will also be output when barcodes are observed within 1ED of a '
                                  'whitelisted barcode')
-        parser.add_argument("--cell-barcode-start-position",
-                            dest="cell_barcode_start_pos",
-                            default=0,
-                            help='the user defined start position, in base pairs, of the cell barcode',
-                            type=cls.validate_barcode_start_pos)
-        parser.add_argument("--cell-barcode-length",
-                            dest="cell_barcode_length",
-                            default=16,
-                            help='the user defined length, in base pairs, of the cell barcode',
-                            type=cls.validate_barcode_length)
+
+        parser.add_argument('--i1',
+                            default=None,
+                            help='(optional) i7 index fastq file for a 10x genomics experiment')
+        known_args = parser.parse_known_args()[0]
+        if known_args.i1 is not None:
+            parser.add_argument("--sample-barcode-start-position",
+                                dest="sample_barcode_start_pos",
+                                default=None,
+                                help='the user defined start position (base pairs) of the sample barcode',
+                                type=cls._validate_barcode_start_pos)
+            parser.add_argument("--sample-barcode-length",
+                                dest="sample_barcode_length",
+                                default=16,
+                                help='the user defined length (base pairs) of the sample barcode',
+                                type=cls._validate_barcode_length)
+
         parser.add_argument('--no-cell-barcode',
                             dest="no_cell_barcode",
+                            default=None,
                             help="do no not tag the bam file with a cell barcode",
                             action='store_true')
-        parser.add_argument("--molecule-barcode-start-position",
-                            dest="molecule_barcode_start_pos",
-                            default=16,
-                            help='the user defined start position, in base pairs, of the molecule barcode',
-                            type=cls.validate_barcode_start_pos)
-        parser.add_argument("--molecule-barcode-length",
-                            dest="molecule_barcode_length",
-                            default=10,
-                            help='the user defined length, in base pairs, of the molecule barcode',
-                            type=cls.validate_barcode_length)
+        known_args = parser.parse_known_args()[0]
+        if known_args.no_cell_barcode is None:
+            parser.add_argument("--cell-barcode-start-position",
+                                dest="cell_barcode_start_pos",
+                                default=None,
+                                help='the user defined start position, in base pairs, of the cell barcode',
+                                type=cls._validate_barcode_start_pos)
+            parser.add_argument("--cell-barcode-length",
+                                dest="cell_barcode_length",
+                                default=None,
+                                help='the user defined length, in base pairs, of the cell barcode',
+                                type=cls._validate_barcode_length)
+
         parser.add_argument('--no-molecule-barcode',
                             dest="no_molecule_barcode",
+                            default=None,
                             help="do no not tag the bam file with a molecule barcode",
                             action='store_true')
-        parser.add_argument("--sample-barcode-start-position",
-                            dest="sample_barcode_start_pos",
-                            default=0,
-                            help='the user defined start position (base pairs) of the sample barcode',
-                            type=cls.validate_barcode_start_pos)
-        parser.add_argument("--sample-barcode-length",
-                            dest="sample_barcode_length",
-                            default=16,
-                            help='the user defined length (base pairs) of the sample barcode',
-                            type=cls.validate_barcode_length)
+        known_args = parser.parse_known_args()[0]
+        if known_args.no_molecule_barcode is None:
+            parser.add_argument("--molecule-barcode-start-position",
+                                dest="molecule_barcode_start_pos",
+                                default=16,
+                                help='the user defined start position, in base pairs, of the molecule barcode',
+                                type=cls._validate_barcode_start_pos)
+            parser.add_argument("--molecule-barcode-length",
+                                dest="molecule_barcode_length",
+                                default=10,
+                                help='the user defined length, in base pairs, of the molecule barcode',
+                                type=cls._validate_barcode_length)
 
         if args is not None:
             args = parser.parse_args(args)
-            tag_generators = cls.attach._make_tag_generators(args.r1, args.i1, args.whitelist)
+            tag_generators = cls._make_tag_generators(args.r1, args.i1, args.whitelist)
         else:
             args = parser.parse_args()
-            cls.update_barcode_positions(args.cell_barcode_start_pos, args.cell_barcode_length,
-                                         args.molecule_barcode_start_pos, args.molecule_barcode_length,
-                                         args.sample_barcode_start_pos, args.sample_barcode_length)
-            tag_generators = cls.attach._make_tag_generators(args.r1, args.i1, args.whitelist, args.no_cell_barcode, args.no_molecule_barcode)
-        cls.attach._tag_bamfile(args.u2, args.output_bamfile, tag_generators)
+            if args.i1 is not None:
+                cls._update_barcode(cls.sample_barcode, args.sample_barcode_start_pos, args.sample_barcode_length)
+            if args.no_cell_barcode is None:
+                cls._update_barcode(cls.cell_barcode, args.cell_barcode_start_pos, args.cell_barcode_length)
+            if args.no_molecule_barcode is None:
+                cls._update_barcode(cls.molecule_barcode, args.molecule_barcode_start_pos, args.molecule_barcode_length)
+            tag_generators = cls._make_tag_generators(args.r1,
+                                                      args.i1,
+                                                      args.whitelist,
+                                                      args.no_cell_barcode,
+                                                      args.no_molecule_barcode)
+        cls._tag_bamfile(args.u2, args.output_bamfile, tag_generators)
 
         return 0
 
