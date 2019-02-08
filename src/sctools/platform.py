@@ -477,8 +477,10 @@ class GenericPlatform:
 
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
+
     This class defines several methods that are created as CLI tools when sctools is installed
     (see setup.py)
+
     Attributes
     ----------
     cell_barcode : fastq.EmbeddedBarcode
@@ -490,11 +492,13 @@ class TenXV2(GenericPlatform):
     sample_barcode : fastq.EmbeddedBarcode
         A data class that defines the start and end position of the sample barcode and the tags
         to assign the sequence and quality of the sample barcode
+
     Methods
     -------
     attach_barcodes()
         Attach barcodes from the forward (r1) and optionally index (i1) fastq files to the reverse
         (r2) bam file
+
     """
     # 10x contains three barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
@@ -522,8 +526,10 @@ class TenXV2(GenericPlatform):
             output_bamfile_name: str,
             tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator]) -> None:
         """Adds tags from fastq file(s) to a bam file.
+
         Attaches tags extracted from fastq files by `tag_generators`, attaches them to records from
         `input_bamfile_name`, and writes the result to `output_bamfile_name`
+
         Parameters
         ----------
         input_bamfile_name : str
@@ -532,6 +538,7 @@ class TenXV2(GenericPlatform):
             output bam
         tag_generators : Iterable[fastq.EmbeddedBarcodeGenerator]
             Iterable of generators that yield barcodes from fastq files
+
         """
         bam_tagger = bam.Tagger(input_bamfile_name)
         bam_tagger.tag(output_bamfile_name, tag_generators)
@@ -540,9 +547,11 @@ class TenXV2(GenericPlatform):
     def _make_tag_generators(
             cls, r1, i1=None, whitelist=None) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
+
         Tag generators are iterators that run over fastq records, they extract and yield all of the
         barcodes embedded in each fastq record. For 10x, this means extracting the cell, umi, and
         optionally, the sample barcode.
+
         Parameters
         ----------
         r1 : str
@@ -551,10 +560,12 @@ class TenXV2(GenericPlatform):
             index fastq file
         whitelist : str, optional
             A file that contains a list of acceptable cell barcodes
+
         Returns
         -------
         tag_generators, List[EmbeddedBarcodeGenerator]
             EmbeddedBarcodeGenerators containing barcodes from 10x fastq records
+
         """
         tag_generators = []
 
@@ -579,16 +590,19 @@ class TenXV2(GenericPlatform):
     @classmethod
     def attach_barcodes(cls, args=None):
         """Command line entrypoint for attaching barcodes to a bamfile.
+
         Parameters
         ----------
         args : Iterable[str], optional
             arguments list, for testing (see test/test_entrypoints.py for example). The default
             value of None, when passed to `parser.parse_args` causes the parser to
+
             read `sys.argv`
         Returns
         -------
         return_call : 0
             return call if the program completes successfully
+            
         """
         parser = argparse.ArgumentParser()
         parser.add_argument(
