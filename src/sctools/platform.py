@@ -597,7 +597,7 @@ class TenXV2(GenericPlatform):
             arguments list, for testing (see test/test_entrypoints.py for example). The default
             value of None, when passed to `parser.parse_args` causes the parser to
             read `sys.argv`
-            
+
         Returns
         -------
         return_call : 0
