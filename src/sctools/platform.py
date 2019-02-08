@@ -596,13 +596,13 @@ class TenXV2(GenericPlatform):
         args : Iterable[str], optional
             arguments list, for testing (see test/test_entrypoints.py for example). The default
             value of None, when passed to `parser.parse_args` causes the parser to
-
             read `sys.argv`
+            
         Returns
         -------
         return_call : 0
             return call if the program completes successfully
-            
+
         """
         parser = argparse.ArgumentParser()
         parser.add_argument(
