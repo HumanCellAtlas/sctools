@@ -691,6 +691,7 @@ class Attach(GenericPlatform):
                 barcode_args["embedded_barcodes"] = [cls.cell_barcode]
             elif cls.molecule_barcode:
                 barcode_args["embedded_barcodes"] = [cls.molecule_barcode]
+            print(barcode_args)
             tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
 
         return tag_generators
@@ -769,19 +770,19 @@ class Attach(GenericPlatform):
 
         if args.cell_barcode_length:
             cls.cell_barcode = cls._get_barcode(args.cell_barcode_start_pos,
-                                                args.cell_barcode_length,
+                                                args.cell_barcode_start_pos + args.cell_barcode_length,
                                                 consts.QUALITY_CELL_BARCODE_TAG_KEY,
                                                 consts.RAW_CELL_BARCODE_TAG_KEY)
         if args.molecule_barcode_length:
             cls.molecule_barcode = cls._get_barcode(args.molecule_barcode_start_pos,
-                                                args.molecule_barcode_length,
-                                                consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-                                                consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+                                                    args.molecule_barcode_start_pos + args.molecule_barcode_length,
+                                                    consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+                                                    consts.RAW_MOLECULE_BARCODE_TAG_KEY)
         if args.sample_barcode_length:
             cls.sample_barcode = cls._get_barcode(args.sample_barcode_start_pos,
-                                                    args.sample_barcode_length,
-                                                    consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
-                                                    consts.RAW_SAMPLE_BARCODE_TAG_KEY)
+                                                  args.sample_barcode_start_pos + args.sample_barcode_length,
+                                                  consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
+                                                  consts.RAW_SAMPLE_BARCODE_TAG_KEY)
 
         tag_generators = cls._make_tag_generators(args.r1, args.i1, args.whitelist)
         cls._tag_bamfile(args.u2, args.output_bamfile, tag_generators)
