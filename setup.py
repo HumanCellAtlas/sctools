@@ -37,7 +37,7 @@ setup(
     ],
     entry_points={
             'console_scripts': [
-                'AttachBarcodes = sctools.platform:Attach.attach_barcodes',
+                'AttachBarcodes = sctools.platform:BarcodePlatform.attach_barcodes',
                 'Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes',
                 'SplitBam = sctools.platform:GenericPlatform.split_bam',
                 'CalculateGeneMetrics = sctools.platform:GenericPlatform.calculate_gene_metrics',

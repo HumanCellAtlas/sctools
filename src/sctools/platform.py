@@ -631,25 +631,30 @@ class TenXV2(GenericPlatform):
         return 0
 
 
-class Attach(GenericPlatform):
+class BarcodePlatform(GenericPlatform):
 
     cell_barcode = None
     molecule_barcode = None
     sample_barcode = None
 
     @classmethod
-    def _get_barcode(cls, barcode_start_pos, barcode_length, barcode_quality_tag, barcode_sequence_tag):
-        barcode = {"start": barcode_start_pos,
-                   "end": barcode_length,
-                   "quality_tag": barcode_quality_tag,
-                   "sequence_tag": barcode_sequence_tag}
-        return fastq.EmbeddedBarcode(**barcode)
-
-    @classmethod
     def _validate_barcode_input(cls, given_value, min_value):
         if given_value < min_value:
             raise argparse.ArgumentTypeError("Invalid barcode length/position")
         return given_value
+
+    @classmethod
+    def _validate_barcode_args(cls, args):
+        # check that both the barcode length and position are given as arguments
+        if ((bool(args.cell_barcode_start_pos) or args.cell_barcode_start_pos == 0) != bool(args.cell_barcode_length) or
+            (bool(args.molecule_barcode_start_pos) or args.molecule_barcode_start_pos == 0) != bool(args.molecule_barcode_length) or
+            (bool(args.sample_barcode_start_pos) or args.sample_barcode_start_pos == 0) != bool(args.sample_barcode_length)):
+            argparse.ArgumentError("Invalid barocde pos/length arguments, barcode start pos and barcode length must be specified together")
+
+        if args.i1 is None and args.sample_barcode_length:
+            argparse.ArgumentError("An i7 index fastq file must be given to attach a sample barcode")
+
+        return args
 
     @classmethod
     def _validate_barcode_start_pos(cls, given_value):
@@ -682,16 +687,10 @@ class Attach(GenericPlatform):
                 barcode_args["embedded_cell_barcode"] = cls.cell_barcode
             if cls.molecule_barcode:
                 barcode_args["other_embedded_barcodes"] = cls.molecule_barcode
+            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(**barcode_args))
 
         else:
-            if cls.cell_barcode and cls.molecule_barcode:
-                barcode_args["embedded_barcodes"] = [cls.cell_barcode,
-                                                     cls.molecule_barcode]
-            elif cls.cell_barcode:
-                barcode_args["embedded_barcodes"] = [cls.cell_barcode]
-            elif cls.molecule_barcode:
-                barcode_args["embedded_barcodes"] = [cls.molecule_barcode]
-            print(barcode_args)
+            barcode_args["embedded_barcodes"] = [barcode for barcode in [cls.cell_barcode, cls.molecule_barcode] if barcode]
             tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
 
         return tag_generators
@@ -701,10 +700,10 @@ class Attach(GenericPlatform):
         parser = argparse.ArgumentParser()
         parser.add_argument('--r1',
                             required=True,
-                            help='read 1 fastq file for a 10x genomics v2 experiment')
+                            help='read 1 fastq file')
         parser.add_argument('--u2',
                             required=True,
-                            help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
+                            help='unaligned bam, can be converted from fastq read 2'
                                  'using picard FastqToSam')
         parser.add_argument('-o',
                             '--output-bamfile',
@@ -718,7 +717,7 @@ class Attach(GenericPlatform):
                                  'whitelisted barcode')
         parser.add_argument('--i1',
                             default=None,
-                            help='(optional) i7 index fastq file for a 10x genomics experiment')
+                            help='(optional) i7 index fastq file')
         parser.add_argument("--sample-barcode-start-position",
                             dest="sample_barcode_start_pos",
                             default=None,
@@ -754,35 +753,27 @@ class Attach(GenericPlatform):
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
+        cls._validate_barcode_args(args)
 
-        if ((bool(args.cell_barcode_start_pos) or args.cell_barcode_start_pos == 0)
-                != bool(args.cell_barcode_length) or
-            (bool(args.molecule_barcode_start_pos) or args.molecule_barcode_start_pos == 0)
-                != bool(args.molecule_barcode_length) or
-            (bool(args.sample_barcode_start_pos) or args.sample_barcode_start_pos == 0)
-                != bool(args.sample_barcode_length)):
-            argparse.ArgumentError("Invalid barocde pos/length arguments, barcode start pos and barcode length must be specified together")
-        if args.i1 is None and args.sample_barcode_length:
-            argparse.ArgumentError("An i7 index fastq file must be given to attach a sample barcode")
         if args.cell_barcode_length and args.molecule_barcode_length:
             cls._validate_barcode_input(args.molecule_barcode_start_pos,
                                         args.cell_barcode_start_pos + args.cell_barcode_length)
 
         if args.cell_barcode_length:
-            cls.cell_barcode = cls._get_barcode(args.cell_barcode_start_pos,
-                                                args.cell_barcode_start_pos + args.cell_barcode_length,
-                                                consts.QUALITY_CELL_BARCODE_TAG_KEY,
-                                                consts.RAW_CELL_BARCODE_TAG_KEY)
+            cls.cell_barcode = fastq.EmbeddedBarcode(start=args.cell_barcode_start_pos,
+                                                     end=args.cell_barcode_start_pos + args.cell_barcode_length,
+                                                     quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+                                                     sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
         if args.molecule_barcode_length:
-            cls.molecule_barcode = cls._get_barcode(args.molecule_barcode_start_pos,
-                                                    args.molecule_barcode_start_pos + args.molecule_barcode_length,
-                                                    consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-                                                    consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+            cls.molecule_barcode = fastq.EmbeddedBarcode(start=args.molecule_barcode_start_pos,
+                                                         end=args.molecule_barcode_start_pos + args.molecule_barcode_length,
+                                                         quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+                                                         sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
         if args.sample_barcode_length:
-            cls.sample_barcode = cls._get_barcode(args.sample_barcode_start_pos,
-                                                  args.sample_barcode_start_pos + args.sample_barcode_length,
-                                                  consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
-                                                  consts.RAW_SAMPLE_BARCODE_TAG_KEY)
+            cls.sample_barcode = fastq.EmbeddedBarcode(start=args.sample_barcode_start_pos,
+                                                       end=args.sample_barcode_start_pos + args.sample_barcode_length,
+                                                       quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
+                                                       sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY)
 
         tag_generators = cls._make_tag_generators(args.r1, args.i1, args.whitelist)
         cls._tag_bamfile(args.u2, args.output_bamfile, tag_generators)
