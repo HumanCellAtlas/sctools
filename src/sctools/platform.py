@@ -645,14 +645,29 @@ class BarcodePlatform(GenericPlatform):
 
     @classmethod
     def _validate_barcode_args(cls, args):
-        # check that both the barcode length and position are given as arguments
-        if ((bool(args.cell_barcode_start_pos) or args.cell_barcode_start_pos == 0) != bool(args.cell_barcode_length) or
-            (bool(args.molecule_barcode_start_pos) or args.molecule_barcode_start_pos == 0) != bool(args.molecule_barcode_length) or
-            (bool(args.sample_barcode_start_pos) or args.sample_barcode_start_pos == 0) != bool(args.sample_barcode_length)):
+        cell_barcode_start_pos_exists = bool(args.cell_barcode_start_pos) or (args.cell_barcode_start_pos == 0)
+        cell_barcode_length_exists =  bool(args.cell_barcode_length)
+
+        molecule_barcode_start_pos_exists = bool(args.molecule_barcode_start_pos) or (args.molecule_barcode_start_pos == 0)
+        molecule_barcode_length_exists = bool(args.molecule_barcode_length)
+
+        sample_barcode_start_pos_exists = bool(args.sample_barcode_start_pos) or (args.sample_barcode_start_pos == 0)
+        sample_barcode_length_exists = bool(args.sample_barcode_length)
+
+        # check that both the barcode length and position are given as arguments (XOR boolean logic)
+        if (cell_barcode_start_pos_exists != cell_barcode_length_exists or
+            molecule_barcode_start_pos_exists != molecule_barcode_length_exists or
+            sample_barcode_start_pos_exists != sample_barcode_length_exists):
             argparse.ArgumentError("Invalid barocde pos/length arguments, barcode start pos and barcode length must be specified together")
 
+        # check that an index fastq is provided sample barcode length and position are given
         if args.i1 is None and args.sample_barcode_length:
             argparse.ArgumentError("An i7 index fastq file must be given to attach a sample barcode")
+
+        # check that cell and molecule barcodes don't overlap
+        if args.cell_barcode_length and args.molecule_barcode_length:
+            cls._validate_barcode_input(args.molecule_barcode_start_pos,
+                                        args.cell_barcode_start_pos + args.cell_barcode_length)
 
         return args
 
@@ -754,10 +769,6 @@ class BarcodePlatform(GenericPlatform):
         else:
             args = parser.parse_args()
         cls._validate_barcode_args(args)
-
-        if args.cell_barcode_length and args.molecule_barcode_length:
-            cls._validate_barcode_input(args.molecule_barcode_start_pos,
-                                        args.cell_barcode_start_pos + args.cell_barcode_length)
 
         if args.cell_barcode_length:
             cls.cell_barcode = fastq.EmbeddedBarcode(start=args.cell_barcode_start_pos,
