@@ -737,7 +737,7 @@ class BarcodePlatform(GenericPlatform):
 
         Returns
         -------
-        given_value, int
+        given_value : int
             returns the start position if it is valid
 
         """
@@ -754,7 +754,7 @@ class BarcodePlatform(GenericPlatform):
 
         Returns
         -------
-        given_value, int
+        given_value : int
             returns the length if it is valid
 
         """
@@ -802,7 +802,7 @@ class BarcodePlatform(GenericPlatform):
 
         Returns
         -------
-        tag_generators, List[EmbeddedBarcodeGenerator]
+        tag_generators : List[EmbeddedBarcodeGenerator]
             EmbeddedBarcodeGenerators containing barcodes from 10x fastq records
 
         """
