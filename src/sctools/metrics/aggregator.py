@@ -36,7 +36,6 @@ sctools.metrics.writer
 from collections import Counter
 from typing import Iterable, Tuple, Counter, List, Sequence
 
-import logging
 import numpy as np
 import pysam
 
@@ -262,10 +261,11 @@ class MetricAggregator:
             try:
                 self.perfect_molecule_barcodes += (
                     record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
-            except KeyError as e:
-                logging.warning('An error occurred while retrieving the data from the optional alighment section: {}'.format(e))
-                # FIXME: not sure if we should skip this loop
-                continue
+            except KeyError:
+                # An error occurred while retrieving the data from the optional alighment section, which 
+                # indicates that the read did not have a corrected UMI sequenct. In the future we would like to 
+                # keep track of these reads.
+                pass
 
             self._genomic_reads_fraction_bases_quality_above_30.update(
                 self._quality_above_threshold(30, record.query_alignment_qualities))
