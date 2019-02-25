@@ -263,7 +263,7 @@ class MetricAggregator:
                     record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
             except KeyError:
                 # An error occurred while retrieving the data from the optional alighment section, which 
-                # indicates that the read did not have a corrected UMI sequenct. In the future we would like to 
+                # indicates that the read did not have a corrected UMI sequence. In the future we would like to 
                 # keep track of these reads.
                 pass
 
