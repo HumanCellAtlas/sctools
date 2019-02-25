@@ -256,8 +256,16 @@ class MetricAggregator:
                 self._quality_above_threshold(
                     30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY))))
 
-            self.perfect_molecule_barcodes += (
-                record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
+            # we should be tolerant and handle it if the pysam.AlignedSegment.get_tag 
+            # cannot retrieve the data by a tag since it's not a fatal error
+            try:
+                self.perfect_molecule_barcodes += (
+                    record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
+            except KeyError:
+                # An error occurred while retrieving the data from the optional alighment section, which 
+                # indicates that the read did not have a corrected UMI sequence. In the future we would like to 
+                # keep track of these reads.
+                pass
 
             self._genomic_reads_fraction_bases_quality_above_30.update(
                 self._quality_above_threshold(30, record.query_alignment_qualities))
