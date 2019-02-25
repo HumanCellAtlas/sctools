@@ -632,7 +632,7 @@ class TenXV2(GenericPlatform):
 
 
 class BarcodePlatform(GenericPlatform):
-    """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
+    """Command Line Interface for extracting and attaching barcodes with specified positions
 
     This class defines several methods that are created as CLI tools when sctools is installed
     (see setup.py)
@@ -661,6 +661,62 @@ class BarcodePlatform(GenericPlatform):
     sample_barcode = None
 
     @classmethod
+    def _validate_barcode_args(cls, args):
+        """Validates that the barcode start position is greater than 0
+
+        Parameters
+        ----------
+        args : object
+            arguments list, The default value of None, when passed to `parser.parse_args`
+            causes the parser to read `sys.argv`
+
+        Returns
+        -------
+        args : object
+            return arguments list if valid
+
+        """
+        # check that if a barcode start position is provided, its length is also (and vice versa)
+        cls._validate_barcode_length_and_position(args.cell_barcode_start_pos, args.cell_barcode_length)
+        cls._validate_barcode_length_and_position(args.molecule_barcode_start_pos, args.molecule_barcode_length)
+        cls._validate_barcode_length_and_position(args.sample_barcode_start_pos, args.sample_barcode_length)
+
+        # check that an index fastq is provided sample barcode length and position are given
+        if args.i1 is None and args.sample_barcode_length:
+            raise argparse.ArgumentError('An i7 index fastq file must be given to attach a sample barcode')
+
+        # check that cell and molecule barcodes don't overlap
+        if args.cell_barcode_length and args.molecule_barcode_length:
+            cls._validate_barcode_input(args.molecule_barcode_start_pos,
+                                        args.cell_barcode_start_pos + args.cell_barcode_length)
+
+        return args
+
+    @classmethod
+    def _validate_barcode_length_and_position(cls, barcode_start_position, barcode_length):
+        """Checks that either that both barcode length and position are given or that neither are given as arguments
+
+        Parameters
+        ----------
+        barcode_start_position : int
+            the user defined start position (base pairs) of the barcode
+
+        barcode_length : int
+            the user defined length (base pairs) of the barcode
+
+        Returns
+        -------
+        given_value : int
+            return given value if valid
+
+        """
+        barcode_start_pos_exists = bool(barcode_start_position) or (barcode_start_position == 0)
+        barcode_length_exists =  bool(barcode_length)
+        # (XOR boolean logic)
+        if (barcode_start_pos_exists != barcode_length_exists):
+            raise argparse.ArgumentError('Invalid position/length, both position and length must be provided by the user together')
+
+    @classmethod
     def _validate_barcode_input(cls, given_value, min_value):
         """Validates that the barcode input is greater than a min value
 
@@ -684,58 +740,12 @@ class BarcodePlatform(GenericPlatform):
         return given_value
 
     @classmethod
-    def _validate_barcode_args(cls, args):
-        """Validates that the barcode start position is greater than 0
-
-        Parameters
-        ----------
-        args : Iterable[str]
-            arguments list, The default value of None, when passed to `parser.parse_args`
-            causes the parser to read `sys.argv`
-
-        Returns
-        -------
-        args : Iterable[str]
-            return arguments list if valid
-
-        """
-        # check that both the barcode length and position are given as arguments
-        # or that neither barcode length and position are given as arguments (XOR boolean logic)
-        cell_barcode_start_pos_exists = bool(args.cell_barcode_start_pos) or (args.cell_barcode_start_pos == 0)
-        cell_barcode_length_exists =  bool(args.cell_barcode_length)
-        if (cell_barcode_start_pos_exists != cell_barcode_length_exists):
-            argparse.ArgumentError('Invalid cell barocde position/length, both position and length must be provided by the user together')
-
-        molecule_barcode_start_pos_exists = bool(args.molecule_barcode_start_pos) or (args.molecule_barcode_start_pos == 0)
-        molecule_barcode_length_exists = bool(args.molecule_barcode_length)
-        if (molecule_barcode_start_pos_exists != molecule_barcode_length_exists):
-            argparse.ArgumentError('Invalid molecule barocde position/length, both position and length must be provided by the user together')
-
-
-        sample_barcode_start_pos_exists = bool(args.sample_barcode_start_pos) or (args.sample_barcode_start_pos == 0)
-        sample_barcode_length_exists = bool(args.sample_barcode_length)
-        if (sample_barcode_start_pos_exists != sample_barcode_length_exists):
-            argparse.ArgumentError('Invalid sample barocde position/length, both position and length must be provided by the user together')
-
-
-        # check that an index fastq is provided sample barcode length and position are given
-        if args.i1 is None and args.sample_barcode_length:
-            argparse.ArgumentError('An i7 index fastq file must be given to attach a sample barcode')
-
-        # check that cell and molecule barcodes don't overlap
-        if args.cell_barcode_length and args.molecule_barcode_length:
-            cls._validate_barcode_input(args.molecule_barcode_start_pos,
-                                        args.cell_barcode_start_pos + args.cell_barcode_length)
-
-        return args
-
-    @classmethod
     def _validate_barcode_start_pos(cls, given_value):
         """Validates that the barcode start position is greater than 0
 
         Parameters
         ----------
-        given_value : int
+        given_value : Union[int, str]
             the given start position of the barcode to validate
 
         Returns
@@ -752,7 +762,7 @@ class BarcodePlatform(GenericPlatform):
 
         Parameters
         ----------
-        given_value : int
+        given_value : Union[int, str]
             the given length of the barcode to validate
 
         Returns
@@ -791,8 +801,7 @@ class BarcodePlatform(GenericPlatform):
         """Create tag generators from fastq files.
 
         Tag generators are iterators that run over fastq records, they extract and yield all of the
-        barcodes embedded in each fastq record. For 10x, this means extracting the cell, umi, and
-        optionally, the sample barcode.
+        barcodes embedded in each fastq record. This means extracting the cell, umi, and/or the sample barcode.
 
         Parameters
         ----------
@@ -806,7 +815,7 @@ class BarcodePlatform(GenericPlatform):
         Returns
         -------
         tag_generators : List[EmbeddedBarcodeGenerator]
-            EmbeddedBarcodeGenerators containing barcodes from 10x fastq records
+            EmbeddedBarcodeGenerators containing barcodes from the given fastq
 
         """
         tag_generators = []
