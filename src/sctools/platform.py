@@ -633,6 +633,11 @@ class TenXV2(GenericPlatform):
 
 class BarcodePlatform(GenericPlatform):
     """Command Line Interface for extracting and attaching barcodes with specified positions
+     generalizing TenXV2 attach barcodes
+
+    Sample, cell and/or molecule barcodes can be extracted and attached to an unmapped bam when the
+    corresponding barcode's start position and and length are provided. The sample barcode is extracted
+    from the index i7 fastq file and the cell/molecule barcode is extracted from the r1 fastq file
 
     This class defines several methods that are created as CLI tools when sctools is installed
     (see setup.py)
@@ -806,9 +811,9 @@ class BarcodePlatform(GenericPlatform):
         Parameters
         ----------
         r1 : str
-            forward fastq file
+            forward fastq file, where possibly the cell and/or molecule barcode is found
         i1 : str, optional
-            index fastq file
+            index fastq file, where the sample barcode is found
         whitelist : str, optional
             A file that contains a list of acceptable cell barcodes
 
@@ -859,7 +864,7 @@ class BarcodePlatform(GenericPlatform):
         parser = argparse.ArgumentParser()
         parser.add_argument('--r1',
                             required=True,
-                            help='read 1 fastq file')
+                            help='read 1 fastq file, where the cell and molecule barcode is found')
         parser.add_argument('--u2',
                             required=True,
                             help='unaligned bam, can be converted from fastq read 2'
@@ -876,7 +881,7 @@ class BarcodePlatform(GenericPlatform):
                                  'whitelisted barcode')
         parser.add_argument('--i1',
                             default=None,
-                            help='(optional) i7 index fastq file')
+                            help='(optional) i7 index fastq file, where the sample barcode is found')
         parser.add_argument('--sample-barcode-start-position',
                             dest='sample_barcode_start_pos',
                             default=None,
