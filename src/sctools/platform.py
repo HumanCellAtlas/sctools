@@ -637,7 +637,7 @@ class BarcodePlatform(GenericPlatform):
 
     Sample, cell and/or molecule barcodes can be extracted and attached to an unmapped bam when the
     corresponding barcode's start position and and length are provided. The sample barcode is extracted
-    from the index i7 fastq file and the cell/molecule barcode is extracted from the r1 fastq file
+    from the index i7 fastq file and the cell and molecule barcode are extracted from the r1 fastq file
 
     This class defines several methods that are created as CLI tools when sctools is installed
     (see setup.py)
