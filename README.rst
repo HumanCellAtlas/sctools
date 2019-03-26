@@ -12,7 +12,7 @@ Single Cell Tools
   :alt: Documentation Status
 
 .. image:: https://img.shields.io/snyk/vulnerabilities/github/HumanCellAtlas/sctools/requirements.txt.svg?label=Snyk%20Vulnerabilities&logo=Snyk
-  :target: https://snyk.io/test/github/HumanCellAtlas/sctools?targetFile=tools/requirements.txt
+  :target: https://snyk.io/test/github/HumanCellAtlas/sctools?targetFile=requirements.txt
   :alt: Snyk Vulnerabilities for GitHub Repo (Specific Manifest)
 
 Single Cell Tools provides utilities for manipulating sequence data formats suitable for use in
