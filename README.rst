@@ -11,6 +11,10 @@ Single Cell Tools
   :target: https://sctools.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
 
+.. image:: https://img.shields.io/snyk/vulnerabilities/github/HumanCellAtlas/sctools/requirements.txt.svg?label=Snyk%20Vulnerabilities&logo=Snyk
+  :target: https://snyk.io/test/github/HumanCellAtlas/sctools/?targetFile=requirements.txt
+  :alt: Snyk Vulnerabilities for GitHub Repo (Specific Manifest)
+
 Single Cell Tools provides utilities for manipulating sequence data formats suitable for use in
 distributed systems analyzing large biological datasets.
 
