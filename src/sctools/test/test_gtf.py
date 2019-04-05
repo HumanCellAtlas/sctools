@@ -42,8 +42,10 @@ def test_opens_file_populates_fields_properly(files):
     }
     assert record._attributes == expected_features
 
-    assert all(i in str(record) for i in chain(expected_features.keys(),
-                                               expected_features.values()))
+    assert all(
+        i in str(record)
+        for i in chain(expected_features.keys(), expected_features.values())
+    )
 
 
 def test_set_attribute_verify_included_in_output_string(files):

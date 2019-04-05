@@ -33,8 +33,9 @@ from sctools import consts, bam
 
 
 class CountMatrix:
-
-    def __init__(self, matrix: sp.csr_matrix, row_index: np.ndarray, col_index: np.ndarray):
+    def __init__(
+        self, matrix: sp.csr_matrix, row_index: np.ndarray, col_index: np.ndarray
+    ):
         self._matrix = matrix
         self._row_index = row_index
         self._col_index = col_index
@@ -53,8 +54,13 @@ class CountMatrix:
 
     @staticmethod
     def _get_alignments_grouped_by_query_name_generator(
-            bam_file: str, cell_barcode_tag: str, molecule_barcode_tag: str, open_mode: str = 'rb') -> \
-            Generator[Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None]:
+        bam_file: str,
+        cell_barcode_tag: str,
+        molecule_barcode_tag: str,
+        open_mode: str = 'rb',
+    ) -> Generator[
+        Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None
+    ]:
         """Iterates through a query_name-sorted BAM file, groups all alignments with the same query name
 
         Parameters
@@ -72,10 +78,16 @@ class CountMatrix:
             a generator for tuples (query_name, cell_barcode, molecule_barcode, alignments)
         """
         with pysam.AlignmentFile(bam_file, mode=open_mode) as bam_records:
-            for (query_name, grouper) in itertools.groupby(bam_records, key=lambda record: record.query_name):
+            for (query_name, grouper) in itertools.groupby(
+                bam_records, key=lambda record: record.query_name
+            ):
                 alignments: List[pysam.AlignedSegment] = list(grouper)
-                cell_barcode: Optional[str] = bam.get_tag_or_default(alignments[0], cell_barcode_tag)
-                molecule_barcode: Optional[str] = bam.get_tag_or_default(alignments[0], molecule_barcode_tag)
+                cell_barcode: Optional[str] = bam.get_tag_or_default(
+                    alignments[0], cell_barcode_tag
+                )
+                molecule_barcode: Optional[str] = bam.get_tag_or_default(
+                    alignments[0], molecule_barcode_tag
+                )
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
     # todo add support for generating a matrix of invalid barcodes
@@ -85,13 +97,14 @@ class CountMatrix:
     # todo once the stringent checks are in place, safely move on to the hashset-free implementation
     @classmethod
     def from_sorted_tagged_bam(
-            cls,
-            bam_file: str,
-            gene_name_to_index: Dict[str, int],
-            cell_barcode_tag: str=consts.CELL_BARCODE_TAG_KEY,
-            molecule_barcode_tag: str=consts.MOLECULE_BARCODE_TAG_KEY,
-            gene_name_tag: str=consts.GENE_NAME_TAG_KEY,
-            open_mode: str='rb') -> 'CountMatrix':
+        cls,
+        bam_file: str,
+        gene_name_to_index: Dict[str, int],
+        cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
+        molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
+        gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
+        open_mode: str = 'rb',
+    ) -> 'CountMatrix':
         """Generate a count matrix from a sorted, tagged bam file
 
         Notes
@@ -189,11 +202,19 @@ class CountMatrix:
         cell_barcode_to_index: Dict[str, int] = {}
 
         grouped_records_generator = cls._get_alignments_grouped_by_query_name_generator(
-            bam_file, cell_barcode_tag, molecule_barcode_tag, open_mode=open_mode)
+            bam_file, cell_barcode_tag, molecule_barcode_tag, open_mode=open_mode
+        )
 
-        for query_name, cell_barcode, molecule_barcode, alignments in grouped_records_generator:
+        for (
+            query_name,
+            cell_barcode,
+            molecule_barcode,
+            alignments,
+        ) in grouped_records_generator:
 
-            if cell_barcode is None or molecule_barcode is None:  # only keep queries w/ well-formed UMIs
+            if (
+                cell_barcode is None or molecule_barcode is None
+            ):  # only keep queries w/ well-formed UMIs
                 continue
 
             if len(alignments) == 1:
@@ -212,10 +233,16 @@ class CountMatrix:
                 else:
                     continue  # drop query
 
-            if (cell_barcode, molecule_barcode, gene_name) in observed_cell_molecule_gene_set:
+            if (
+                cell_barcode,
+                molecule_barcode,
+                gene_name,
+            ) in observed_cell_molecule_gene_set:
                 continue  # optical/PCR duplicate -> drop query
             else:
-                observed_cell_molecule_gene_set.add((cell_barcode, molecule_barcode, gene_name))
+                observed_cell_molecule_gene_set.add(
+                    (cell_barcode, molecule_barcode, gene_name)
+                )
 
             # find the indices that this molecule should correspond to
             gene_index = gene_name_to_index[gene_name]
@@ -235,11 +262,28 @@ class CountMatrix:
 
         # convert into coo_matrix
         coordinate_matrix = sp.coo_matrix(
-            (data, (cell_indices, gene_indices)), shape=(n_cells, n_genes), dtype=np.uint32)
+            (data, (cell_indices, gene_indices)),
+            shape=(n_cells, n_genes),
+            dtype=np.uint32,
+        )
 
         # convert to a csr sparse matrix and return
-        col_index = np.asarray([k for k, v in sorted(gene_name_to_index.items(), key=operator.itemgetter(1))])
-        row_index = np.asarray([k for k, v in sorted(cell_barcode_to_index.items(), key=operator.itemgetter(1))])
+        col_index = np.asarray(
+            [
+                k
+                for k, v in sorted(
+                    gene_name_to_index.items(), key=operator.itemgetter(1)
+                )
+            ]
+        )
+        row_index = np.asarray(
+            [
+                k
+                for k, v in sorted(
+                    cell_barcode_to_index.items(), key=operator.itemgetter(1)
+                )
+            ]
+        )
 
         return cls(coordinate_matrix.tocsr(), row_index, col_index)
 
@@ -268,7 +312,9 @@ class CountMatrix:
         return cls(matrix, row_index, col_index)
 
     @classmethod
-    def from_mtx(cls, matrix_mtx: str, row_index_file: str, col_index_file: str) -> 'CountMatrix':
+    def from_mtx(
+        cls, matrix_mtx: str, row_index_file: str, col_index_file: str
+    ) -> 'CountMatrix':
         """
 
         Parameters

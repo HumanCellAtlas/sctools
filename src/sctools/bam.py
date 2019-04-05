@@ -41,7 +41,18 @@ import os
 import warnings
 from abc import abstractmethod
 from itertools import cycle
-from typing import Iterator, Iterable, Generator, List, Dict, Union, Tuple, Callable, Any, Optional
+from typing import (
+    Iterator,
+    Iterable,
+    Generator,
+    List,
+    Dict,
+    Union,
+    Tuple,
+    Callable,
+    Any,
+    Optional,
+)
 
 import pysam
 
@@ -76,7 +87,7 @@ class SubsetAlignments:
 
     """
 
-    def __init__(self, alignment_file: str, open_mode: str=None):
+    def __init__(self, alignment_file: str, open_mode: str = None):
         if open_mode is None:
             if alignment_file.endswith('.bam'):
                 open_mode = 'rb'
@@ -85,12 +96,13 @@ class SubsetAlignments:
             else:
                 raise ValueError(
                     f'Could not autodetect file type for alignment_file {alignment_file} (detectable suffixes: '
-                    f'.sam, .bam)')
+                    f'.sam, .bam)'
+                )
         self._file: str = alignment_file
         self._open_mode: str = open_mode
 
     def indices_by_chromosome(
-            self, n_specific: int, chromosome: str, include_other: int=0
+        self, n_specific: int, chromosome: str, include_other: int = 0
     ) -> Union[List[int], Tuple[List[int], List[int]]]:
         """Return the list of first `n_specific` indices of reads aligned to `chromosome`.
 
@@ -122,8 +134,10 @@ class SubsetAlignments:
         if isinstance(chromosome, int) and chromosome < 23:
             chromosome = str(chromosome)  # try to convert
         if chromosome not in valid_chromosomes:
-            warnings.warn('chromsome %s not in list of expected chromosomes: %r' %
-                          (chromosome, valid_chromosomes))
+            warnings.warn(
+                'chromsome %s not in list of expected chromosomes: %r'
+                % (chromosome, valid_chromosomes)
+            )
 
         with pysam.AlignmentFile(self._file, self._open_mode) as fin:
             chromosome = str(chromosome)
@@ -142,13 +156,18 @@ class SubsetAlignments:
                     other_indices.append(i)
 
                 # check termination condition (we have the requisite number of reads
-                if len(chromosome_indices) == n_specific and len(other_indices) == include_other:
+                if (
+                    len(chromosome_indices) == n_specific
+                    and len(other_indices) == include_other
+                ):
                     break
 
         if len(chromosome_indices) < n_specific or len(other_indices) < include_other:
-            warnings.warn('Only %d unaligned and %d reads aligned to chromosome %s were found in' 
-                          '%s' % (len(other_indices), len(chromosome_indices),
-                                  chromosome, self._file))
+            warnings.warn(
+                'Only %d unaligned and %d reads aligned to chromosome %s were found in'
+                '%s'
+                % (len(other_indices), len(chromosome_indices), chromosome, self._file)
+            )
 
         if include_other != 0:
             return chromosome_indices, other_indices
@@ -173,7 +192,9 @@ class Tagger:
 
     def __init__(self, bam_file: str) -> None:
         if not isinstance(bam_file, str):
-            raise TypeError(f'The argument "bam_file" must be of type str, not {type(bam_file)}')
+            raise TypeError(
+                f'The argument "bam_file" must be of type str, not {type(bam_file)}'
+            )
         self.bam_file = bam_file
 
     # todo add type to tag_generators (make sure it doesn't introduce import issues
@@ -191,8 +212,11 @@ class Tagger:
             list of generators that yield fastq.Tag objects
 
         """
-        with pysam.AlignmentFile(self.bam_file, 'rb', check_sq=False) as inbam, \
-                pysam.AlignmentFile(output_bam_name, 'wb', template=inbam) as outbam:
+        with pysam.AlignmentFile(
+            self.bam_file, 'rb', check_sq=False
+        ) as inbam, pysam.AlignmentFile(
+            output_bam_name, 'wb', template=inbam
+        ) as outbam:
 
             # zip up all the iterators
             for *tag_sets, sam_record in zip(*tag_generators, inbam):
@@ -202,7 +226,9 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_missing=True) -> List[str]:
+def split(
+    in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_missing=True
+) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
     Parameters
@@ -241,8 +267,10 @@ def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_m
         raise ValueError('At least one tag must be passed')
 
     def _cleanup(
-            _files_to_counts: Dict[pysam.AlignmentFile, int], _files_to_names: Dict[pysam.AlignmentFile, str],
-            rm_all: bool=False) -> None:
+        _files_to_counts: Dict[pysam.AlignmentFile, int],
+        _files_to_names: Dict[pysam.AlignmentFile, str],
+        rm_all: bool = False,
+    ) -> None:
         """Closes file handles and remove any empty files.
 
         Parameters
@@ -268,12 +296,16 @@ def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_m
     bam_mb = os.path.getsize(in_bam) * 1e-6
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN:
-        warnings.warn(f'Number of requested subfiles ({n_subfiles}) exceeds '
-                      f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN}; this may cause OS errors by exceeding fid limits')
+        warnings.warn(
+            f'Number of requested subfiles ({n_subfiles}) exceeds '
+            f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN}; this may cause OS errors by exceeding fid limits'
+        )
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE:
-        raise ValueError(f'Number of requested subfiles ({n_subfiles}) exceeds '
-                         f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE}; this will usually cause OS errors, '
-                         f'think about increasing max_mb_per_split.')
+        raise ValueError(
+            f'Number of requested subfiles ({n_subfiles}) exceeds '
+            f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE}; this will usually cause OS errors, '
+            f'think about increasing max_mb_per_split.'
+        )
 
     # create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
@@ -283,7 +315,9 @@ def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_m
         files_to_names: Dict[pysam.AlignmentFile, str] = {}
         for i in range(n_subfiles):
             out_bam_name = out_prefix + '_%d.bam' % i
-            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)
+            open_bam = pysam.AlignmentFile(
+                out_bam_name, 'wb', template=input_alignments
+            )
             files_to_counts[open_bam] = 0
             files_to_names[open_bam] = out_bam_name
 
@@ -309,7 +343,9 @@ def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_m
             if tag_content is None:
                 if raise_missing:
                     _cleanup(files_to_counts, files_to_names, rm_all=True)
-                    raise RuntimeError('Alignment encountered that is missing {repr(tags)} tag(s).')
+                    raise RuntimeError(
+                        'Alignment encountered that is missing {repr(tags)} tag(s).'
+                    )
                 else:
                     continue  # move on to next alignment
 
@@ -328,9 +364,8 @@ def split(in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_m
 
 # todo change this to throw away "None" reads instead of appending them if we are filtering them
 def iter_tag_groups(
-        tag: str,
-        bam_iterator: Iterator[pysam.AlignedSegment],
-        filter_null: bool=False) -> Generator:
+    tag: str, bam_iterator: Iterator[pysam.AlignedSegment], filter_null: bool = False
+) -> Generator:
     """Iterates over reads and yields them grouped by the provided tag value
 
     Parameters
@@ -395,7 +430,9 @@ def iter_molecule_barcodes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Gene
         the molecule barcode that records in the group all share
 
     """
-    return iter_tag_groups(tag=consts.MOLECULE_BARCODE_TAG_KEY, bam_iterator=bam_iterator)
+    return iter_tag_groups(
+        tag=consts.MOLECULE_BARCODE_TAG_KEY, bam_iterator=bam_iterator
+    )
 
 
 def iter_cell_barcodes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
@@ -436,7 +473,9 @@ def iter_genes(bam_iterator: Iterator[pysam.AlignedSegment]) -> Generator:
     return iter_tag_groups(tag=consts.GENE_NAME_TAG_KEY, bam_iterator=bam_iterator)
 
 
-def get_tag_or_default(alignment: pysam.AlignedSegment, tag_key: str, default: Optional[str] = None) -> Optional[str]:
+def get_tag_or_default(
+    alignment: pysam.AlignedSegment, tag_key: str, default: Optional[str] = None
+) -> Optional[str]:
     """Extracts the value associated to `tag_key` from `alignment`, and returns a default value
     if the tag is not present."""
     try:
@@ -447,6 +486,7 @@ def get_tag_or_default(alignment: pysam.AlignedSegment, tag_key: str, default: O
 
 class AlignmentSortOrder:
     """The base class of alignment sort orders."""
+
     @property
     @abstractmethod
     def key_generator(self) -> Callable[[pysam.AlignedSegment], Any]:
@@ -456,6 +496,7 @@ class AlignmentSortOrder:
 
 class QueryNameSortOrder(AlignmentSortOrder):
     """Alignment record sort order by query name."""
+
     @staticmethod
     def get_sort_key(alignment: pysam.AlignedSegment) -> str:
         return alignment.query_name
@@ -473,18 +514,21 @@ class TagSortableRecord(object):
     """Wrapper for pysam.AlignedSegment that facilitates sorting by tags and query name."""
 
     def __init__(
-            self,
-            tag_keys: Iterable[str],
-            tag_values: Iterable[str],
-            query_name: str,
-            record: pysam.AlignedSegment = None) -> None:
+        self,
+        tag_keys: Iterable[str],
+        tag_values: Iterable[str],
+        query_name: str,
+        record: pysam.AlignedSegment = None,
+    ) -> None:
         self.tag_keys = tag_keys
         self.tag_values = tag_values
         self.query_name = query_name
         self.record = record
 
     @classmethod
-    def from_aligned_segment(cls, record: pysam.AlignedSegment, tag_keys: Iterable[str]) -> 'TagSortableRecord':
+    def from_aligned_segment(
+        cls, record: pysam.AlignedSegment, tag_keys: Iterable[str]
+    ) -> 'TagSortableRecord':
         """Create a TagSortableRecord from a pysam.AlignedSegment and list of tag keys"""
         assert record is not None
         tag_values = [get_tag_or_default(record, key, '') for key in tag_keys]
@@ -526,12 +570,14 @@ class TagSortableRecord(object):
 
 
 def sort_by_tags_and_queryname(
-        records: Iterable[pysam.AlignedSegment],
-        tag_keys: Iterable[str]) -> Iterable[pysam.AlignedSegment]:
+    records: Iterable[pysam.AlignedSegment], tag_keys: Iterable[str]
+) -> Iterable[pysam.AlignedSegment]:
     """Sorts the given bam records by the given tags, followed by query name.
     If no tags are given, just sorts by query name.
     """
-    tag_sortable_records = (TagSortableRecord.from_aligned_segment(r, tag_keys) for r in records)
+    tag_sortable_records = (
+        TagSortableRecord.from_aligned_segment(r, tag_keys) for r in records
+    )
     sorted_records = sorted(tag_sortable_records)
     aligned_segments = (r.record for r in sorted_records)
     return aligned_segments
@@ -540,7 +586,9 @@ def sort_by_tags_and_queryname(
 def verify_sort(records: Iterable[TagSortableRecord], tag_keys: Iterable[str]) -> None:
     """Raise AssertionError if the given records are not correctly sorted by the given tags and query name"""
     # Setting tag values and query name to empty string ensures first record will never be less than old_record
-    old_record = TagSortableRecord(tag_keys=tag_keys, tag_values=['' for _ in tag_keys], query_name='', record=None)
+    old_record = TagSortableRecord(
+        tag_keys=tag_keys, tag_values=['' for _ in tag_keys], query_name='', record=None
+    )
     i = 0
     for record in records:
         i += 1

@@ -75,8 +75,8 @@ class OnlineGaussianSufficientStatistic:
     __slots__ = ['_count', '_mean', '_mean_squared_error']
 
     def __init__(self):
-        self._mean_squared_error: float = 0.
-        self._mean: float = 0.
+        self._mean_squared_error: float = 0.0
+        self._mean: float = 0.0
         self._count: int = 0
 
     def update(self, new_value: float) -> None:
