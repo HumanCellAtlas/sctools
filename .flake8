@@ -1,0 +1,17 @@
+# We ignore the following PEP-8 styles:
+
+# E203  whitespace before ‘:’
+# E266  too many leading ‘#’ for block comment
+# E501  line too long (82 > 79 characters) (^)
+# W503  line break occurred before a binary operator
+# F841  local variable is assigned to but never used
+# W605  invalid escape sequence (causes false alarms around regex)
+
+# Note: (^) These checks can be disabled at the
+# line level using the # noqa special comment.
+# This possibility should be reserved for special cases.
+
+[flake8]
+ignore = E203, E266, E501, W503, F841, W605
+max-complexity = 18
+select = B,C,E,F,W,T4,B9

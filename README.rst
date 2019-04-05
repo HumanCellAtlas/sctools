@@ -1,25 +1,43 @@
 Single Cell Tools
-=======
+#################
 
-.. image:: https://circleci.com/gh/HumanCellAtlas/sctools/tree/master.svg?style=shield
-    :target: https://circleci.com/gh/HumanCellAtlas/sctools/tree/master
+.. image:: https://img.shields.io/circleci/project/github/HumanCellAtlas/sctools.svg?label=Unit%20Test%20on%20Circle%20CI%20&style=flat-square&logo=circleci
+  :target: https://circleci.com/gh/HumanCellAtlas/sctools/tree/master
+  :alt: Unit Test Status
 
-.. image:: https://codecov.io/gh/HumanCellAtlas/sctools/branch/master/graph/badge.svg
+.. image:: https://img.shields.io/codecov/c/github/HumanCellAtlas/sctools/master.svg?label=Test%20Coverage&logo=codecov&style=flat-square
   :target: https://codecov.io/gh/HumanCellAtlas/sctools
+  :alt: Test Coverage on Codecov
 
-.. image:: https://readthedocs.org/projects/sctools/badge/?version=latest
-  :target: https://sctools.readthedocs.io/en/latest/?badge=latest
+.. image:: https://img.shields.io/readthedocs/sctools/latest.svg?label=ReadtheDocs%3A%20Latest&logo=Read%20the%20Docs&style=flat-square
+  :target: http://sctools.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
 
 .. image:: https://img.shields.io/snyk/vulnerabilities/github/HumanCellAtlas/sctools/requirements.txt.svg?label=Snyk%20Vulnerabilities&logo=Snyk
   :target: https://snyk.io/test/github/HumanCellAtlas/sctools/?targetFile=requirements.txt
   :alt: Snyk Vulnerabilities for GitHub Repo (Specific Manifest)
 
+.. image:: https://img.shields.io/github/release/HumanCellAtlas/sctools.svg?label=Latest%20Release&style=flat-square&colorB=green
+  :target: https://github.com/HumanCellAtlas/sctools/releases
+  :alt: Latest Release
+
+.. image:: https://img.shields.io/github/license/HumanCellAtlas/sctools.svg?style=flat-square
+  :target: https://img.shields.io/github/license/HumanCellAtlas/sctools.svg?style=flat-square
+  :alt: License
+
+.. image:: https://img.shields.io/badge/python-3.6-green.svg?style=flat-square&logo=python&colorB=blue
+  :target: https://img.shields.io/badge/python-3.6-green.svg?style=flat-square&logo=python&colorB=blue
+  :alt: Language
+
+.. image:: https://img.shields.io/badge/Code%20Style-black-000000.svg?style=flat-square
+  :target: https://github.com/ambv/black
+  :alt: Code Style
+
 Single Cell Tools provides utilities for manipulating sequence data formats suitable for use in
 distributed systems analyzing large biological datasets.
 
 Download and Installation
--------------------------
+=========================
 
 .. code bash
    git clone https://github.com/humancellatlas/sctools.git
@@ -28,13 +46,13 @@ Download and Installation
    pytest  # verify installation; run tests
 
 sctools Package
----------------
+===============
 
 The sctools package provides both command line utilities and classes designed for use in python
 programs.
 
 Command Line Utilities
-----------------------
+======================
 
 1. Attach10XBarcodes: Attached barcodes stored in fastq files to reads in an unaligned bam file
 2. SplitBam: Split a bam file into chunks, guaranteeing that cells are contained in 1 chunk
@@ -44,7 +62,7 @@ Command Line Utilities
 6. MergeCellMetrics Merge cell metrics calculated from different chunks of an experiment
 
 Main Package Classes
---------------------
+====================
 
 1. **Platform**: an abstract class that defines a common data structure for different 3' sequencing
    formats. All algorithms and methods in this package that are designed to work on 3' sequencing data
@@ -74,7 +92,7 @@ Main Package Classes
 
 
 Viewing Test Results and Coverage
----------------------------------
+=================================
 
 To calculate and view test coverage cd to the ``sctools`` directory and
 type the following two commands to generate the report and open it in your web browser:
@@ -85,7 +103,7 @@ type the following two commands to generate the report and open it in your web b
    open cov_html/index.html
 
 Definitions
------------
+===========
 
 Several definitions are helpful to understand how sequence data is analyzed.
 
@@ -118,3 +136,22 @@ position it aligns to on that chromosome, after correcting for clipping that the
 7. **Bam/Sam file**: The GA4GH standard file type for the storage of aligned sequencing reads.
 Unless specified, our Single Cell Tools will operate over bam files containing either aligned or
 unaligned reads
+
+Development
+===========
+
+Code Style
+----------
+The sctools code base is complying with the PEP-8 and using `Black <https://github.com/ambv/black>`_ to
+format our code, in order to avoid "nitpicky" comments during the code review process so we spend more time discussing about the logic, 
+not code styles.
+
+In order to enable the auto-formatting in the development process, you have to spend a few seconds setting 
+up the ``pre-commit`` the first time you clone the repo:
+
+1. Install ``pre-commit`` by running: ``pip install pre-commit`` (or simply run ``pip install -r requirements.txt``).
+2. Run `pre-commit install` to install the git hook.
+
+Once you successfully install the ``pre-commit`` hook to this repo, the Black linter/formatter will be automatically triggered and run on this repo. Please make sure you followed the above steps, otherwise your commits might fail at the linting test!
+
+If you really want to manually trigger the linters and formatters on your code, make sure ``Black`` and ``flake8`` are installed in your Python environment and run ``flake8 DIR1 DIR2`` and ``black DIR1 DIR2 --skip-string-normalization`` respectively.

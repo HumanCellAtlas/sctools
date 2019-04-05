@@ -8,3 +8,6 @@ scipy>=1.1.0
 crimson>=0.3.0
 setuptools>=40.4.3
 setuptools_scm>=3.1.0
+black==19.3b0
+flake8==3.7.7
+pre-commit==1.14.4

@@ -1,0 +1,17 @@
+repos:
+-   repo: https://github.com/ambv/black
+    rev: 19.3b0
+    hooks:
+    - id: black
+      language_version: python3.6
+      # Using args here is not recommended by Black:
+      # https://black.readthedocs.io/en/stable/version_control_integration.html
+      # But since we only have one argument here, and
+      # we don't force developers to use editor plugins,
+      # putting the args here seems to be fine
+      args: [./, --skip-string-normalization]
+
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.7
+    hooks:
+    -   id: flake8
