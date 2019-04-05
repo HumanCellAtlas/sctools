@@ -45,7 +45,7 @@ jobs:
       - run:
           name: linting test
           command: |
-            . venv/bin/activate
+            . venv/bin/activate && cd ~/repo
             # Check Black code style compliance
             black ./ --skip-string-normalization --check
             # Check PEP-8 compliance
