@@ -83,10 +83,13 @@ def gene_name_to_index() -> Dict[str, int]:
 
 class AlignmentRecordTags:
     """Represents the bundle of cell barcode, molecule barcode, and gene name."""
-    def __init__(self,
-                 cell_barcode: Optional[str],
-                 molecule_barcode: Optional[str],
-                 gene_name: Optional[str]) -> None:
+
+    def __init__(
+        self,
+        cell_barcode: Optional[str],
+        molecule_barcode: Optional[str],
+        gene_name: Optional[str],
+    ) -> None:
         self.cell_barcode = cell_barcode
         self.molecule_barcode = molecule_barcode
         self.gene_name = gene_name
@@ -95,18 +98,22 @@ class AlignmentRecordTags:
         return hash((self.cell_barcode, self.molecule_barcode, self.gene_name))
 
     def __repr__(self):
-        return f'{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, ' \
-               f'{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, ' \
-               f'{consts.GENE_NAME_TAG_KEY}: {self.gene_name}'
+        return (
+            f'{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, '
+            f'{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, '
+            f'{consts.GENE_NAME_TAG_KEY}: {self.gene_name}'
+        )
 
 
 class CellMoleculeGeneQueryNameSortOrder(bam.AlignmentSortOrder):
     """Hierarchical alignment record sort order (cell barcode >= molecule barcode >= gene name >= query name)."""
+
     def __init__(
-            self,
-            cell_barcode_tag_key: str = consts.CELL_BARCODE_TAG_KEY,
-            molecule_barcode_tag_key: str = consts.MOLECULE_BARCODE_TAG_KEY,
-            gene_name_tag_key: str = consts.GENE_NAME_TAG_KEY) -> None:
+        self,
+        cell_barcode_tag_key: str = consts.CELL_BARCODE_TAG_KEY,
+        molecule_barcode_tag_key: str = consts.MOLECULE_BARCODE_TAG_KEY,
+        gene_name_tag_key: str = consts.GENE_NAME_TAG_KEY,
+    ) -> None:
         assert cell_barcode_tag_key, "Cell barcode tag key can not be None"
         assert molecule_barcode_tag_key, "Molecule barcode tag key can not be None"
         assert gene_name_tag_key, "Gene name tag key can not be None"
@@ -114,14 +121,22 @@ class CellMoleculeGeneQueryNameSortOrder(bam.AlignmentSortOrder):
         self.molecule_barcode_tag_key = molecule_barcode_tag_key
         self.gene_name_tag_key = gene_name_tag_key
 
-    def _get_sort_key(self, alignment: pysam.AlignedSegment) -> Tuple[str, str, str, str]:
-        return (bam.get_tag_or_default(alignment, self.cell_barcode_tag_key, default='N'),
-                bam.get_tag_or_default(alignment, self.molecule_barcode_tag_key, default='N'),
-                bam.get_tag_or_default(alignment, self.gene_name_tag_key, default='N'),
-                alignment.query_name)
+    def _get_sort_key(
+        self, alignment: pysam.AlignedSegment
+    ) -> Tuple[str, str, str, str]:
+        return (
+            bam.get_tag_or_default(alignment, self.cell_barcode_tag_key, default='N'),
+            bam.get_tag_or_default(
+                alignment, self.molecule_barcode_tag_key, default='N'
+            ),
+            bam.get_tag_or_default(alignment, self.gene_name_tag_key, default='N'),
+            alignment.query_name,
+        )
 
     @property
-    def key_generator(self) -> Callable[[pysam.AlignedSegment], Tuple[str, str, str, str]]:
+    def key_generator(
+        self
+    ) -> Callable[[pysam.AlignedSegment], Tuple[str, str, str, str]]:
         return self._get_sort_key
 
     def __repr__(self) -> str:
@@ -169,8 +184,13 @@ class SyntheticTaggedBAMGenerator:
     col_index_output_filename = OUTPUT_PREFIX + '_col_index.npy'
 
     def __init__(
-            self, num_cells: int, max_genes: int, gene_name_to_index: Dict[str, int],
-            gene_expression_rate: float, rng_seed: int = 777) -> None:
+        self,
+        num_cells: int,
+        max_genes: int,
+        gene_name_to_index: Dict[str, int],
+        gene_expression_rate: float,
+        rng_seed: int = 777,
+    ) -> None:
         self.num_cells = num_cells
         self.gene_expression_rate = gene_expression_rate
 
@@ -178,19 +198,32 @@ class SyntheticTaggedBAMGenerator:
         self.rng: np.random.RandomState = np.random.RandomState(seed=rng_seed)
 
         # generate gene names
-        self.all_gene_names = [k for k, v in sorted(gene_name_to_index.items(), key=operator.itemgetter(1))]
+        self.all_gene_names = [
+            k for k, v in sorted(gene_name_to_index.items(), key=operator.itemgetter(1))
+        ]
         self.num_genes = len(self.all_gene_names)
         self.max_genes = max_genes
-        assert max_genes <= self.num_genes, \
-            f"Max genes ({self.max_genes}) must be <= to all annotated genes ({self.num_genes})"
+        assert (
+            max_genes <= self.num_genes
+        ), f"Max genes ({self.max_genes}) must be <= to all annotated genes ({self.num_genes})"
         self.to_be_used_gene_indices: List[int] = self.rng.choice(
-            np.arange(0, self.num_genes, dtype=np.int), size=self.max_genes, replace=False).tolist()
-        self.to_be_used_gene_names = [self.all_gene_names[j] for j in self.to_be_used_gene_indices]
+            np.arange(0, self.num_genes, dtype=np.int),
+            size=self.max_genes,
+            replace=False,
+        ).tolist()
+        self.to_be_used_gene_names = [
+            self.all_gene_names[j] for j in self.to_be_used_gene_indices
+        ]
 
     def generate_synthetic_bam_and_counts_matrix(
-            self, output_path: str, num_duplicates: int, num_missing_some_tags: int,
-            num_multiple_gene_alignments: int, max_gene_hits_per_multiple_gene_alignments: int,
-            alignment_sort_order: bam.AlignmentSortOrder = CellMoleculeGeneQueryNameSortOrder()):
+        self,
+        output_path: str,
+        num_duplicates: int,
+        num_missing_some_tags: int,
+        num_multiple_gene_alignments: int,
+        max_gene_hits_per_multiple_gene_alignments: int,
+        alignment_sort_order: bam.AlignmentSortOrder = CellMoleculeGeneQueryNameSortOrder(),
+    ):
         """Generates synthetic count matrix and BAM file and writes them to disk.
 
         Parameters
@@ -212,20 +245,30 @@ class SyntheticTaggedBAMGenerator:
         -------
         None
         """
-        assert 2 <= max_gene_hits_per_multiple_gene_alignments <= self.max_genes, \
-            f"The parameter `max_gene_hits_per_multiple_gene_alignments` must >= 2 and < maximum annotated " \
+        assert 2 <= max_gene_hits_per_multiple_gene_alignments <= self.max_genes, (
+            f"The parameter `max_gene_hits_per_multiple_gene_alignments` must >= 2 and < maximum annotated "
             f"genes ({self.max_genes})"
+        )
         assert num_duplicates >= 0, "Number of duplicate queries must be non-negative"
-        assert num_missing_some_tags >= 0, "Number of queries with missing tags must be non-negative"
-        assert num_multiple_gene_alignments >= 0, "Number of queries with multiple gene alignments must be non-negative"
+        assert (
+            num_missing_some_tags >= 0
+        ), "Number of queries with missing tags must be non-negative"
+        assert (
+            num_multiple_gene_alignments >= 0
+        ), "Number of queries with multiple gene alignments must be non-negative"
 
         # generate synthetic count matrix and corresponding simulated records
         synthetic_data_bundle = self._generate_synthetic_counts_and_alignment_tags(
             num_duplicates,
             num_missing_some_tags,
             num_multiple_gene_alignments,
-            max_gene_hits_per_multiple_gene_alignments)
-        records = list(SyntheticTaggedBAMGenerator._get_bam_records_generator(synthetic_data_bundle))
+            max_gene_hits_per_multiple_gene_alignments,
+        )
+        records = list(
+            SyntheticTaggedBAMGenerator._get_bam_records_generator(
+                synthetic_data_bundle
+            )
+        )
 
         if not alignment_sort_order:  # random
             # shuffle records
@@ -236,55 +279,81 @@ class SyntheticTaggedBAMGenerator:
 
         # write BAM file
         with pysam.AlignmentFile(
-                os.path.join(output_path, self.bam_output_filename),
-                mode='wb',
-                reference_names=[self.SYNTHETIC_SEQUENCE_NAME],
-                reference_lengths=[self.SYNTHETIC_SEQUENCE_LENGTH]) as bo:
+            os.path.join(output_path, self.bam_output_filename),
+            mode='wb',
+            reference_names=[self.SYNTHETIC_SEQUENCE_NAME],
+            reference_lengths=[self.SYNTHETIC_SEQUENCE_LENGTH],
+        ) as bo:
             for record in records:
                 bo.write(record)
 
         # write count matrix, row index, and col index
-        np.save(os.path.join(output_path, self.count_matrix_output_filename), synthetic_data_bundle.count_matrix)
-        np.save(os.path.join(output_path, self.row_index_output_filename), synthetic_data_bundle.row_index)
-        np.save(os.path.join(output_path, self.col_index_output_filename), synthetic_data_bundle.col_index)
+        np.save(
+            os.path.join(output_path, self.count_matrix_output_filename),
+            synthetic_data_bundle.count_matrix,
+        )
+        np.save(
+            os.path.join(output_path, self.row_index_output_filename),
+            synthetic_data_bundle.row_index,
+        )
+        np.save(
+            os.path.join(output_path, self.col_index_output_filename),
+            synthetic_data_bundle.col_index,
+        )
 
     def _generate_synthetic_counts_and_alignment_tags(
-            self, num_duplicates: int, num_missing_some_tags: int, num_multiple_gene_alignments: int,
-            max_gene_hits_per_multiple_gene_alignments: int) -> 'SyntheticDataBundle':
+        self,
+        num_duplicates: int,
+        num_missing_some_tags: int,
+        num_multiple_gene_alignments: int,
+        max_gene_hits_per_multiple_gene_alignments: int,
+    ) -> 'SyntheticDataBundle':
 
         # generate count matrix
         count_matrix: np.ndarray = self._generate_random_count_matrix()
 
         # generate necessary alignment tags that produce count_matrix
-        (necessary_alignment_record_tags_set, row_index,
-         col_index) = self._generate_necessary_alignment_record_bundle(count_matrix)
+        (
+            necessary_alignment_record_tags_set,
+            row_index,
+            col_index,
+        ) = self._generate_necessary_alignment_record_bundle(count_matrix)
         necessary_alignment_record_tags_list = list(necessary_alignment_record_tags_set)
 
         # sanity check -- we require as many necessary alignment records as the total counts
-        assert len(necessary_alignment_record_tags_set) == np.sum(count_matrix), \
-            "There is an inconsistency between synthetic counts and necessary tags: we require as " \
+        assert len(necessary_alignment_record_tags_set) == np.sum(count_matrix), (
+            "There is an inconsistency between synthetic counts and necessary tags: we require as "
             "many necessary alignment tags as the total counts"
+        )
 
         # add duplicate records
         duplicate_alignment_tags_list = self._generate_duplicate_alignment_tags(
-            num_duplicates, necessary_alignment_record_tags_list)
+            num_duplicates, necessary_alignment_record_tags_list
+        )
 
         # add records with missing tags
-        incomplete_alignment_tags_list: List[AlignmentRecordTags] = self._generate_incomplete_alignment_tags(
-            num_missing_some_tags)
+        incomplete_alignment_tags_list: List[
+            AlignmentRecordTags
+        ] = self._generate_incomplete_alignment_tags(num_missing_some_tags)
 
         # add records with multiple gene alignments
-        multiple_alignment_tags_list: List[List[AlignmentRecordTags]] = self._generate_multiple_gene_alignment_tags(
+        multiple_alignment_tags_list: List[
+            List[AlignmentRecordTags]
+        ] = self._generate_multiple_gene_alignment_tags(
             num_multiple_gene_alignments,
             max_gene_hits_per_multiple_gene_alignments,
-            necessary_alignment_record_tags_set)
+            necessary_alignment_record_tags_set,
+        )
 
         return SyntheticDataBundle(
-            count_matrix, row_index, col_index,
+            count_matrix,
+            row_index,
+            col_index,
             necessary_alignment_record_tags_list,
             duplicate_alignment_tags_list,
             incomplete_alignment_tags_list,
-            multiple_alignment_tags_list)
+            multiple_alignment_tags_list,
+        )
 
     def _generate_random_count_matrix(self) -> np.ndarray:
         """Generates a random count matrix.
@@ -299,7 +368,8 @@ class SyntheticTaggedBAMGenerator:
             an ndarray of shape (`self.num_cells`, `self.num_genes`)
         """
         non_zero_count_matrix = self.rng.poisson(
-            lam=self.gene_expression_rate, size=(self.num_cells, self.max_genes))
+            lam=self.gene_expression_rate, size=(self.num_cells, self.max_genes)
+        )
         count_matrix = np.zeros((self.num_cells, self.num_genes), dtype=np.int)
         for i, i_gene in enumerate(self.to_be_used_gene_indices):
             count_matrix[:, i_gene] = non_zero_count_matrix[:, i]
@@ -307,8 +377,8 @@ class SyntheticTaggedBAMGenerator:
 
     @staticmethod
     def _get_bam_records_generator(
-            synthetic_data_bundle: 'SyntheticDataBundle',
-            rng_seed: int = 777) -> Generator[pysam.AlignedSegment, None, None]:
+        synthetic_data_bundle: 'SyntheticDataBundle', rng_seed: int = 777
+    ) -> Generator[pysam.AlignedSegment, None, None]:
         """Returns a generator of pysam.AlignedSegment instances created from the alignment tags
         provided to the initializer.
 
@@ -332,15 +402,21 @@ class SyntheticTaggedBAMGenerator:
 
         # necessary, duplicate, and incomplete alignments
         for alignment_tags_list, query_name_prefix in zip(
-                [synthetic_data_bundle.necessary_alignment_record_tags_list,
-                 synthetic_data_bundle.duplicate_alignment_tags_list,
-                 synthetic_data_bundle.incomplete_alignment_tags_list],
-                [SyntheticTaggedBAMGenerator.NECESSARY_QUERY_NAME_PREFIX,
-                 SyntheticTaggedBAMGenerator.DUPLICATE_QUERY_NAME_PREFIX,
-                 SyntheticTaggedBAMGenerator.INCOMPLETE_QUERY_NAME_PREFIX]):
+            [
+                synthetic_data_bundle.necessary_alignment_record_tags_list,
+                synthetic_data_bundle.duplicate_alignment_tags_list,
+                synthetic_data_bundle.incomplete_alignment_tags_list,
+            ],
+            [
+                SyntheticTaggedBAMGenerator.NECESSARY_QUERY_NAME_PREFIX,
+                SyntheticTaggedBAMGenerator.DUPLICATE_QUERY_NAME_PREFIX,
+                SyntheticTaggedBAMGenerator.INCOMPLETE_QUERY_NAME_PREFIX,
+            ],
+        ):
             for alignment_tags in alignment_tags_list:
                 yield SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                    alignment_tags, query_name_prefix, i_query, num_queries, rng)
+                    alignment_tags, query_name_prefix, i_query, num_queries, rng
+                )
                 i_query += 1
 
         # multi-gene alignments
@@ -348,14 +424,22 @@ class SyntheticTaggedBAMGenerator:
             # multiple alignments have the same query name (by definition)
             for alignment_tags in alignment_tags_list:
                 yield SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                    alignment_tags, SyntheticTaggedBAMGenerator.MULTI_GENE_QUERY_NAME_PREFIX,
-                    i_query, num_queries, rng)
+                    alignment_tags,
+                    SyntheticTaggedBAMGenerator.MULTI_GENE_QUERY_NAME_PREFIX,
+                    i_query,
+                    num_queries,
+                    rng,
+                )
             i_query += 1
 
     @staticmethod
     def _generate_aligned_segment_from_tags(
-            alignment_tags: AlignmentRecordTags, query_prefix: str, i_query: int, num_queries: int,
-            rng: np.random.RandomState) -> pysam.AlignedSegment:
+        alignment_tags: AlignmentRecordTags,
+        query_prefix: str,
+        i_query: int,
+        num_queries: int,
+        rng: np.random.RandomState,
+    ) -> pysam.AlignedSegment:
         """Generates pysam.AlignedSegment instances from alignment_tags.
 
         Parameters
@@ -385,17 +469,20 @@ class SyntheticTaggedBAMGenerator:
         """
         tags = []
         if alignment_tags.cell_barcode:
-            tags.append((consts.CELL_BARCODE_TAG_KEY,
-                         alignment_tags.cell_barcode, 'Z'))
+            tags.append((consts.CELL_BARCODE_TAG_KEY, alignment_tags.cell_barcode, 'Z'))
         if alignment_tags.molecule_barcode:
-            tags.append((consts.MOLECULE_BARCODE_TAG_KEY,
-                         alignment_tags.molecule_barcode, 'Z'))
+            tags.append(
+                (consts.MOLECULE_BARCODE_TAG_KEY, alignment_tags.molecule_barcode, 'Z')
+            )
         if alignment_tags.gene_name:
-            tags.append((consts.GENE_NAME_TAG_KEY,
-                         alignment_tags.gene_name, 'Z'))
+            tags.append((consts.GENE_NAME_TAG_KEY, alignment_tags.gene_name, 'Z'))
         record = pysam.AlignedSegment()
-        record.query_name = SyntheticTaggedBAMGenerator._generate_query_name(query_prefix, i_query, num_queries)
-        record.reference_start = rng.randint(low=0, high=SyntheticTaggedBAMGenerator.SYNTHETIC_SEQUENCE_LENGTH)
+        record.query_name = SyntheticTaggedBAMGenerator._generate_query_name(
+            query_prefix, i_query, num_queries
+        )
+        record.reference_start = rng.randint(
+            low=0, high=SyntheticTaggedBAMGenerator.SYNTHETIC_SEQUENCE_LENGTH
+        )
         record.reference_id = 0  # note: we only use one synthetic sequence
         if len(tags) > 0:
             record.set_tags(tags)
@@ -409,7 +496,8 @@ class SyntheticTaggedBAMGenerator:
         return query_prefix + str(i_query).zfill(num_digits)
 
     def _generate_necessary_alignment_record_bundle(
-            self, count_matrix: np.ndarray) -> Tuple[Set[AlignmentRecordTags], List[str], List[str]]:
+        self, count_matrix: np.ndarray
+    ) -> Tuple[Set[AlignmentRecordTags], List[str], List[str]]:
         alignments: Set[AlignmentRecordTags] = set()
         used_cell_barcodes: Set[str] = set()
 
@@ -430,34 +518,44 @@ class SyntheticTaggedBAMGenerator:
                     unique_alignment_tag = self._generate_unique_random_alignment_tag(
                         alignments,
                         gene_name=self.all_gene_names[i_gene],
-                        cell_barcode=cell_barcode)
+                        cell_barcode=cell_barcode,
+                    )
                     alignments.add(unique_alignment_tag)
 
         return alignments, row_index, col_index
 
     def _generate_unique_random_alignment_tag(
-            self,
-            existing_alignment_tags: Set[AlignmentRecordTags],
-            gene_name: str,
-            cell_barcode: Optional[str] = None,
-            molecule_barcode: Optional[str] = None) -> AlignmentRecordTags:
-        assert gene_name in self.to_be_used_gene_names, \
-            f"{gene_name} is not an allowed gene for generating synthetic data"
+        self,
+        existing_alignment_tags: Set[AlignmentRecordTags],
+        gene_name: str,
+        cell_barcode: Optional[str] = None,
+        molecule_barcode: Optional[str] = None,
+    ) -> AlignmentRecordTags:
+        assert (
+            gene_name in self.to_be_used_gene_names
+        ), f"{gene_name} is not an allowed gene for generating synthetic data"
 
         while True:
             alignment = AlignmentRecordTags(
-                cell_barcode=cell_barcode if cell_barcode else self._generate_random_cell_barcode(),
-                molecule_barcode=molecule_barcode if molecule_barcode else self._generate_random_molecule_barcode(),
-                gene_name=gene_name)
+                cell_barcode=cell_barcode
+                if cell_barcode
+                else self._generate_random_cell_barcode(),
+                molecule_barcode=molecule_barcode
+                if molecule_barcode
+                else self._generate_random_molecule_barcode(),
+                gene_name=gene_name,
+            )
             if alignment not in existing_alignment_tags:
                 return alignment
 
     def _generate_duplicate_alignment_tags(
-            self, num_duplicates: int, necessary_alignments_list: List[AlignmentRecordTags]) \
-            -> List[AlignmentRecordTags]:
+        self, num_duplicates: int, necessary_alignments_list: List[AlignmentRecordTags]
+    ) -> List[AlignmentRecordTags]:
         return self.rng.choice(necessary_alignments_list, size=num_duplicates).tolist()
 
-    def _generate_incomplete_alignment_tags(self, num_missing_some_tags: int) -> List[AlignmentRecordTags]:
+    def _generate_incomplete_alignment_tags(
+        self, num_missing_some_tags: int
+    ) -> List[AlignmentRecordTags]:
         """Generates alignments with missing crucial tags.
 
         Notes
@@ -484,24 +582,39 @@ class SyntheticTaggedBAMGenerator:
         return incomplete_alignment_tags_list
 
     def _generate_multiple_gene_alignment_tags(
-            self, num_multiple_gene_alignments: int, max_gene_hits_per_multiple_gene_alignments: int,
-            necessary_alignment_record_tags_set: Set[AlignmentRecordTags]) -> List[List[AlignmentRecordTags]]:
+        self,
+        num_multiple_gene_alignments: int,
+        max_gene_hits_per_multiple_gene_alignments: int,
+        necessary_alignment_record_tags_set: Set[AlignmentRecordTags],
+    ) -> List[List[AlignmentRecordTags]]:
 
         necessary_alignment_record_tags_list = list(necessary_alignment_record_tags_set)
 
         multiple_gene_alignment_tags_list: List[List[AlignmentRecordTags]] = list()
         for _ in range(num_multiple_gene_alignments):
-            random_necessary_alignment = self.rng.choice(necessary_alignment_record_tags_list)
+            random_necessary_alignment = self.rng.choice(
+                necessary_alignment_record_tags_list
+            )
             random_necessary_cell_barcode: str = random_necessary_alignment.cell_barcode
             novel_molecule_barcode: str = self._generate_unique_random_alignment_tag(
                 necessary_alignment_record_tags_set,
                 gene_name=random_necessary_alignment.gene_name,
-                cell_barcode=random_necessary_cell_barcode).molecule_barcode
-            num_gene_hits = self.rng.randint(low=2, high=max_gene_hits_per_multiple_gene_alignments + 1)
-            gene_name_hits = self.rng.choice(self.to_be_used_gene_names, replace=False, size=num_gene_hits)
+                cell_barcode=random_necessary_cell_barcode,
+            ).molecule_barcode
+            num_gene_hits = self.rng.randint(
+                low=2, high=max_gene_hits_per_multiple_gene_alignments + 1
+            )
+            gene_name_hits = self.rng.choice(
+                self.to_be_used_gene_names, replace=False, size=num_gene_hits
+            )
             multiple_gene_alignment_tags_list.append(
-                [AlignmentRecordTags(random_necessary_cell_barcode, novel_molecule_barcode, gene_name)
-                 for gene_name in gene_name_hits])
+                [
+                    AlignmentRecordTags(
+                        random_necessary_cell_barcode, novel_molecule_barcode, gene_name
+                    )
+                    for gene_name in gene_name_hits
+                ]
+            )
         return multiple_gene_alignment_tags_list
 
     def _generate_random_cell_barcode(self, length: int = 16):
@@ -542,14 +655,20 @@ class SyntheticDataBundle:
     """
 
     def __init__(
-            self, count_matrix: np.ndarray, row_index: List[str], col_index: List[str],
-            necessary_alignment_record_tags_list: List[AlignmentRecordTags],
-            duplicate_alignment_tags_list: List[AlignmentRecordTags],
-            incomplete_alignment_tags_list: List[AlignmentRecordTags],
-            multiple_alignment_tags_list: List[List[AlignmentRecordTags]]) -> None:
+        self,
+        count_matrix: np.ndarray,
+        row_index: List[str],
+        col_index: List[str],
+        necessary_alignment_record_tags_list: List[AlignmentRecordTags],
+        duplicate_alignment_tags_list: List[AlignmentRecordTags],
+        incomplete_alignment_tags_list: List[AlignmentRecordTags],
+        multiple_alignment_tags_list: List[List[AlignmentRecordTags]],
+    ) -> None:
 
-        assert count_matrix.shape == (len(row_index), len(col_index)), \
-            "The shape of the count matrix is inconsistent with the provided row/column indices"
+        assert count_matrix.shape == (
+            len(row_index),
+            len(col_index),
+        ), "The shape of the count matrix is inconsistent with the provided row/column indices"
 
         self.count_matrix = count_matrix
         self.row_index = row_index
@@ -560,14 +679,17 @@ class SyntheticDataBundle:
         self.incomplete_alignment_tags_list = incomplete_alignment_tags_list
         self.multiple_alignment_tags_list = multiple_alignment_tags_list
 
-        self.num_queries = (len(necessary_alignment_record_tags_list)
-                            + len(duplicate_alignment_tags_list)
-                            + len(incomplete_alignment_tags_list)
-                            + len(multiple_alignment_tags_list))
+        self.num_queries = (
+            len(necessary_alignment_record_tags_list)
+            + len(duplicate_alignment_tags_list)
+            + len(incomplete_alignment_tags_list)
+            + len(multiple_alignment_tags_list)
+        )
 
 
-def _get_sorted_count_matrix(count_matrix: np.ndarray, row_index: np.ndarray, col_index: np.ndarray)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _get_sorted_count_matrix(
+    count_matrix: np.ndarray, row_index: np.ndarray, col_index: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Sorted the rows and columns of `count_matrix` and the associated row/column indices.
 
     Parameters
@@ -584,24 +706,31 @@ def _get_sorted_count_matrix(count_matrix: np.ndarray, row_index: np.ndarray, co
     Tuple[np.ndarray, np.ndarray, np.ndarray]
         row/column sorted count matrix, sorted row index, sorted column index
     """
-    sorted_row_indices = [idx for idx, _ in sorted(enumerate(row_index), key=operator.itemgetter(1))]
-    sorted_col_indices = [idx for idx, _ in sorted(enumerate(col_index), key=operator.itemgetter(1))]
-    return (count_matrix[sorted_row_indices, :][:, sorted_col_indices],
-            row_index[sorted_row_indices],
-            col_index[sorted_col_indices])
+    sorted_row_indices = [
+        idx for idx, _ in sorted(enumerate(row_index), key=operator.itemgetter(1))
+    ]
+    sorted_col_indices = [
+        idx for idx, _ in sorted(enumerate(col_index), key=operator.itemgetter(1))
+    ]
+    return (
+        count_matrix[sorted_row_indices, :][:, sorted_col_indices],
+        row_index[sorted_row_indices],
+        col_index[sorted_col_indices],
+    )
 
 
 @pytest.mark.parametrize(
     'alignment_sort_order',
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
-    ids=['query_name_sort_order', 'cell_molecule_gene_query_name_sort_order'])
-def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index):
+    ids=['query_name_sort_order', 'cell_molecule_gene_query_name_sort_order'],
+)
+def test_count_matrix_from_bam(
+    alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index
+):
     # instantiate a test data generator
     synthetic_data_generator = SyntheticTaggedBAMGenerator(
-        _test_num_cells,
-        _test_max_genes,
-        gene_name_to_index,
-        _test_gene_expression_rate)
+        _test_num_cells, _test_max_genes, gene_name_to_index, _test_gene_expression_rate
+    )
 
     _test_temp_dir = tempfile.TemporaryDirectory()
     try:
@@ -612,20 +741,28 @@ def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder, gen
             _test_num_missing_some_tags,
             _test_num_multiple_gene_alignments,
             _test_max_gene_hits_per_multiple_gene_alignments,
-            alignment_sort_order=alignment_sort_order)
+            alignment_sort_order=alignment_sort_order,
+        )
 
         # test data paths
         test_bam_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedBAMGenerator.bam_output_filename)
+            _test_temp_dir.name, SyntheticTaggedBAMGenerator.bam_output_filename
+        )
         test_count_matrix_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedBAMGenerator.count_matrix_output_filename)
+            _test_temp_dir.name,
+            SyntheticTaggedBAMGenerator.count_matrix_output_filename,
+        )
         test_row_index_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedBAMGenerator.row_index_output_filename)
+            _test_temp_dir.name, SyntheticTaggedBAMGenerator.row_index_output_filename
+        )
         test_col_index_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedBAMGenerator.col_index_output_filename)
+            _test_temp_dir.name, SyntheticTaggedBAMGenerator.col_index_output_filename
+        )
 
         # create CountMatrix from the synthetic bam
-        count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(test_bam_path, gene_name_to_index)
+        count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(
+            test_bam_path, gene_name_to_index
+        )
 
         # load the test counts matrix
         count_matrix_data_expected = np.load(test_count_matrix_path)
@@ -641,18 +778,38 @@ def test_count_matrix_from_bam(alignment_sort_order: bam.AlignmentSortOrder, gen
 
     # sort expected and from_bam results by their respective row and column indices, since their sort order
     # is not part of the design specs and is considered arbitrary
-    (sorted_count_matrix_data_from_bam,
-     sorted_row_index_from_bam,
-     sorted_col_index_from_bam) = _get_sorted_count_matrix(
-        count_matrix_data_from_bam, row_index_from_bam, col_index_from_bam)
-    (sorted_count_matrix_data_expected,
-     sorted_row_index_expected,
-     sorted_col_index_expected) = _get_sorted_count_matrix(
-        count_matrix_data_expected, row_index_expected, col_index_expected)
+    (
+        sorted_count_matrix_data_from_bam,
+        sorted_row_index_from_bam,
+        sorted_col_index_from_bam,
+    ) = _get_sorted_count_matrix(
+        count_matrix_data_from_bam, row_index_from_bam, col_index_from_bam
+    )
+    (
+        sorted_count_matrix_data_expected,
+        sorted_row_index_expected,
+        sorted_col_index_expected,
+    ) = _get_sorted_count_matrix(
+        count_matrix_data_expected, row_index_expected, col_index_expected
+    )
 
     # assert equality of sorted count matrices and sorted row/col indices
-    assert np.allclose(sorted_count_matrix_data_from_bam, sorted_count_matrix_data_expected)
-    assert all([row_name_from_bam == row_name_expected
-                for row_name_from_bam, row_name_expected in zip(sorted_row_index_from_bam, sorted_row_index_expected)])
-    assert all([col_name_from_bam == col_name_expected
-                for col_name_from_bam, col_name_expected in zip(sorted_col_index_from_bam, sorted_col_index_expected)])
+    assert np.allclose(
+        sorted_count_matrix_data_from_bam, sorted_count_matrix_data_expected
+    )
+    assert all(
+        [
+            row_name_from_bam == row_name_expected
+            for row_name_from_bam, row_name_expected in zip(
+                sorted_row_index_from_bam, sorted_row_index_expected
+            )
+        ]
+    )
+    assert all(
+        [
+            col_name_from_bam == col_name_expected
+            for col_name_from_bam, col_name_expected in zip(
+                sorted_col_index_from_bam, sorted_col_index_expected
+            )
+        ]
+    )

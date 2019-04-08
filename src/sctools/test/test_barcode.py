@@ -11,10 +11,12 @@ data_dir = os.path.split(__file__)[0] + '/data/'
 
 # TEST BARCODES
 
+
 @pytest.fixture
 def barcode_set():
     return barcode.Barcodes.from_whitelist(
-        data_dir + '1k-august-2016.txt', barcode_length=16)
+        data_dir + '1k-august-2016.txt', barcode_length=16
+    )
 
 
 @pytest.fixture(scope='module', params=['r', 'rb'])
@@ -29,7 +31,9 @@ def short_barcode_set_from_iterable(request):
 
 @pytest.fixture(scope='module')
 def short_barcode_set_from_encoded():
-    return barcode.Barcodes.from_iterable_encoded([0, 1, 2, 3, 4, 5, 6, 7], barcode_length=2)
+    return barcode.Barcodes.from_iterable_encoded(
+        [0, 1, 2, 3, 4, 5, 6, 7], barcode_length=2
+    )
 
 
 def test_iterable_produces_correct_barcodes(short_barcode_set_from_encoded):
@@ -55,7 +59,9 @@ def test_barcode_diversity_is_in_range(barcode_set):
     assert np.all(bd <= 1)
 
 
-def test_summarize_hamming_distances_gives_reasonable_results(short_barcode_set_from_iterable):
+def test_summarize_hamming_distances_gives_reasonable_results(
+    short_barcode_set_from_iterable
+):
 
     hamming_summary = short_barcode_set_from_iterable.summarize_hamming_distances()
 
@@ -67,11 +73,13 @@ def test_summarize_hamming_distances_gives_reasonable_results(short_barcode_set_
 
 # TEST HashErrorsToCorrectBarcodes
 
+
 @pytest.fixture(scope='module')
 def trivial_whitelist():
     barcode_iterable = ['A' * 8]
     error_mapping = barcode.ErrorsToCorrectBarcodesMap._prepare_single_base_error_hash_table(
-        barcode_iterable)
+        barcode_iterable
+    )
     return barcode.ErrorsToCorrectBarcodesMap(error_mapping)
 
 
@@ -80,7 +88,8 @@ def truncated_whitelist_from_10x():
     # note that this whitelist contains 1 non-10x barcode to ensure the presence of a matching
     # target in the test data.
     error_mapping = barcode.ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
-        data_dir + '1k-august-2016.txt')
+        data_dir + '1k-august-2016.txt'
+    )
     return error_mapping
 
 
@@ -101,7 +110,9 @@ def test_correct_barcode_finds_and_corrects_1_base_errors(trivial_whitelist):
     assert trivial_whitelist.get_corrected_barcode('AAAAAAAA') == 'AAAAAAAA'
 
 
-def test_correct_barcode_raises_keyerror_when_barcode_not_correct_length(trivial_whitelist):
+def test_correct_barcode_raises_keyerror_when_barcode_not_correct_length(
+    trivial_whitelist
+):
     with pytest.raises(KeyError):
         trivial_whitelist.get_corrected_barcode('AAA')
     with pytest.raises(KeyError):
@@ -110,7 +121,9 @@ def test_correct_barcode_raises_keyerror_when_barcode_not_correct_length(trivial
         trivial_whitelist.get_corrected_barcode('AAAAAAAAAA')
 
 
-def test_correct_barcode_raises_keyerror_when_barcode_has_more_than_one_error(trivial_whitelist):
+def test_correct_barcode_raises_keyerror_when_barcode_has_more_than_one_error(
+    trivial_whitelist
+):
     with pytest.raises(KeyError):
         trivial_whitelist.get_corrected_barcode('AAAAAATT')
     with pytest.raises(KeyError):
@@ -121,10 +134,15 @@ def test_correct_barcode_raises_keyerror_when_barcode_has_more_than_one_error(tr
 def tagged_bamfile():
     outbam = data_dir + 'bam_with_tags_test.bam'
     args = [
-        '--r1', data_dir + 'test_r1.fastq',
-        '--i1', data_dir + 'test_i7.fastq',
-        '--u2', data_dir + 'test.bam',
-        '--output-bamfile', outbam]
+        '--r1',
+        data_dir + 'test_r1.fastq',
+        '--i1',
+        data_dir + 'test_i7.fastq',
+        '--u2',
+        data_dir + 'test.bam',
+        '--output-bamfile',
+        outbam,
+    ]
     platform.TenXV2.attach_barcodes(args)
     yield outbam
     os.remove(outbam)

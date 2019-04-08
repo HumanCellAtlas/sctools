@@ -33,7 +33,7 @@ sctools.metrics.writer
 
 """
 
-from collections import Counter
+
 from typing import Iterable, Tuple, Counter, List, Sequence
 
 import numpy as np
@@ -135,19 +135,23 @@ class MetricAggregator:
         Chromosome: int
         Strand: bool  # reverse = True, see pysam.AlignedSegment.is_reverse
         Position: int
-        Fragment: Tuple[Chromosome, Position, Strand]
+        Fragment: Tuple[Chromosome, Position, Strand]  # noqa: F821
 
         # count information
         self.n_reads: int = 0
         self.noise_reads: int = 0  # long polymers, N-sequences; NotImplemented
-        self._fragment_histogram: Counter[Fragment] = Counter()
+        self._fragment_histogram: Counter[Fragment] = Counter()  # noqa: F821
         self._molecule_histogram: Counter[str] = Counter()
 
         # molecule information
-        self._molecule_barcode_fraction_bases_above_30 = OnlineGaussianSufficientStatistic()
+        self._molecule_barcode_fraction_bases_above_30 = (
+            OnlineGaussianSufficientStatistic()
+        )
         self.perfect_molecule_barcodes = 0
 
-        self._genomic_reads_fraction_bases_quality_above_30 = OnlineGaussianSufficientStatistic()
+        self._genomic_reads_fraction_bases_quality_above_30 = (
+            OnlineGaussianSufficientStatistic()
+        )
         self._genomic_read_quality = OnlineGaussianSufficientStatistic()
 
         # alignment location information
@@ -199,10 +203,14 @@ class MetricAggregator:
             A list of Illumina base call qualities converted to integers
 
         """
-        return [ord(c) - 33 for c in quality_sequence]  # todo look up if this is accurate
+        return [
+            ord(c) - 33 for c in quality_sequence
+        ]  # todo look up if this is accurate
 
     @staticmethod
-    def _quality_above_threshold(threshold: int, quality_sequence: Sequence[int]) -> float:
+    def _quality_above_threshold(
+        threshold: int, quality_sequence: Sequence[int]
+    ) -> float:
         """Calculate the fraction of bases called with a quality above ``threshold``.
 
         Parameters
@@ -218,13 +226,16 @@ class MetricAggregator:
             The fraction of bases in ``quality_sequence`` with quality greater than ``threshold``
 
         """
-        return sum(1 for base in quality_sequence if base > threshold) / len(quality_sequence)
+        return sum(1 for base in quality_sequence if base > threshold) / len(
+            quality_sequence
+        )
 
     def _is_noise(self, record: pysam.AlignedSegment) -> bool:
         return NotImplemented  # todo required because 10x measures this
 
     def parse_molecule(
-            self, tags: Sequence[str], records: Iterable[pysam.AlignedSegment]) -> None:
+        self, tags: Sequence[str], records: Iterable[pysam.AlignedSegment]
+    ) -> None:
         """Parse information from all records of a molecule.
 
         The parsed information is stored in the MetricAggregator in-place.
@@ -254,21 +265,28 @@ class MetricAggregator:
 
             self._molecule_barcode_fraction_bases_above_30.update(
                 self._quality_above_threshold(
-                    30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY))))
+                    30,
+                    self._quality_string_to_numeric(
+                        record.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY)
+                    ),
+                )
+            )
 
-            # we should be tolerant and handle it if the pysam.AlignedSegment.get_tag 
+            # we should be tolerant and handle it if the pysam.AlignedSegment.get_tag
             # cannot retrieve the data by a tag since it's not a fatal error
             try:
-                self.perfect_molecule_barcodes += (
-                    record.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY))
+                self.perfect_molecule_barcodes += record.get_tag(
+                    consts.RAW_MOLECULE_BARCODE_TAG_KEY
+                ) == record.get_tag(consts.MOLECULE_BARCODE_TAG_KEY)
             except KeyError:
-                # An error occurred while retrieving the data from the optional alighment section, which 
-                # indicates that the read did not have a corrected UMI sequence. In the future we would like to 
+                # An error occurred while retrieving the data from the optional alighment section, which
+                # indicates that the read did not have a corrected UMI sequence. In the future we would like to
                 # keep track of these reads.
                 pass
 
             self._genomic_reads_fraction_bases_quality_above_30.update(
-                self._quality_above_threshold(30, record.query_alignment_qualities))
+                self._quality_above_threshold(30, record.query_alignment_qualities)
+            )
 
             mean_alignment_quality: float = np.mean(record.query_alignment_qualities)
             self._genomic_read_quality.update(mean_alignment_quality)
@@ -300,7 +318,9 @@ class MetricAggregator:
             if number_mappings == 1:
                 self.reads_mapped_uniquely += 1
             else:
-                self.reads_mapped_multiple += 1  # todo without multi-mapping, this number is zero!
+                self.reads_mapped_multiple += (
+                    1
+                )  # todo without multi-mapping, this number is zero!
 
             if record.is_duplicate:
                 self.duplicate_reads += 1
@@ -313,7 +333,9 @@ class MetricAggregator:
             # todo figure out antisense and make this notation clearer; info likely in dropseqtools
             self._plus_strand_reads += not record.is_reverse
 
-    def parse_extra_fields(self, tags: Sequence[str], record: pysam.AlignedSegment) -> None:
+    def parse_extra_fields(
+        self, tags: Sequence[str], record: pysam.AlignedSegment
+    ) -> None:
         """Defined by subclasses to extract class-specific information from molecules"""
         raise NotImplementedError
 
@@ -325,17 +347,13 @@ class MetricAggregator:
 
         """
 
-        self.molecule_barcode_fraction_bases_above_30_mean: float = \
-            self._molecule_barcode_fraction_bases_above_30.mean
+        self.molecule_barcode_fraction_bases_above_30_mean: float = self._molecule_barcode_fraction_bases_above_30.mean
 
-        self.molecule_barcode_fraction_bases_above_30_variance: float = \
-            self._molecule_barcode_fraction_bases_above_30.calculate_variance()
+        self.molecule_barcode_fraction_bases_above_30_variance: float = self._molecule_barcode_fraction_bases_above_30.calculate_variance()
 
-        self.genomic_reads_fraction_bases_quality_above_30_mean: float = \
-            self._genomic_reads_fraction_bases_quality_above_30.mean
+        self.genomic_reads_fraction_bases_quality_above_30_mean: float = self._genomic_reads_fraction_bases_quality_above_30.mean
 
-        self.genomic_reads_fraction_bases_quality_above_30_variance: float = \
-            self._genomic_reads_fraction_bases_quality_above_30.calculate_variance()
+        self.genomic_reads_fraction_bases_quality_above_30_variance: float = self._genomic_reads_fraction_bases_quality_above_30.calculate_variance()
 
         self.genomic_read_quality_mean: float = self._genomic_read_quality.mean
 
@@ -360,11 +378,13 @@ class MetricAggregator:
         except ZeroDivisionError:
             self.fragments_per_molecule: float = float('nan')
 
-        self.fragments_with_single_read_evidence: int = \
-            sum(1 for v in self._fragment_histogram.values() if v == 1)
+        self.fragments_with_single_read_evidence: int = sum(
+            1 for v in self._fragment_histogram.values() if v == 1
+        )
 
-        self.molecules_with_single_read_evidence: int = \
-            sum(1 for v in self._molecule_histogram.values() if v == 1)
+        self.molecules_with_single_read_evidence: int = sum(
+            1 for v in self._molecule_histogram.values() if v == 1
+        )
 
 
 class CellMetrics(MetricAggregator):
@@ -434,19 +454,19 @@ class CellMetrics(MetricAggregator):
     def finalize(self):
         super().finalize()
 
-        self.cell_barcode_fraction_bases_above_30_mean: float = \
-            self._cell_barcode_fraction_bases_above_30.mean
+        self.cell_barcode_fraction_bases_above_30_mean: float = self._cell_barcode_fraction_bases_above_30.mean
 
-        self.cell_barcode_fraction_bases_above_30_variance: float = \
-            self._cell_barcode_fraction_bases_above_30.calculate_variance()
+        self.cell_barcode_fraction_bases_above_30_variance: float = self._cell_barcode_fraction_bases_above_30.calculate_variance()
 
-        self.n_genes: int = \
-            len(self._genes_histogram.keys())
+        self.n_genes: int = len(self._genes_histogram.keys())
 
-        self.genes_detected_multiple_observations: int = \
-            sum(1 for v in self._genes_histogram.values() if v > 1)
+        self.genes_detected_multiple_observations: int = sum(
+            1 for v in self._genes_histogram.values() if v > 1
+        )
 
-    def parse_extra_fields(self, tags: Sequence[str], record: pysam.AlignedSegment) -> None:
+    def parse_extra_fields(
+        self, tags: Sequence[str], record: pysam.AlignedSegment
+    ) -> None:
         """Parses a record to extract gene-specific information
 
         Gene-specific metric data is stored in-place in the MetricAggregator
@@ -461,13 +481,18 @@ class CellMetrics(MetricAggregator):
         """
         self._cell_barcode_fraction_bases_above_30.update(
             self._quality_above_threshold(
-                30, self._quality_string_to_numeric(record.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY))))
+                30,
+                self._quality_string_to_numeric(
+                    record.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY)
+                ),
+            )
+        )
 
         # Exclude reads that do not have a CB tag from the perfect_cell_barcodes count
         if record.has_tag(consts.CELL_BARCODE_TAG_KEY):
             raw_cell_barcode_tag = record.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY)
             cell_barcode_tag = record.get_tag(consts.CELL_BARCODE_TAG_KEY)
-            self.perfect_cell_barcodes += (raw_cell_barcode_tag == cell_barcode_tag)
+            self.perfect_cell_barcodes += raw_cell_barcode_tag == cell_barcode_tag
 
         try:
             alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
@@ -524,10 +549,13 @@ class GeneMetrics(MetricAggregator):
 
         self.number_cells_expressing: int = len(self._cells_histogram.keys())
 
-        self.number_cells_detected_multiple: int = \
-            sum(1 for c in self._cells_histogram.values() if c > 1)
+        self.number_cells_detected_multiple: int = sum(
+            1 for c in self._cells_histogram.values() if c > 1
+        )
 
-    def parse_extra_fields(self, tags: Sequence[str], record: pysam.AlignedSegment) -> None:
+    def parse_extra_fields(
+        self, tags: Sequence[str], record: pysam.AlignedSegment
+    ) -> None:
         """Parses a record to extract cell-specific information
 
         Cell-specific metric data is stored in-place in the MetricAggregator

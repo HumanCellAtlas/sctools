@@ -57,7 +57,6 @@ class MergeMetrics:
 
 
 class MergeCellMetrics(MergeMetrics):
-
     def execute(self) -> None:
         """Concatenate input cell metric files
 
@@ -73,7 +72,6 @@ class MergeCellMetrics(MergeMetrics):
 
 
 class MergeGeneMetrics(MergeMetrics):
-
     def execute(self) -> None:
         """Merge input gene metric files
 
@@ -133,7 +131,11 @@ class MergeGeneMetrics(MergeMetrics):
             ]
 
             return pd.Series(
-                {c: np.average(data_frame[c], weights=weights) for c in columns_to_average_by_read})
+                {
+                    c: np.average(data_frame[c], weights=weights)
+                    for c in columns_to_average_by_read
+                }
+            )
 
         def recalculate_operation(data_frame) -> pd.DataFrame:
             """Recalculate metrics that are dependent on other metric values
@@ -153,9 +155,14 @@ class MergeGeneMetrics(MergeMetrics):
             """
             return pd.DataFrame(
                 data={
-                    'reads_per_molecule': data_frame['n_reads'] / data_frame['n_molecules'],
-                    'fragments_per_molecule': data_frame['n_fragments'] / data_frame['n_molecules'],
-                    'reads_per_fragment': data_frame['n_reads'] / data_frame['n_fragments']})
+                    'reads_per_molecule': data_frame['n_reads']
+                    / data_frame['n_molecules'],
+                    'fragments_per_molecule': data_frame['n_fragments']
+                    / data_frame['n_molecules'],
+                    'reads_per_fragment': data_frame['n_reads']
+                    / data_frame['n_fragments'],
+                }
+            )
 
         # pick one file as a nucleus and merge each subsequent dataframe into it
         nucleus = pd.read_csv(self._metric_files[0], index_col=0)

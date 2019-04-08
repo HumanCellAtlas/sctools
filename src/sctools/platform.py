@@ -53,7 +53,7 @@ class GenericPlatform:
     """
 
     @classmethod
-    def tag_sort_bam(cls, args: Iterable=None) -> int:
+    def tag_sort_bam(cls, args: Iterable = None) -> int:
         """Command line entrypoint for sorting a bam file by zero or more tags, followed by queryname.
 
         Parameters
@@ -71,14 +71,15 @@ class GenericPlatform:
         """
         description = 'Sorts bam by list of zero or more tags, followed by query name'
         parser = argparse.ArgumentParser(description=description)
+        parser.add_argument('-i', '--input_bam', required=True, help='input bamfile')
+        parser.add_argument('-o', '--output_bam', required=True, help='output bamfile')
         parser.add_argument(
-            '-i', '--input_bam', required=True,
-            help='input bamfile')
-        parser.add_argument(
-            '-o', '--output_bam', required=True,
-            help='output bamfile')
-        parser.add_argument('-t', '--tags', nargs='+', action='append',
-                            help='tag(s) to sort by, separated by space, e.g. -t CB GE UB')
+            '-t',
+            '--tags',
+            nargs='+',
+            action='append',
+            help='tag(s) to sort by, separated by space, e.g. -t CB GE UB',
+        )
         if args is not None:
             args = parser.parse_args(args)
         else:
@@ -96,7 +97,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def verify_bam_sort(cls, args: Iterable=None) -> int:
+    def verify_bam_sort(cls, args: Iterable = None) -> int:
         """Command line entrypoint for verifying bam is properly sorted by zero or more tags, followed by queryname.
 
         Parameters
@@ -114,11 +115,14 @@ class GenericPlatform:
         """
         description = 'Verifies whether bam is sorted by the list of zero or more tags, followed by query name'
         parser = argparse.ArgumentParser(description=description)
+        parser.add_argument('-i', '--input_bam', required=True, help='input bamfile')
         parser.add_argument(
-            '-i', '--input_bam', required=True,
-            help='input bamfile')
-        parser.add_argument('-t', '--tags', nargs='+', action='append',
-                            help='tag(s) to use to verify sorting, separated by space, e.g. -t CB GE UB')
+            '-t',
+            '--tags',
+            nargs='+',
+            action='append',
+            help='tag(s) to use to verify sorting, separated by space, e.g. -t CB GE UB',
+        )
         if args is not None:
             args = parser.parse_args(args)
         else:
@@ -127,10 +131,15 @@ class GenericPlatform:
         tags = cls.get_tags(args.tags)
         with pysam.AlignmentFile(args.input_bam, 'rb') as f:
             aligned_segments = f.fetch(until_eof=True)
-            sortable_records = (bam.TagSortableRecord.from_aligned_segment(r, tags) for r in aligned_segments)
+            sortable_records = (
+                bam.TagSortableRecord.from_aligned_segment(r, tags)
+                for r in aligned_segments
+            )
             bam.verify_sort(sortable_records, tags)
 
-        print('{0} is correctly sorted by {1} and query name'.format(args.input_bam, tags))
+        print(
+            '{0} is correctly sorted by {1} and query name'.format(args.input_bam, tags)
+        )
         return 0
 
     @classmethod
@@ -141,7 +150,7 @@ class GenericPlatform:
         return [t for t in chain.from_iterable(raw_tags)]
 
     @classmethod
-    def split_bam(cls, args: Iterable=None) -> int:
+    def split_bam(cls, args: Iterable = None) -> int:
         """Command line entrypoint for splitting a bamfile into subfiles of equal size.
 
         prints filenames of chunks to stdout
@@ -160,37 +169,51 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
+        parser.add_argument('-b', '--bamfile', required=True, help='input bamfile')
         parser.add_argument(
-            '-b', '--bamfile', required=True,
-            help='input bamfile')
+            '-p', '--output-prefix', required=True, help='prefix for output chunks'
+        )
         parser.add_argument(
-            '-p', '--output-prefix', required=True,
-            help='prefix for output chunks')
+            '-s',
+            '--subfile-size',
+            required=False,
+            default=1000,
+            type=float,
+            help='approximate size target for each subfile (in MB)',
+        )
         parser.add_argument(
-            '-s', '--subfile-size', required=False, default=1000, type=float,
-            help='approximate size target for each subfile (in MB)')
-        parser.add_argument('-t', '--tags', nargs='+',
-                            help='tag(s) to split bamfile over. Tags are checked sequentially, '
-                                 'and tags after the first are only checked if the first tag is '
-                                 'not present.')
+            '-t',
+            '--tags',
+            nargs='+',
+            help='tag(s) to split bamfile over. Tags are checked sequentially, '
+            'and tags after the first are only checked if the first tag is '
+            'not present.',
+        )
         parser.set_defaults(raise_missing=True)
-        parser.add_argument('--drop-missing', action='store_false',
-                            help='drop records without tag specified by -t/--tag (default '
-                                 'behavior is to raise an exception')
+        parser.add_argument(
+            '--drop-missing',
+            action='store_false',
+            help='drop records without tag specified by -t/--tag (default '
+            'behavior is to raise an exception',
+        )
         if args is not None:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
 
         filenames = bam.split(
-            args.bamfile, args.output_prefix, *args.tags,
-            approx_mb_per_split=args.subfile_size, raise_missing=args.raise_missing)
+            args.bamfile,
+            args.output_prefix,
+            *args.tags,
+            approx_mb_per_split=args.subfile_size,
+            raise_missing=args.raise_missing,
+        )
 
         print(' '.join(filenames))
         return 0
 
     @classmethod
-    def calculate_gene_metrics(cls, args: Iterable[str]=None) -> int:
+    def calculate_gene_metrics(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for calculating gene metrics from a sorted bamfile.
 
         Writes metrics to .csv
@@ -209,8 +232,12 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
-        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+        parser.add_argument(
+            '-i', '--input-bam', required=True, help='Input bam file name.'
+        )
+        parser.add_argument(
+            '-o', '--output-filestem', required=True, help='Output file stem.'
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -218,12 +245,13 @@ class GenericPlatform:
             args = parser.parse_args()
 
         gene_metric_gatherer = metrics.gatherer.GatherGeneMetrics(
-            args.input_bam, args.output_filestem)
+            args.input_bam, args.output_filestem
+        )
         gene_metric_gatherer.extract_metrics()
         return 0
 
     @classmethod
-    def calculate_cell_metrics(cls, args: Iterable[str]=None) -> int:
+    def calculate_cell_metrics(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for calculating cell metrics from a sorted bamfile.
 
         Writes metrics to .csv
@@ -242,20 +270,25 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-i', '--input-bam', required=True, help='Input bam file name.')
-        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+        parser.add_argument(
+            '-i', '--input-bam', required=True, help='Input bam file name.'
+        )
+        parser.add_argument(
+            '-o', '--output-filestem', required=True, help='Output file stem.'
+        )
 
         if args is not None:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
         cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
-            args.input_bam, args.output_filestem)
+            args.input_bam, args.output_filestem
+        )
         cell_metric_gatherer.extract_metrics()
         return 0
 
     @classmethod
-    def merge_gene_metrics(cls, args: Iterable[str]=None) -> int:
+    def merge_gene_metrics(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for merging multiple gene metrics files.
 
         Merges multiple metrics inputs into a single metrics file that matches the shape and
@@ -276,7 +309,9 @@ class GenericPlatform:
         """
         parser = argparse.ArgumentParser()
         parser.add_argument('metric_files', nargs='+', help='Input metric files')
-        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+        parser.add_argument(
+            '-o', '--output-filestem', required=True, help='Output file stem.'
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -287,7 +322,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def merge_cell_metrics(cls, args: Iterable[str]=None) -> int:
+    def merge_cell_metrics(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for merging multiple cell metrics files.
 
         Merges multiple metrics inputs into a single metrics file that matches the shape and
@@ -308,7 +343,9 @@ class GenericPlatform:
         """
         parser = argparse.ArgumentParser()
         parser.add_argument('metric_files', nargs='+', help='Input metric files')
-        parser.add_argument('-o', '--output-filestem', required=True, help='Output file stem.')
+        parser.add_argument(
+            '-o', '--output-filestem', required=True, help='Output file stem.'
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -319,7 +356,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def bam_to_count_matrix(cls, args: Iterable[str]=None) -> int:
+    def bam_to_count_matrix(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for constructing a count matrix from a tagged bam file.
 
         Constructs a count matrix from an aligned bam file sorted by cell barcode, molecule
@@ -342,23 +379,33 @@ class GenericPlatform:
         parser.set_defaults(
             cell_barcode_tag=consts.CELL_BARCODE_TAG_KEY,
             molecule_barcode_tag=consts.MOLECULE_BARCODE_TAG_KEY,
-            gene_name_tag=consts.GENE_NAME_TAG_KEY
+            gene_name_tag=consts.GENE_NAME_TAG_KEY,
         )
         parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
         parser.add_argument(
-            '-o', '--output-prefix', help='file stem for count matrix', required=True)
+            '-o', '--output-prefix', help='file stem for count matrix', required=True
+        )
         parser.add_argument(
-            '-a', '--gtf-annotation-file', required=True,
-            help='gtf annotation file that bam_file was aligned against')
+            '-a',
+            '--gtf-annotation-file',
+            required=True,
+            help='gtf annotation file that bam_file was aligned against',
+        )
         parser.add_argument(
-            '-c', '--cell-barcode-tag',
-            help=f'tag that identifies the cell barcode (default = {consts.CELL_BARCODE_TAG_KEY})')
+            '-c',
+            '--cell-barcode-tag',
+            help=f'tag that identifies the cell barcode (default = {consts.CELL_BARCODE_TAG_KEY})',
+        )
         parser.add_argument(
-            '-m', '--molecule-barcode-tag',
-            help=f'tag that identifies the molecule barcode (default = {consts.MOLECULE_BARCODE_TAG_KEY})')
+            '-m',
+            '--molecule-barcode-tag',
+            help=f'tag that identifies the molecule barcode (default = {consts.MOLECULE_BARCODE_TAG_KEY})',
+        )
         parser.add_argument(
-            '-g', '--gene-id-tag',
-            help=f'tag that identifies the gene name (default = {consts.GENE_NAME_TAG_KEY})')
+            '-g',
+            '--gene-id-tag',
+            help=f'tag that identifies the gene name (default = {consts.GENE_NAME_TAG_KEY})',
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -369,7 +416,9 @@ class GenericPlatform:
         open_mode = 'r' if args.bam_file.endswith('.sam') else 'rb'
 
         # load gene names from the annotation file
-        gene_name_to_index: Dict[str, int] = gtf.extract_gene_names(args.gtf_annotation_file)
+        gene_name_to_index: Dict[str, int] = gtf.extract_gene_names(
+            args.gtf_annotation_file
+        )
 
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
@@ -377,14 +426,14 @@ class GenericPlatform:
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
             gene_name_tag=args.gene_name_tag,
-            open_mode=open_mode
+            open_mode=open_mode,
         )
         matrix.save(args.output_prefix)
 
         return 0
 
     @classmethod
-    def merge_count_matrices(cls, args: Iterable[str]=None) -> int:
+    def merge_count_matrices(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for constructing a count matrix from a tagged bam file.
 
         Constructs a count matrix from an aligned bam file sorted by cell barcode, molecule
@@ -404,12 +453,17 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-i', '--input-prefixes', nargs='+',
-                            help='prefix for count matrices to be concatenated. e.g. test_counts '
-                                 'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
-                                 'row_index.npy')
-        parser.add_argument('-o', '--output-stem', help='file stem for merged csr matrix',
-                            required=True)
+        parser.add_argument(
+            '-i',
+            '--input-prefixes',
+            nargs='+',
+            help='prefix for count matrices to be concatenated. e.g. test_counts '
+            'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
+            'row_index.npy',
+        )
+        parser.add_argument(
+            '-o', '--output-stem', help='file stem for merged csr matrix', required=True
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -422,7 +476,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def group_qc_outputs(cls, args: Iterable[str]=None) -> int:
+    def group_qc_outputs(cls, args: Iterable[str] = None) -> int:
         """Commandline entrypoint for parsing picard metrics files, hisat2 and rsem statistics log files.
         Parameters
         ----------
@@ -432,30 +486,33 @@ class GenericPlatform:
             metrics_type: Picard, PicardTable, HISAT2, RSEM and Core.
         Returns
         ----------
-        return: 0 
+        return: 0
             return if the program completes successfully.
         """
         parser = argparse.ArgumentParser()
         parser.add_argument(
-                "-f",
-                "--file_names",
-                dest="file_names",
-                nargs='+',
-                required=True,
-                help="a list of files to be parsed out.")
+            "-f",
+            "--file_names",
+            dest="file_names",
+            nargs='+',
+            required=True,
+            help="a list of files to be parsed out.",
+        )
         parser.add_argument(
-                "-o",
-                "--output_name",
-                dest="output_name",
-                required=True,
-                help="The output file name")
+            "-o",
+            "--output_name",
+            dest="output_name",
+            required=True,
+            help="The output file name",
+        )
         parser.add_argument(
-                "-t",
-                "--metrics_type",
-                dest="metrics_type",
-                choices=['Picard', 'PicardTable', 'Core', 'HISAT2', 'RSEM'],
-                required=True,
-                help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core")
+            "-t",
+            "--metrics_type",
+            dest="metrics_type",
+            choices=['Picard', 'PicardTable', 'Core', 'HISAT2', 'RSEM'],
+            required=True,
+            help="a list of string to represent metrics types,such Picard, PicardTable, HISAT2,RSEM, Core",
+        )
 
         if args is not None:
             args = parser.parse_args(args)
@@ -463,9 +520,13 @@ class GenericPlatform:
             args = parser.parse_args()
 
         if args.metrics_type == "Picard":
-            groups.write_aggregated_picard_metrics_by_row(args.file_names, args.output_name)
+            groups.write_aggregated_picard_metrics_by_row(
+                args.file_names, args.output_name
+            )
         elif args.metrics_type == "PicardTable":
-            groups.write_aggregated_picard_metrics_by_table(args.file_names, args.output_name)
+            groups.write_aggregated_picard_metrics_by_table(
+                args.file_names, args.output_name
+            )
         elif args.metrics_type == "Core":
             groups.write_aggregated_qc_metrics(args.file_names, args.output_name)
         elif args.metrics_type == "HISAT2":
@@ -500,6 +561,7 @@ class TenXV2(GenericPlatform):
         (r2) bam file
 
     """
+
     # 10x contains three barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
     # GA4GH standard tags that the extracted barcodes should be labeled with in the BAM file.
@@ -507,24 +569,28 @@ class TenXV2(GenericPlatform):
         start=0,
         end=16,
         quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+    )
     molecule_barcode = fastq.EmbeddedBarcode(
         start=16,
         end=26,
         quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
+    )
     sample_barcode = fastq.EmbeddedBarcode(
         start=0,
         end=8,
         quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY,
+    )
 
     @classmethod
     def _tag_bamfile(
-            cls,
-            input_bamfile_name: str,
-            output_bamfile_name: str,
-            tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator]) -> None:
+        cls,
+        input_bamfile_name: str,
+        output_bamfile_name: str,
+        tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
+    ) -> None:
         """Adds tags from fastq file(s) to a bam file.
 
         Attaches tags extracted from fastq files by `tag_generators`, attaches them to records from
@@ -545,7 +611,8 @@ class TenXV2(GenericPlatform):
 
     @classmethod
     def _make_tag_generators(
-            cls, r1, i1=None, whitelist=None) -> List[fastq.EmbeddedBarcodeGenerator]:
+        cls, r1, i1=None, whitelist=None
+    ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
         Tag generators are iterators that run over fastq records, they extract and yield all of the
@@ -571,20 +638,29 @@ class TenXV2(GenericPlatform):
 
         # generator for cell and molecule barcodes
         if whitelist is not None:
-            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
-                fastq_files=r1,
-                embedded_cell_barcode=cls.cell_barcode,
-                whitelist=whitelist,
-                other_embedded_barcodes=[cls.molecule_barcode],
-            ))
+            tag_generators.append(
+                fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+                    fastq_files=r1,
+                    embedded_cell_barcode=cls.cell_barcode,
+                    whitelist=whitelist,
+                    other_embedded_barcodes=[cls.molecule_barcode],
+                )
+            )
         else:
-            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
-                fastq_files=r1, embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode]))
+            tag_generators.append(
+                fastq.EmbeddedBarcodeGenerator(
+                    fastq_files=r1,
+                    embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode],
+                )
+            )
 
         # generator for sample barcodes
         if i1 is not None:
-            tag_generators.append(fastq.EmbeddedBarcodeGenerator(
-                fastq_files=i1, embedded_barcodes=[cls.sample_barcode]))
+            tag_generators.append(
+                fastq.EmbeddedBarcodeGenerator(
+                    fastq_files=i1, embedded_barcodes=[cls.sample_barcode]
+                )
+            )
         return tag_generators
 
     @classmethod
@@ -606,21 +682,32 @@ class TenXV2(GenericPlatform):
         """
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            '--r1', required=True,
-            help='read 1 fastq file for a 10x genomics v2 experiment')
+            '--r1',
+            required=True,
+            help='read 1 fastq file for a 10x genomics v2 experiment',
+        )
         parser.add_argument(
-            '--u2', required=True,
+            '--u2',
+            required=True,
             help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
-                 'using picard FastqToSam')
+            'using picard FastqToSam',
+        )
         parser.add_argument(
-            '--i1', default=None,
-            help='(optional) i7 index fastq file for a 10x genomics experiment')
-        parser.add_argument('-o', '--output-bamfile', required=True,
-                            help='filename for tagged bam')
-        parser.add_argument('-w', '--whitelist', default=None,
-                            help='optional cell barcode whitelist. If provided, corrected barcodes '
-                                 'will also be output when barcodes are observed within 1ED of a '
-                                 'whitelisted barcode')
+            '--i1',
+            default=None,
+            help='(optional) i7 index fastq file for a 10x genomics experiment',
+        )
+        parser.add_argument(
+            '-o', '--output-bamfile', required=True, help='filename for tagged bam'
+        )
+        parser.add_argument(
+            '-w',
+            '--whitelist',
+            default=None,
+            help='optional cell barcode whitelist. If provided, corrected barcodes '
+            'will also be output when barcodes are observed within 1ED of a '
+            'whitelisted barcode',
+        )
         if args is not None:
             args = parser.parse_args(args)
         else:
@@ -661,6 +748,7 @@ class BarcodePlatform(GenericPlatform):
         (r2) bam file
 
     """
+
     cell_barcode = None
     molecule_barcode = None
     sample_barcode = None
@@ -682,23 +770,35 @@ class BarcodePlatform(GenericPlatform):
 
         """
         # check that if a barcode start position is provided, its length is also (and vice versa)
-        cls._validate_barcode_length_and_position(args.cell_barcode_start_pos, args.cell_barcode_length)
-        cls._validate_barcode_length_and_position(args.molecule_barcode_start_pos, args.molecule_barcode_length)
-        cls._validate_barcode_length_and_position(args.sample_barcode_start_pos, args.sample_barcode_length)
+        cls._validate_barcode_length_and_position(
+            args.cell_barcode_start_pos, args.cell_barcode_length
+        )
+        cls._validate_barcode_length_and_position(
+            args.molecule_barcode_start_pos, args.molecule_barcode_length
+        )
+        cls._validate_barcode_length_and_position(
+            args.sample_barcode_start_pos, args.sample_barcode_length
+        )
 
         # check that an index fastq is provided sample barcode length and position are given
         if args.i1 is None and args.sample_barcode_length:
-            raise argparse.ArgumentError('An i7 index fastq file must be given to attach a sample barcode')
+            raise argparse.ArgumentError(
+                'An i7 index fastq file must be given to attach a sample barcode'
+            )
 
         # check that cell and molecule barcodes don't overlap
         if args.cell_barcode_length and args.molecule_barcode_length:
-            cls._validate_barcode_input(args.molecule_barcode_start_pos,
-                                        args.cell_barcode_start_pos + args.cell_barcode_length)
+            cls._validate_barcode_input(
+                args.molecule_barcode_start_pos,
+                args.cell_barcode_start_pos + args.cell_barcode_length,
+            )
 
         return args
 
     @classmethod
-    def _validate_barcode_length_and_position(cls, barcode_start_position, barcode_length):
+    def _validate_barcode_length_and_position(
+        cls, barcode_start_position, barcode_length
+    ):
         """Checks that either that both barcode length and position are given or that neither are given as arguments
 
         Parameters
@@ -715,11 +815,15 @@ class BarcodePlatform(GenericPlatform):
             return given value if valid
 
         """
-        barcode_start_pos_exists = bool(barcode_start_position) or (barcode_start_position == 0)
-        barcode_length_exists =  bool(barcode_length)
+        barcode_start_pos_exists = bool(barcode_start_position) or (
+            barcode_start_position == 0
+        )
+        barcode_length_exists = bool(barcode_length)
         # (XOR boolean logic)
-        if (barcode_start_pos_exists != barcode_length_exists):
-            raise argparse.ArgumentError('Invalid position/length, both position and length must be provided by the user together')
+        if barcode_start_pos_exists != barcode_length_exists:
+            raise argparse.ArgumentError(
+                'Invalid position/length, both position and length must be provided by the user together'
+            )
 
     @classmethod
     def _validate_barcode_input(cls, given_value, min_value):
@@ -779,10 +883,12 @@ class BarcodePlatform(GenericPlatform):
         return cls._validate_barcode_input(int(given_value), 1)
 
     @classmethod
-    def _tag_bamfile(cls,
-                     input_bamfile_name: str,
-                     output_bamfile_name: str,
-                     tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator]) -> None:
+    def _tag_bamfile(
+        cls,
+        input_bamfile_name: str,
+        output_bamfile_name: str,
+        tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
+    ) -> None:
         """Adds tags from fastq file(s) to a bam file.
 
         Attaches tags extracted from fastq files by `tag_generators`, attaches them to records from
@@ -802,7 +908,9 @@ class BarcodePlatform(GenericPlatform):
         bam_tagger.tag(output_bamfile_name, tag_generators)
 
     @classmethod
-    def _make_tag_generators(cls, r1, i1=None, whitelist=None) -> List[fastq.EmbeddedBarcodeGenerator]:
+    def _make_tag_generators(
+        cls, r1, i1=None, whitelist=None
+    ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
         Tag generators are iterators that run over fastq records, they extract and yield all of the
@@ -836,11 +944,17 @@ class BarcodePlatform(GenericPlatform):
                 barcode_args['embedded_cell_barcode'] = cls.cell_barcode
             if cls.molecule_barcode:
                 barcode_args['other_embedded_barcodes'] = cls.molecule_barcode
-            tag_generators.append(fastq.BarcodeGeneratorWithCorrectedCellBarcodes(**barcode_args))
+            tag_generators.append(
+                fastq.BarcodeGeneratorWithCorrectedCellBarcodes(**barcode_args)
+            )
 
         else:
             # for all the barcodes that have a length and starting position specified
-            barcode_args['embedded_barcodes'] = [barcode for barcode in [cls.cell_barcode, cls.molecule_barcode] if barcode]
+            barcode_args['embedded_barcodes'] = [
+                barcode
+                for barcode in [cls.cell_barcode, cls.molecule_barcode]
+                if barcode
+            ]
             tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
 
         return tag_generators
@@ -862,57 +976,76 @@ class BarcodePlatform(GenericPlatform):
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('--r1',
-                            required=True,
-                            help='read 1 fastq file, where the cell and molecule barcode is found')
-        parser.add_argument('--u2',
-                            required=True,
-                            help='unaligned bam, can be converted from fastq read 2'
-                                 'using picard FastqToSam')
-        parser.add_argument('-o',
-                            '--output-bamfile',
-                            required=True,
-                            help='filename for tagged bam')
-        parser.add_argument('-w',
-                            '--whitelist',
-                            default=None,
-                            help='optional cell barcode whitelist. If provided, corrected barcodes '
-                                 'will also be output when barcodes are observed within 1ED of a '
-                                 'whitelisted barcode')
-        parser.add_argument('--i1',
-                            default=None,
-                            help='(optional) i7 index fastq file, where the sample barcode is found')
-        parser.add_argument('--sample-barcode-start-position',
-                            dest='sample_barcode_start_pos',
-                            default=None,
-                            help='the user defined start position (base pairs) of the sample barcode',
-                            type=cls._validate_barcode_start_pos)
-        parser.add_argument('--sample-barcode-length',
-                            dest='sample_barcode_length',
-                            default=None,
-                            help='the user defined length (base pairs) of the sample barcode',
-                            type=cls._validate_barcode_length)
-        parser.add_argument('--cell-barcode-start-position',
-                            dest='cell_barcode_start_pos',
-                            default=None,
-                            help='the user defined start position, in base pairs, of the cell barcode',
-                            type=cls._validate_barcode_start_pos)
-        parser.add_argument('--cell-barcode-length',
-                            dest='cell_barcode_length',
-                            default=None,
-                            help='the user defined length, in base pairs, of the cell barcode',
-                            type=cls._validate_barcode_length)
-        parser.add_argument('--molecule-barcode-start-position',
-                            dest='molecule_barcode_start_pos',
-                            default=None,
-                            help='the user defined start position, in base pairs, of the molecule barcode '
-                                 '(must be not overlap cell barcode if cell barcode is provided)',
-                            type=cls._validate_barcode_start_pos)
-        parser.add_argument('--molecule-barcode-length',
-                            dest='molecule_barcode_length',
-                            default=None,
-                            help='the user defined length, in base pairs, of the molecule barcode',
-                            type=cls._validate_barcode_length)
+        parser.add_argument(
+            '--r1',
+            required=True,
+            help='read 1 fastq file, where the cell and molecule barcode is found',
+        )
+        parser.add_argument(
+            '--u2',
+            required=True,
+            help='unaligned bam, can be converted from fastq read 2'
+            'using picard FastqToSam',
+        )
+        parser.add_argument(
+            '-o', '--output-bamfile', required=True, help='filename for tagged bam'
+        )
+        parser.add_argument(
+            '-w',
+            '--whitelist',
+            default=None,
+            help='optional cell barcode whitelist. If provided, corrected barcodes '
+            'will also be output when barcodes are observed within 1ED of a '
+            'whitelisted barcode',
+        )
+        parser.add_argument(
+            '--i1',
+            default=None,
+            help='(optional) i7 index fastq file, where the sample barcode is found',
+        )
+        parser.add_argument(
+            '--sample-barcode-start-position',
+            dest='sample_barcode_start_pos',
+            default=None,
+            help='the user defined start position (base pairs) of the sample barcode',
+            type=cls._validate_barcode_start_pos,
+        )
+        parser.add_argument(
+            '--sample-barcode-length',
+            dest='sample_barcode_length',
+            default=None,
+            help='the user defined length (base pairs) of the sample barcode',
+            type=cls._validate_barcode_length,
+        )
+        parser.add_argument(
+            '--cell-barcode-start-position',
+            dest='cell_barcode_start_pos',
+            default=None,
+            help='the user defined start position, in base pairs, of the cell barcode',
+            type=cls._validate_barcode_start_pos,
+        )
+        parser.add_argument(
+            '--cell-barcode-length',
+            dest='cell_barcode_length',
+            default=None,
+            help='the user defined length, in base pairs, of the cell barcode',
+            type=cls._validate_barcode_length,
+        )
+        parser.add_argument(
+            '--molecule-barcode-start-position',
+            dest='molecule_barcode_start_pos',
+            default=None,
+            help='the user defined start position, in base pairs, of the molecule barcode '
+            '(must be not overlap cell barcode if cell barcode is provided)',
+            type=cls._validate_barcode_start_pos,
+        )
+        parser.add_argument(
+            '--molecule-barcode-length',
+            dest='molecule_barcode_length',
+            default=None,
+            help='the user defined length, in base pairs, of the molecule barcode',
+            type=cls._validate_barcode_length,
+        )
 
         # parse and validate the args
         if args:
@@ -924,20 +1057,26 @@ class BarcodePlatform(GenericPlatform):
         # if the length and there for the start pos have been given as args
         # get the appropriate barcodes
         if args.cell_barcode_length:
-            cls.cell_barcode = fastq.EmbeddedBarcode(start=args.cell_barcode_start_pos,
-                                                     end=args.cell_barcode_start_pos + args.cell_barcode_length,
-                                                     quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-                                                     sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+            cls.cell_barcode = fastq.EmbeddedBarcode(
+                start=args.cell_barcode_start_pos,
+                end=args.cell_barcode_start_pos + args.cell_barcode_length,
+                quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+                sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+            )
         if args.molecule_barcode_length:
-            cls.molecule_barcode = fastq.EmbeddedBarcode(start=args.molecule_barcode_start_pos,
-                                                         end=args.molecule_barcode_start_pos + args.molecule_barcode_length,
-                                                         quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-                                                         sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+            cls.molecule_barcode = fastq.EmbeddedBarcode(
+                start=args.molecule_barcode_start_pos,
+                end=args.molecule_barcode_start_pos + args.molecule_barcode_length,
+                quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+                sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
+            )
         if args.sample_barcode_length:
-            cls.sample_barcode = fastq.EmbeddedBarcode(start=args.sample_barcode_start_pos,
-                                                       end=args.sample_barcode_start_pos + args.sample_barcode_length,
-                                                       quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
-                                                       sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY)
+            cls.sample_barcode = fastq.EmbeddedBarcode(
+                start=args.sample_barcode_start_pos,
+                end=args.sample_barcode_start_pos + args.sample_barcode_length,
+                quality_tag=consts.QUALITY_SAMPLE_BARCODE_TAG_KEY,
+                sequence_tag=consts.RAW_SAMPLE_BARCODE_TAG_KEY,
+            )
 
         # make the tags and attach the barcodes
         tag_generators = cls._make_tag_generators(args.r1, args.i1, args.whitelist)

@@ -150,8 +150,17 @@ class TwoBit(Encoding):
         Generates random nucleotides for ambiguous nucleotides e.g. N
 
         """
-        map_ = {ord('A'): 0, ord('C'): 1, ord('T'): 2, ord('G'): 3,
-                ord('a'): 0, ord('c'): 1, ord('t'): 2, ord('g'): 3}
+
+        map_ = {
+            ord('A'): 0,
+            ord('C'): 1,
+            ord('T'): 2,
+            ord('G'): 3,
+            ord('a'): 0,
+            ord('c'): 1,
+            ord('t'): 2,
+            ord('g'): 3,
+        }
 
         iupac_ambiguous: Set[int] = {ord(c) for c in 'MRWSYKVHDBNmrwsykvhdbn'}
 
@@ -227,9 +236,20 @@ class ThreeBit(Encoding):
         All IUPAC ambiguous codes are treated as "N"
 
         """
+
         # C: 1, A: 2, G: 3, T: 4, N: 6;  # note, not using 0
-        map_ = {ord('C'): 1, ord('A'): 2, ord('G'): 3, ord('T'): 4, ord('N'): 6,
-                ord('c'): 1, ord('a'): 2, ord('g'): 3, ord('t'): 4, ord('n'): 6}
+        map_ = {
+            ord('C'): 1,
+            ord('A'): 2,
+            ord('G'): 3,
+            ord('T'): 4,
+            ord('N'): 6,
+            ord('c'): 1,
+            ord('a'): 2,
+            ord('g'): 3,
+            ord('t'): 4,
+            ord('n'): 6,
+        }
 
         def __getitem__(self, byte: int) -> int:
             try:

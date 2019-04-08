@@ -165,7 +165,9 @@ class Reader:
             records from file corresponding to indices
 
         """
-        indices = copy(indices)  # passed indices is a reference, need own copy to modify
+        indices = copy(
+            indices
+        )  # passed indices is a reference, need own copy to modify
         for idx, record in enumerate(self):
             if idx in indices:
                 yield record
