@@ -75,7 +75,8 @@ class GTFRecord:
 
     _del_letters: str = string.ascii_letters
     _del_non_letters: str = ''.join(
-        set(string.printable).difference(string.ascii_letters))
+        set(string.printable).difference(string.ascii_letters)
+    )
 
     def __init__(self, record: str):
         fields: List[str] = record.strip(';\n').split('\t')
@@ -88,7 +89,9 @@ class GTFRecord:
                 key, _, value = field.strip().partition(' ')
                 self._attributes[key] = value.strip('"')
             except Exception:
-                raise RuntimeError(f'Error parsing field "{field}" of GTF record "{record}"')
+                raise RuntimeError(
+                    f'Error parsing field "{field}" of GTF record "{record}"'
+                )
 
     def __repr__(self):
         return '<Record: %s>' % self.__str__()
@@ -218,7 +221,9 @@ class Reader(reader.Reader):
     """
 
     def __init__(self, files='-', mode='r', header_comment_char='#'):
-        super().__init__(files, mode, header_comment_char)  # has different default args from super
+        super().__init__(
+            files, mode, header_comment_char
+        )  # has different default args from super
 
     def __iter__(self):
         for line in super().__iter__():
@@ -248,13 +253,16 @@ class Reader(reader.Reader):
 
 # todo this lenient behavior is deemed to change in the future (warning -> exception)
 def _resolve_multiple_gene_names(gene_name: str):
-    _logger.warning(f'Multiple entries encountered for "{gene_name}". Please validate the input GTF file(s). '
-                    f'Skipping the record for now; in the future, this will be considered as a '
-                    f'malformed GTF file.')
+    _logger.warning(
+        f'Multiple entries encountered for "{gene_name}". Please validate the input GTF file(s). '
+        f'Skipping the record for now; in the future, this will be considered as a '
+        f'malformed GTF file.'
+    )
 
 
 def extract_gene_names(
-        files: Union[str, List[str]]='-', mode: str='r', header_comment_char: str='#') -> Dict[str, int]:
+    files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
+) -> Dict[str, int]:
     """Extract gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence orders in the given file(s).
 
@@ -274,12 +282,15 @@ def extract_gene_names(
     """
     gene_name_to_index: Dict[str, int] = dict()
     gene_index = 0
-    for record in Reader(files, mode, header_comment_char).filter(retain_types=['gene']):
+    for record in Reader(files, mode, header_comment_char).filter(
+        retain_types=['gene']
+    ):
         gene_name = record.get_attribute('gene_name')
         if gene_name is None:
             raise ValueError(
                 f'Malformed GTF file detected. Record is of type gene but does not have a '
-                f'"gene_name" field: {record}')
+                f'"gene_name" field: {record}'
+            )
         if gene_name in gene_name_to_index:
             _resolve_multiple_gene_names(gene_name)
             continue

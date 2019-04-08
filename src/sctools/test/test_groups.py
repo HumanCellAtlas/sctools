@@ -9,26 +9,31 @@ data_dir = os.path.split(__file__)[0] + '/data/group_metrics/'
 
 def check_parsed_metrics_csv(file_name, cell_id, class_name, expected_metrics):
     with open(file_name) as f:
-            column_headers = f.readline().strip().split(',')
-            classes = f.readline().strip().split(',')
-            metrics = f.readline().strip().split(',')
-            assert classes[0] == 'Class'
-            assert set(classes[1:]) == {class_name}
-            for idx, each in enumerate(column_headers):
-                if idx == 0:
-                    assert metrics[0] == cell_id
-                if idx > 0:
-                    metric_name = column_headers[idx]
-                    assert metrics[idx] == expected_metrics[metric_name]
+        column_headers = f.readline().strip().split(',')
+        classes = f.readline().strip().split(',')
+        metrics = f.readline().strip().split(',')
+        assert classes[0] == 'Class'
+        assert set(classes[1:]) == {class_name}
+        for idx, each in enumerate(column_headers):
+            if idx == 0:
+                assert metrics[0] == cell_id
+            if idx > 0:
+                metric_name = column_headers[idx]
+                assert metrics[idx] == expected_metrics[metric_name]
 
 
 def test_write_aggregated_picard_metrics_by_row():
     args = [
-        '-f', data_dir + 'test_qc.alignment_summary_metrics.txt', data_dir + 'test_qc.insert_size_metrics.txt',
-        data_dir + 'test_qc.duplicate_metrics.txt', data_dir + 'test_qc.rna_metrics.txt',
+        '-f',
+        data_dir + 'test_qc.alignment_summary_metrics.txt',
+        data_dir + 'test_qc.insert_size_metrics.txt',
+        data_dir + 'test_qc.duplicate_metrics.txt',
+        data_dir + 'test_qc.rna_metrics.txt',
         data_dir + 'test_qc.gc_bias.summary_metrics.txt',
-        '-t', 'Picard',
-        '-o', 'output_picard_group'
+        '-t',
+        'Picard',
+        '-o',
+        'output_picard_group',
     ]
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0
@@ -39,10 +44,7 @@ def test_write_aggregated_picard_metrics_by_row():
         classes = f.readline().strip().split(',')
         metrics = f.readline().strip().split(',')
         for idx, each in enumerate(column_headers):
-            expected_metrics[each] = {
-                'class': classes[idx],
-                'metric': metrics[idx]
-            }
+            expected_metrics[each] = {'class': classes[idx], 'metric': metrics[idx]}
     with open('output_picard_group.csv') as f:
         column_headers = f.readline().strip().split(',')
         classes = f.readline().strip().split(',')
@@ -57,19 +59,83 @@ def test_write_aggregated_picard_metrics_by_row():
 
 def test_write_aggregated_picard_metrics_by_table():
     args = [
-        '-t', 'PicardTable',
-        '-o', 'output_picard_group',
-        '-f', data_dir + 'test_qc.error_summary_metrics.txt']
+        '-t',
+        'PicardTable',
+        '-o',
+        'output_picard_group',
+        '-f',
+        data_dir + 'test_qc.error_summary_metrics.txt',
+    ]
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0
 
     expected_metrics = [
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'C'), ('ALT_COUNT', '16'), ('REF_BASE', 'A'), ('REF_COUNT', '231512'), ('SUBSTITUTION', 'A>C'), ('SUBSTITUTION_RATE', '6.9e-05')]),
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'G'), ('ALT_COUNT', '156'), ('REF_BASE', 'A'), ('REF_COUNT', '231512'), ('SUBSTITUTION', 'A>G'), ('SUBSTITUTION_RATE', '0.000673')]),
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'T'), ('ALT_COUNT', '16'), ('REF_BASE', 'A'), ('REF_COUNT', '231512'), ('SUBSTITUTION', 'A>T'), ('SUBSTITUTION_RATE', '6.9e-05')]),
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'A'), ('ALT_COUNT', '16'), ('REF_BASE', 'C'), ('REF_COUNT', '173880'), ('SUBSTITUTION', 'C>A'), ('SUBSTITUTION_RATE', '9.2e-05')]),
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'G'), ('ALT_COUNT', '14'), ('REF_BASE', 'C'), ('REF_COUNT', '173880'), ('SUBSTITUTION', 'C>G'), ('SUBSTITUTION_RATE', '8.1e-05')]),
-        OrderedDict([('Sample', 'test'), ('ALT_BASE', 'T'), ('ALT_COUNT', '82'), ('REF_BASE', 'C'), ('REF_COUNT', '173880'), ('SUBSTITUTION', 'C>T'), ('SUBSTITUTION_RATE', '0.000471')])
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'C'),
+                ('ALT_COUNT', '16'),
+                ('REF_BASE', 'A'),
+                ('REF_COUNT', '231512'),
+                ('SUBSTITUTION', 'A>C'),
+                ('SUBSTITUTION_RATE', '6.9e-05'),
+            ]
+        ),
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'G'),
+                ('ALT_COUNT', '156'),
+                ('REF_BASE', 'A'),
+                ('REF_COUNT', '231512'),
+                ('SUBSTITUTION', 'A>G'),
+                ('SUBSTITUTION_RATE', '0.000673'),
+            ]
+        ),
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'T'),
+                ('ALT_COUNT', '16'),
+                ('REF_BASE', 'A'),
+                ('REF_COUNT', '231512'),
+                ('SUBSTITUTION', 'A>T'),
+                ('SUBSTITUTION_RATE', '6.9e-05'),
+            ]
+        ),
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'A'),
+                ('ALT_COUNT', '16'),
+                ('REF_BASE', 'C'),
+                ('REF_COUNT', '173880'),
+                ('SUBSTITUTION', 'C>A'),
+                ('SUBSTITUTION_RATE', '9.2e-05'),
+            ]
+        ),
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'G'),
+                ('ALT_COUNT', '14'),
+                ('REF_BASE', 'C'),
+                ('REF_COUNT', '173880'),
+                ('SUBSTITUTION', 'C>G'),
+                ('SUBSTITUTION_RATE', '8.1e-05'),
+            ]
+        ),
+        OrderedDict(
+            [
+                ('Sample', 'test'),
+                ('ALT_BASE', 'T'),
+                ('ALT_COUNT', '82'),
+                ('REF_BASE', 'C'),
+                ('REF_COUNT', '173880'),
+                ('SUBSTITUTION', 'C>T'),
+                ('SUBSTITUTION_RATE', '0.000471'),
+            ]
+        ),
     ]
 
     with open('output_picard_group_error_summary_metrics.csv') as f:
@@ -81,9 +147,12 @@ def test_write_aggregated_picard_metrics_by_table():
 
 def test_parse_hisat2_paired_end_log():
     args = [
-        '-f', data_dir + 'test_hisat2_paired_end_qc.log',
-        '-t', 'HISAT2',
-        '-o', 'output_hisat2'
+        '-f',
+        data_dir + 'test_hisat2_paired_end_qc.log',
+        '-t',
+        'HISAT2',
+        '-o',
+        'output_hisat2',
     ]
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0
@@ -100,7 +169,7 @@ def test_parse_hisat2_paired_end_log():
         'Aligned 0 time': '478',
         'Aligned 1 time': '240',
         'Aligned >1 times': '106',
-        'Overall alignment rate': '95.64%'
+        'Overall alignment rate': '95.64%',
     }
     check_parsed_metrics_csv('output_hisat2.csv', cell_id, tag, expected_metrics)
     os.remove('output_hisat2.csv')
@@ -108,9 +177,12 @@ def test_parse_hisat2_paired_end_log():
 
 def test_parse_hisat2_transcriptome_log():
     args = [
-        '-f', data_dir + 'test_hisat2_transcriptome_rsem.log',
-        '-t', 'HISAT2',
-        '-o', 'output_hisat2_trans'
+        '-f',
+        data_dir + 'test_hisat2_transcriptome_rsem.log',
+        '-t',
+        'HISAT2',
+        '-o',
+        'output_hisat2_trans',
     ]
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0
@@ -127,7 +199,7 @@ def test_parse_hisat2_transcriptome_log():
         'Aligned 0 time': '7270',
         'Aligned 1 time': '0',
         'Aligned >1 times': '0',
-        'Overall alignment rate': '33.66%'
+        'Overall alignment rate': '33.66%',
     }
     check_parsed_metrics_csv('output_hisat2_trans.csv', cell_id, tag, expected_metrics)
     os.remove('output_hisat2_trans.csv')
@@ -135,11 +207,7 @@ def test_parse_hisat2_transcriptome_log():
 
 def test_parse_rsem_cnt():
     file_name = data_dir + 'test_rsem.cnt'
-    args = [
-        '-f', file_name,
-        '-t', 'RSEM',
-        '-o', 'output_rsem'
-    ]
+    args = ['-f', file_name, '-t', 'RSEM', '-o', 'output_rsem']
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0
 
@@ -159,18 +227,29 @@ def test_parse_rsem_cnt():
             'multiple mapped': n_multi,
             'total alignments': n_hits,
             'strand': read_type,
-            'uncertain reads': n_uncertain
+            'uncertain reads': n_uncertain,
         }
     check_parsed_metrics_csv('output_rsem.csv', cell_id, class_name, expected_metrics)
     os.remove('output_rsem.csv')
 
 
 def test_write_aggregated_qc_metrics():
-    input_files = [data_dir + 'test_picard_group.csv', data_dir + 'test_hisat2.csv', data_dir + 'test_hisat2_trans.csv', data_dir + 'test_rsem.csv']
+    input_files = [
+        data_dir + 'test_picard_group.csv',
+        data_dir + 'test_hisat2.csv',
+        data_dir + 'test_hisat2_trans.csv',
+        data_dir + 'test_rsem.csv',
+    ]
     args = [
-        '-f', data_dir + 'test_picard_group.csv', data_dir + 'test_hisat2.csv', data_dir + 'test_hisat2_trans.csv', data_dir + 'test_rsem.csv',
-        '-t', 'Core',
-        '-o', 'output_QCs'
+        '-f',
+        data_dir + 'test_picard_group.csv',
+        data_dir + 'test_hisat2.csv',
+        data_dir + 'test_hisat2_trans.csv',
+        data_dir + 'test_rsem.csv',
+        '-t',
+        'Core',
+        '-o',
+        'output_QCs',
     ]
     return_code = platform.GenericPlatform.group_qc_outputs(args)
     assert return_code == 0

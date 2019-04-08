@@ -46,9 +46,12 @@ class Barcodes:
     sctools.encodings.TwoBit
 
     """
+
     def __init__(self, barcodes: Mapping[str, int], barcode_length: int):
         if not isinstance(barcodes, Mapping):
-            raise TypeError('The argument "barcodes" must be a dict-like object mapping barcodes to counts')
+            raise TypeError(
+                'The argument "barcodes" must be a dict-like object mapping barcodes to counts'
+            )
         self._mapping: Mapping[str, int] = barcodes
 
         if not isinstance(barcode_length, int) and barcode_length > 0:
@@ -87,7 +90,13 @@ class Barcodes:
             distances.append(TwoBit.hamming_distance(a, b))
 
         keys: Tuple = (
-            'minimum', '25th percentile', 'median', '75th percentile', 'maximum', 'average')
+            'minimum',
+            '25th percentile',
+            'median',
+            '75th percentile',
+            'maximum',
+            'average',
+        )
         values: List = list(np.percentile(distances, [0, 25, 50, 75, 100]))
         values.append(np.mean(distances))
 
@@ -118,15 +127,15 @@ class Barcodes:
 
         """
         base_counts_by_position: np.ndarray = np.zeros(
-            (self._barcode_length, 4),
-            dtype=np.uint64)
+            (self._barcode_length, 4), dtype=np.uint64
+        )
 
-        keys: np.ndarray = np.fromiter(
-            self._mapping.keys(),
-            dtype=np.uint64)
+        keys: np.ndarray = np.fromiter(self._mapping.keys(), dtype=np.uint64)
 
         for i in reversed(range(self._barcode_length)):
-            binary_base_representations, counts = np.unique(keys & 3, return_counts=True)
+            binary_base_representations, counts = np.unique(
+                keys & 3, return_counts=True
+            )
             if weighted:
                 raise NotImplementedError
             else:
@@ -177,7 +186,9 @@ class Barcodes:
         """
         tbe = TwoBit(barcode_length)
         with open(file_, 'rb') as f:
-            return cls(Counter(tbe.encode(barcode[:-1]) for barcode in f), barcode_length)
+            return cls(
+                Counter(tbe.encode(barcode[:-1]) for barcode in f), barcode_length
+            )
 
     @classmethod
     def from_iterable_encoded(cls, iterable: Iterable[int], barcode_length: int):
@@ -214,7 +225,10 @@ class Barcodes:
             class object containing barcodes from a whitelist file
         """
         tbe: TwoBit = TwoBit(barcode_length)
-        return cls(Counter(tbe.encode(b.encode()) for b in iterable), barcode_length=barcode_length)
+        return cls(
+            Counter(tbe.encode(b.encode()) for b in iterable),
+            barcode_length=barcode_length,
+        )
 
     @classmethod
     def from_iterable_bytes(cls, iterable: Iterable[bytes], barcode_length: int):
@@ -233,7 +247,9 @@ class Barcodes:
             class object containing barcodes from a whitelist file
         """
         tbe: TwoBit = TwoBit(barcode_length)
-        return cls(Counter(tbe.encode(b) for b in iterable), barcode_length=barcode_length)
+        return cls(
+            Counter(tbe.encode(b) for b in iterable), barcode_length=barcode_length
+        )
 
 
 class ErrorsToCorrectBarcodesMap:
@@ -259,8 +275,10 @@ class ErrorsToCorrectBarcodesMap:
 
     def __init__(self, errors_to_barcodes: Mapping[str, str]):
         if not isinstance(errors_to_barcodes, Mapping):
-            raise TypeError(f'The argument "errors_to_barcodes" must be a mapping of erroneous barcodes to correct '
-                            f'barcodes, not {type(errors_to_barcodes)}')
+            raise TypeError(
+                f'The argument "errors_to_barcodes" must be a mapping of erroneous barcodes to correct '
+                f'barcodes, not {type(errors_to_barcodes)}'
+            )
         self._map = errors_to_barcodes
 
     def get_corrected_barcode(self, barcode: str) -> str:
@@ -290,7 +308,9 @@ class ErrorsToCorrectBarcodesMap:
         return self._map[barcode]
 
     @staticmethod
-    def _prepare_single_base_error_hash_table(barcodes: Iterable[str]) -> Mapping[str, str]:
+    def _prepare_single_base_error_hash_table(
+        barcodes: Iterable[str]
+    ) -> Mapping[str, str]:
         """Generate a map of correct barcodes and single base error codes to whitelist barcodes
 
         Parameters
@@ -311,7 +331,7 @@ class ErrorsToCorrectBarcodesMap:
                 errors = set('ACGTN')
                 errors.discard(nucleotide)
                 for e in errors:
-                    error_map[barcode[:i] + e + barcode[i + 1:]] = barcode
+                    error_map[barcode[:i] + e + barcode[i + 1 :]] = barcode
         return error_map
 
     @classmethod
@@ -330,7 +350,9 @@ class ErrorsToCorrectBarcodesMap:
 
         """
         with open(whitelist_file, 'r') as f:
-            return cls(cls._prepare_single_base_error_hash_table((line[:-1] for line in f)))
+            return cls(
+                cls._prepare_single_base_error_hash_table((line[:-1] for line in f))
+            )
 
     def correct_bam(self, bam_file: str, output_bam_file: str) -> None:
         """Correct barcodes in a (potentially unaligned) bamfile, given a whitelist.
@@ -343,12 +365,15 @@ class ErrorsToCorrectBarcodesMap:
             BAM format file containing cell, umi, and sample tags.
 
         """
-        with pysam.AlignmentFile(bam_file, 'rb') as fin, \
-                pysam.AlignmentFile(output_bam_file, 'wb', template=fin) as fout:
+        with pysam.AlignmentFile(bam_file, 'rb') as fin, pysam.AlignmentFile(
+            output_bam_file, 'wb', template=fin
+        ) as fout:
             for alignment in fin:
                 try:
                     tag = self.get_corrected_barcode(alignment.get_tag('CR'))
                 except KeyError:  # pass through the uncorrected barcode.
                     tag = alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY)
-                alignment.set_tag(tag=consts.CELL_BARCODE_TAG_KEY, value=tag, value_type='Z')
+                alignment.set_tag(
+                    tag=consts.CELL_BARCODE_TAG_KEY, value=tag, value_type='Z'
+                )
                 fout.write(alignment)

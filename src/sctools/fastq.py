@@ -125,7 +125,11 @@ class Record:
 
     def __repr__(self):
         return "Name: %s\nSequence: %s\nName2: %s\nQuality: %s\n" % (
-            self.name, self.sequence, self.name2, self.quality)
+            self.name,
+            self.sequence,
+            self.name2,
+            self.quality,
+        )
 
     def __len__(self):
         return len(self.sequence)
@@ -186,7 +190,9 @@ class StrRecord(Record):
     def average_quality(self) -> float:
         """return the average quality of this record"""
         b = self.quality[:-1].encode()
-        return sum(c for c in b) / len(b) - 33  # -33 due to solexa/illumina phred conversion
+        return (
+            sum(c for c in b) / len(b) - 33
+        )  # -33 due to solexa/illumina phred conversion
 
 
 class Reader(reader.Reader):
@@ -243,7 +249,9 @@ class Reader(reader.Reader):
 EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 
 
-def extract_barcode(record, embedded_barcode) -> Tuple[Tuple[str, str, str], Tuple[str, str, str]]:
+def extract_barcode(
+    record, embedded_barcode
+) -> Tuple[Tuple[str, str, str], Tuple[str, str, str]]:
     """Extracts barcodes from a FASTQ record at positions defined by an EmbeddedBarcode object.
 
     Parameters
@@ -262,9 +270,12 @@ def extract_barcode(record, embedded_barcode) -> Tuple[Tuple[str, str, str], Tup
         quality tag identifier, quality, SAM tag type ('Z' implies a string tag)
 
     """
-    seq = record.sequence[embedded_barcode.start:embedded_barcode.end]
-    qual = record.quality[embedded_barcode.start:embedded_barcode.end]
-    return (embedded_barcode.sequence_tag, seq, 'Z'), (embedded_barcode.quality_tag, qual, 'Z')
+    seq = record.sequence[embedded_barcode.start : embedded_barcode.end]
+    qual = record.quality[embedded_barcode.start : embedded_barcode.end]
+    return (
+        (embedded_barcode.sequence_tag, seq, 'Z'),
+        (embedded_barcode.quality_tag, qual, 'Z'),
+    )
 
 
 # todo the reader subclasses need better docs
@@ -329,21 +340,26 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
     """
 
     def __init__(
-            self,
-            fastq_files: Union[str, Iterable[str]],
-            embedded_cell_barcode: EmbeddedBarcode,
-            whitelist: str,
-            other_embedded_barcodes: Iterable[EmbeddedBarcode]=tuple(),
-            *args, **kwargs):
+        self,
+        fastq_files: Union[str, Iterable[str]],
+        embedded_cell_barcode: EmbeddedBarcode,
+        whitelist: str,
+        other_embedded_barcodes: Iterable[EmbeddedBarcode] = tuple(),
+        *args,
+        **kwargs
+    ):
 
         super().__init__(files=fastq_files, *args, **kwargs)
         if isinstance(other_embedded_barcodes, (list, tuple)):
             self.embedded_barcodes = other_embedded_barcodes
         else:
-            raise TypeError('if passed, other_embedded_barcodes must be a list or tuple')
+            raise TypeError(
+                'if passed, other_embedded_barcodes must be a list or tuple'
+            )
 
         self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
-            whitelist)
+            whitelist
+        )
         self.embedded_cell_barcode = embedded_cell_barcode
 
     def __iter__(self):
@@ -351,7 +367,9 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         for record in super().__iter__():  # iterates records; we extract barcodes.
             barcodes = []
 
-            barcodes.extend(self.extract_cell_barcode(record, self.embedded_cell_barcode))
+            barcodes.extend(
+                self.extract_cell_barcode(record, self.embedded_cell_barcode)
+            )
             for barcode in self.embedded_barcodes:
                 barcodes.extend(extract_barcode(record, barcode))
 

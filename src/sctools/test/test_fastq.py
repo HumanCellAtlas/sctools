@@ -10,10 +10,17 @@ from ..reader import zip_readers
 
 # set some useful globals for testing
 data_dir = os.path.split(__file__)[0] + '/data/'
-_i7_files = [data_dir + f for f in ('test_i7.fastq', 'test_i7.fastq.gz', 'test_i7.fastq.bz2')]
+_i7_files = [
+    data_dir + f for f in ('test_i7.fastq', 'test_i7.fastq.gz', 'test_i7.fastq.bz2')
+]
 _files = [data_dir + f for f in ('test_i7.fastq', 'test_r1.fastq', 'test_r2.fastq')]
-_gz_files = [data_dir + f for f in ('test_i7.fastq.gz', 'test_r1.fastq.gz', 'test_r2.fastq.gz')]
-_bz2_files = [data_dir + f for f in ('test_i7.fastq.bz2', 'test_r1.fastq.bz2', 'test_r2.fastq.bz2')]
+_gz_files = [
+    data_dir + f for f in ('test_i7.fastq.gz', 'test_r1.fastq.gz', 'test_r2.fastq.gz')
+]
+_bz2_files = [
+    data_dir + f
+    for f in ('test_i7.fastq.bz2', 'test_r1.fastq.bz2', 'test_r2.fastq.bz2')
+]
 
 _modes = ('r', 'rb')
 _files_and_modes = list(product(_i7_files, _modes))
@@ -22,6 +29,7 @@ _map_encoder = {'r': str, 'rb': partial(bytes, encoding='utf-8')}
 
 
 # TEST READER
+
 
 @pytest.fixture(scope='module', params=_files_and_modes)
 def i7_files_compressions_and_modes(request):
@@ -37,20 +45,12 @@ def reader_all_compressions(request):
 
 @pytest.fixture(scope='module')
 def bytes_fastq_record():
-    return [
-        b'@name\n',
-        b'ACTACAAT\n',
-        b'+\n',
-        b'%%%%AAAA\n']
+    return [b'@name\n', b'ACTACAAT\n', b'+\n', b'%%%%AAAA\n']
 
 
 @pytest.fixture(scope='module')
 def string_fastq_record():
-    return [
-        '@name\n',
-        'ACTACAAT\n',
-        '+\n',
-        '%%%%AAAA\n']
+    return ['@name\n', 'ACTACAAT\n', '+\n', '%%%%AAAA\n']
 
 
 def test_reader_stores_filenames():
@@ -62,34 +62,34 @@ def test_reader_stores_filenames():
 def test_reader_reads_first_record(reader_all_compressions):
     for record in reader_all_compressions:
         assert isinstance(record, fastq.Record)
-        expected_result = 'NCACAATG\n' if isinstance(record.sequence, str) else b'NCACAATG\n'
+        expected_result = (
+            'NCACAATG\n' if isinstance(record.sequence, str) else b'NCACAATG\n'
+        )
         assert record.sequence == expected_result
         break  # just first record
 
 
-def test_reader_skips_header_character_raises_value_error(i7_files_compressions_and_modes):
+def test_reader_skips_header_character_raises_value_error(
+    i7_files_compressions_and_modes
+):
     """
     test should skip the first name line, shifting each record up 1. As a result, the
      first sequence should be found in the name field
     """
     filename, mode = i7_files_compressions_and_modes
-    rd = fastq.Reader(
-        filename,
-        mode=mode,
-        header_comment_char='@')
+    rd = fastq.Reader(filename, mode=mode, header_comment_char='@')
     with pytest.raises(ValueError):
         next(iter(rd))
 
 
-def test_reader_reads_correct_number_of_records_across_multiple_files(reader_all_compressions):
+def test_reader_reads_correct_number_of_records_across_multiple_files(
+    reader_all_compressions
+):
     assert len(reader_all_compressions) == 300  # 3 files
 
 
 def test_mixed_filetype_read_gets_correct_record_number():
-    rd = fastq.Reader(
-        [_gz_files[0], _bz2_files[0]],
-        mode='r',
-        header_comment_char='#')
+    rd = fastq.Reader([_gz_files[0], _bz2_files[0]], mode='r', header_comment_char='#')
 
     assert len(rd) == 200
 
@@ -111,15 +111,11 @@ def test_invalid_open_mode_raises_valueerror():
 
 def test_fastq_returns_correct_filesize_for_single_and_multiple_files():
     rd = fastq.Reader(
-        _i7_files[0],
-        mode='r',  # mode irrelevant
-        header_comment_char='#')
+        _i7_files[0], mode='r', header_comment_char='#'  # mode irrelevant
+    )
     assert rd.size == 7774
 
-    rd = fastq.Reader(
-        _i7_files,
-        mode='r',  # mode irrelevant
-        header_comment_char='#')
+    rd = fastq.Reader(_i7_files, mode='r', header_comment_char='#')  # mode irrelevant
     assert rd.size == 7774 + 853 + 802  # three file sizes
 
 
@@ -177,6 +173,7 @@ def test_string_fastq_record_quality_score_parsing(string_fastq_record):
 
 # TEST RECORD
 
+
 def test_fields_populate_properly(reader_all_compressions):
     encoder = _map_encoder[reader_all_compressions._mode]
     name_prefix = encoder('@')
@@ -192,20 +189,24 @@ def test_fields_populate_properly(reader_all_compressions):
 
 # TEST BarcodeGeneratorWithCorrectedCellbarcodes
 
+
 @pytest.fixture(scope='function')
 def embedded_barcode_generator():
     cell_barcode = fastq.EmbeddedBarcode(
         start=0,
         end=16,
         quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+    )
     molecule_barcode = fastq.EmbeddedBarcode(
         start=16,
         end=26,
         quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
+    )
     return fastq.EmbeddedBarcodeGenerator(
-        data_dir + 'test_r1.fastq.gz', [cell_barcode, molecule_barcode])
+        data_dir + 'test_r1.fastq.gz', [cell_barcode, molecule_barcode]
+    )
 
 
 @pytest.fixture(scope='function')
@@ -214,17 +215,25 @@ def barcode_generator_with_corrected_cell_barcodes():
         start=0,
         end=16,
         quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+    )
     molecule_barcode = fastq.EmbeddedBarcode(
         start=16,
         end=26,
         quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY)
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
+    )
     return fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
-        data_dir + 'test_r1.fastq.gz', cell_barcode, data_dir + '1k-august-2016.txt', [molecule_barcode])
+        data_dir + 'test_r1.fastq.gz',
+        cell_barcode,
+        data_dir + '1k-august-2016.txt',
+        [molecule_barcode],
+    )
 
 
-def test_embedded_barcode_generator_produces_outputs_of_expected_size(embedded_barcode_generator):
+def test_embedded_barcode_generator_produces_outputs_of_expected_size(
+    embedded_barcode_generator
+):
     for cell_seq, cell_qual, umi_seq, umi_qual in embedded_barcode_generator:
 
         # correct values

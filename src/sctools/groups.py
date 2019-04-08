@@ -38,8 +38,13 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
             rows = {}
             for m in contents:
                 cat = m['CATEGORY']
-                rows.update({k + '.' + cat: v for k, v in m.items() if k not in 
-                             ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']})
+                rows.update(
+                    {
+                        k + '.' + cat: v
+                        for k, v in m.items()
+                        if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
+                    }
+                )
         # sometimes(very rare), insertion metrics also return multiple lines
         # results to include TANDEM repeats. but we only output the first line.
         elif class_name == "InsertSizeMetrics":
@@ -52,10 +57,13 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
         else:
             # other metrics(so far) only return one line results.
             rows = contents
-        metrics[cell_id].update({
-                k: rows[k] for k in rows if k not in
-                ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
-                })
+        metrics[cell_id].update(
+            {
+                k: rows[k]
+                for k in rows
+                if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
+            }
+        )
         df = pd.DataFrame.from_dict(metrics, orient='columns')
         df.insert(0, 'Class', class_name)
         d = d.append(df)
@@ -110,10 +118,10 @@ def parse_hisat2_log(file_names, output_name):
     Parameters
     ----------
     args:
-        file_names: array of HISAT2 log files. Basename of file indicates 
+        file_names: array of HISAT2 log files. Basename of file indicates
         the alignment references 'samplename_qc.log' indicates the genome reference and
         'samplename_rsem.log' indicates the transcriptome reference alignment.
-        output_name: prefix of output file name. 
+        output_name: prefix of output file name.
     Returns
     ----------
         return: 0
@@ -162,21 +170,20 @@ def parse_rsem_cnt(file_names, output_name):
                 if i == 0:
                     [N0, N1, N2, N_tot] = f.readline().strip().split(" ")
                 elif i == 1:
-                    [n_unique, n_multi, n_uncertain] = \
-                        f.readline().strip().split(" ")
+                    [n_unique, n_multi, n_uncertain] = f.readline().strip().split(" ")
                 elif i == 2:
                     [n_hits, read_type] = f.readline().strip().split(" ")
-                i = i+1
+                i = i + 1
         metrics[cell_id] = {
-                "unalignable reads": N0,
-                "alignable reads": N1,
-                "filtered reads": N2,
-                "total reads": N_tot,
-                "unique aligned": n_unique,
-                "multiple mapped": n_multi,
-                "total alignments": n_hits,
-                "strand": read_type,
-                "uncertain reads": n_uncertain
+            "unalignable reads": N0,
+            "alignable reads": N1,
+            "filtered reads": N2,
+            "total reads": N_tot,
+            "unique aligned": n_unique,
+            "multiple mapped": n_multi,
+            "total alignments": n_hits,
+            "strand": read_type,
+            "uncertain reads": n_uncertain,
         }
     df = pd.DataFrame.from_dict(metrics, orient='columns')
     df.insert(0, "Class", "RSEM")

@@ -43,6 +43,15 @@ jobs:
       # https://pytest.org
       # And upload reports to codecov.io
       - run:
+          name: linting test
+          command: |
+            . venv/bin/activate
+            # Check Black code style compliance
+            black ./ --skip-string-normalization --check --exclude venv
+            # Check PEP-8 compliance
+            flake8
+
+      - run:
           name: run tests
           command: |
             . venv/bin/activate
@@ -53,4 +62,3 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
-          
