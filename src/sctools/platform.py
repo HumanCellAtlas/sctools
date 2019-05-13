@@ -536,6 +536,148 @@ class GenericPlatform:
         return 0
 
 
+class InDrop(GenericPlatform):
+    """Command line Interface for inDrop RNA-sequencing programs
+
+    This class defines several methods that are created as CLI tools when sctools is installed
+    (see setup.py)
+
+    Attributes
+    ----------
+    cell_barcode : fastq.EmbeddedBarcode
+        A data class that defines the start and end position of the cell barcode and the tags to
+        assign the sequence and quality of the cell barcode
+    molecule_barcode : fastq.EmbeddedBarcode
+        A data class that defines the start and end position of the molecule barcode and the tags
+        to assign the sequence and quality of the molecule barcode
+
+    Methods
+    -------
+    attach_barcodes()
+        Attach barcodes from the forward (r1) and optionally index (i1) fastq files to the reverse
+        (r2) bam file
+
+    """
+    # inDrop contains 2 barcodes embedded within sequencing reads. The below objects define the
+    # start and end points of those barcodes relative to the start of the sequence, and the
+    # GA4GH standard tags that the extracted barcodes should be labeled with in the BAM file.
+    cell_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=-1,
+        quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+        variable_length=True,
+        type="cell"
+    )
+    molecule_barcode = fastq.EmbeddedBarcode(
+        start=0,
+        end=-1,
+        quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
+        variable_length=True,
+        type="molecule"
+    )
+
+    @classmethod
+    def _tag_bamfile(
+            cls,
+            input_bamfile_name: str,
+            output_bamfile_name: str,
+            tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
+    ) -> None:
+        """Adds tags from fastq file(s) to a bam file.
+
+        Attaches tags extracted from fastq files by `tag_generators`, attaches them to records from
+        `input_bamfile_name`, and writes the result to `output_bamfile_name`
+
+        Parameters
+        ----------
+        input_bamfile_name : str
+            input bam
+        output_bamfile_name : str
+            output bam
+        tag_generators : Iterable[fastq.EmbeddedBarcodeGenerator]
+            Iterable of generators that yield barcodes from fastq files
+
+        """
+        bam_tagger = bam.Tagger(input_bamfile_name)
+        bam_tagger.tag(output_bamfile_name, tag_generators)
+
+    @classmethod
+    def _make_tag_generators(
+        cls, r1
+    ) -> List[fastq.EmbeddedBarcodeGenerator]:
+        """Create tag generators from fastq files.
+
+        Tag generators are iterators that run over fastq records, they extract and yield all of the
+        barcodes embedded in each fastq record. For 10x, this means extracting the cell, umi, and
+        optionally, the sample barcode.
+
+        Parameters
+        ----------
+        r1 : str
+            forward fastq file
+
+        Returns
+        -------
+        tag_generators, List[EmbeddedBarcodeGenerator]
+            EmbeddedBarcodeGenerators containing barcodes from inDrop fastq records
+
+        """
+        tag_generators = []
+
+        tag_generators.append(
+            fastq.EmbeddedBarcodeGenerator(
+                fastq_files=r1,
+                embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode],
+                extract_barcode_function=fastq.extract_variable_barcode
+            )
+        )
+
+        return tag_generators
+
+    @classmethod
+    def attach_barcodes(cls, args=None):
+        """Command line entrypoint for attaching barcodes to a bamfile.
+
+        Parameters
+        ----------
+        args : Iterable[str], optional
+            arguments list, for testing (see test/test_entrypoints.py for example). The default
+            value of None, when passed to `parser.parse_args` causes the parser to
+            read `sys.argv`
+
+        Returns
+        -------
+        return_call : 0
+            return call if the program completes successfully
+
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            '--r1',
+            required=True,
+            help='read 1 fastq file for a 10x genomics v2 experiment',
+        )
+        parser.add_argument(
+            '--u2',
+            required=True,
+            help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
+                 'using picard FastqToSam',
+        )
+        parser.add_argument(
+            '-o', '--output-bamfile', required=True, help='filename for tagged bam'
+        )
+        if args is not None:
+            args = parser.parse_args(args)
+        else:
+            args = parser.parse_args()
+        tag_generators = cls._make_tag_generators(args.r1, args.whitelist)
+        cls._tag_bamfile(args.u2, args.output_bamfile, tag_generators)
+
+        return 0
+
+
 class TenXV2(GenericPlatform):
     """Command Line Interface for 10x Genomics v2 RNA-sequencing programs
 

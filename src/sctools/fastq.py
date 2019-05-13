@@ -28,6 +28,7 @@ https://en.wikipedia.org/wiki/FASTQ_format
 
 from collections import namedtuple
 from typing import Iterable, AnyStr, Iterator, Union, Tuple
+import re
 
 from . import reader, consts
 from .barcode import ErrorsToCorrectBarcodesMap
@@ -246,7 +247,17 @@ class Reader(reader.Reader):
 
 # namedtuple that defines the start and end position of a barcode sequence and provides the name
 # for both a quality and sequence tag
-EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
+class EmbeddedBarcode:
+    def __init__(self, start, end, sequence_tag, quality_tag,
+                 variable_length=False, molecular=True, minimum_length=8):
+        self.start = start
+        self.sequence_tag = sequence_tag
+        self.quality_tag = quality_tag
+        self.variable_length = variable_length
+        self.end = end
+        self.minimum_length = minimum_length
+
+#EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 
 
 def extract_barcode(
@@ -278,6 +289,26 @@ def extract_barcode(
     )
 
 
+def extract_variable_barcode(
+    record, embedded_barcode
+) -> Tuple[Tuple[str, str, str], Tuple[str, str, str]]:
+    match = re.search(consts.SPLITTER_REGEX, record.sequence[embedded_barcode.minimum_length:])
+    if match:
+        first_end = match.start + embedded_barcode.minimum_length
+    else:
+        first_end = 8
+
+    second_start = first_end + 22
+    second_end = second_start + 8
+
+    seq = record.sequence[embedded_barcode.start:first_end] + record.sequence[second_start:second_end]
+    qual = record.quality[embedded_barcode.start:first_end] + record.sequence[second_start:second_end]
+    return(
+        (embedded_barcode.sequence_tag, seq, 'Z'),
+        (embedded_barcode.quality_tag, qual, 'Z'),
+    )
+
+
 # todo the reader subclasses need better docs
 class EmbeddedBarcodeGenerator(Reader):
     """Generate barcodes from a FASTQ file(s) from positions defined by EmbeddedBarcode(s)
@@ -297,16 +328,17 @@ class EmbeddedBarcodeGenerator(Reader):
 
     """
 
-    def __init__(self, fastq_files, embedded_barcodes, *args, **kwargs):
+    def __init__(self, fastq_files, embedded_barcodes, extract_barcode_function=extract_barcode, *args, **kwargs):
         super().__init__(files=fastq_files, *args, **kwargs)
         self.embedded_barcodes = embedded_barcodes
+        self.extract_barcode_function = extract_barcode_function
 
     def __iter__(self):
         """iterates over barcodes extracted from FASTQ"""
         for record in super().__iter__():  # iterates records; we extract barcodes.
             barcodes = []
             for barcode in self.embedded_barcodes:
-                barcodes.extend(extract_barcode(record, barcode))
+                barcodes.extend(self.extract_barcode_function(record, barcode))
             yield barcodes
 
 
