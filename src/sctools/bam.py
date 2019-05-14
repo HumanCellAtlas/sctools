@@ -36,6 +36,8 @@ htslib : https://github.com/samtools/htslib
 """
 
 import functools
+from functools import partial
+from functools import reduce
 import math
 import os
 import warnings
@@ -46,6 +48,7 @@ from typing import (
     Iterable,
     Generator,
     List,
+    Set,
     Dict,
     Union,
     Tuple,
@@ -55,6 +58,7 @@ from typing import (
 )
 
 import pysam
+import multiprocessing
 
 from . import consts
 
@@ -226,15 +230,102 @@ class Tagger:
                 outbam.write(sam_record)
 
 
+def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing=False) -> Set[str]:
+    barcodes = set()
+    # Get all the Barcodes from the BAM
+    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+        for alignment in input_alignments:
+            barcode = get_barcode_for_alignment(alignment, tags)
+            # No provided tag was found on the record that had a non-null value
+            if barcode is None:
+                if raise_missing:
+                    raise RuntimeError(
+                        'Alignment encountered that is missing {} tag(s).'.format(tags)
+                    )
+                else:
+                    continue  # move on to next alignment
+            else:
+                print(barcode)
+                barcodes.add(barcode)
+    return barcodes
+
+
+def get_barcode_for_alignment(alignment, tags: List[str]):
+    alignment_barcode = None
+    for tag in tags:
+        try:
+            alignment_barcode = alignment.get_tag(tag)
+            break
+        except KeyError:
+            continue  # move on to next tag
+    return alignment_barcode
+
+
+def write_barcodes_to_bins(in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int]):
+    # create all the output files
+    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+
+        # map files to counts
+        files_to_counts: Dict[pysam.AlignmentFile, int] = {}
+        files_to_names: Dict[pysam.AlignmentFile, str] = {}
+        for i in range(n_subfiles):
+            out_bam_name = out_prefix + '_%d.bam' % i
+            open_bam = pysam.AlignmentFile(
+                out_bam_name, 'wb', template=input_alignments
+            )
+            files_to_counts[open_bam] = 0
+            files_to_names[open_bam] = out_bam_name
+
+        # cycler over files to assign new barcodes to next file
+        file_cycler = cycle(files_to_counts.keys())
+
+        # create an empty map for (tag, barcode) to files
+        tags_to_files = {}
+
+        # loop over input; check each tag in priority order and partition barcodes into files based
+        # on the highest priority tag that is identified
+        for alignment in input_alignments:
+
+            for tag in tags:
+                try:
+                    tag_content = tag, alignment.get_tag(tag)
+                    break
+                except KeyError:
+                    tag_content = None
+                    continue  # move on to next tag
+
+            # No provided tag was found on the record that had a non-null value
+            if tag_content is None:
+                if raise_missing:
+                    _cleanup(files_to_counts, files_to_names, rm_all=True)
+                    raise RuntimeError(
+                        'Alignment encountered that is missing {repr(tags)} tag(s).'
+                    )
+                else:
+                    continue  # move on to next alignment
+
+            # find or set the file associated with the tag and write the record to the correct file
+            try:
+                out_file = tags_to_files[tag_content]
+            except KeyError:
+                out_file = next(file_cycler)
+                tags_to_files[tag_content] = out_file
+            out_file.write(alignment)
+            files_to_counts[out_file] += 1
+
+    _cleanup(files_to_counts, files_to_names)
+    return list(files_to_names.values())
+
+
 def split(
-    in_bam: str, out_prefix: str, *tags, approx_mb_per_split=1000, raise_missing=True
+    in_bams: List[str], out_prefix: str, *tags, approx_mb_per_split=1000, raise_missing=True
 ) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
     Parameters
     ----------
-    in_bam : str
-        Input bam file.
+    in_bams : str
+        Input bam files.
     out_prefix : str
         Prefix for all output files; output will be named as prefix_n where n is an integer equal
         to the chunk number.
@@ -293,7 +384,7 @@ def split(
                 del _files_to_names[bamfile]
 
     # find correct number of subfiles to spawn
-    bam_mb = os.path.getsize(in_bam) * 1e-6
+    bam_mb = sum(map(lambda in_bam: os.path.getsize(in_bam) * 1e-6, in_bams))
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN:
         warnings.warn(
@@ -307,59 +398,23 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
-    # create all the output files
-    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+    # Get all the barcodes over all the bams
+    pool = multiprocessing.Pool(None)
+    result = pool.map(partial(get_barcodes_from_bam, tags=list(tags), raise_missing=raise_missing), in_bams)
+    barcodes = reduce(lambda x, y: x.union(y), result)
+    barcodes_list = list(barcodes)
 
-        # map files to counts
-        files_to_counts: Dict[pysam.AlignmentFile, int] = {}
-        files_to_names: Dict[pysam.AlignmentFile, str] = {}
-        for i in range(n_subfiles):
-            out_bam_name = out_prefix + '_%d.bam' % i
-            open_bam = pysam.AlignmentFile(
-                out_bam_name, 'wb', template=input_alignments
-            )
-            files_to_counts[open_bam] = 0
-            files_to_names[open_bam] = out_bam_name
+    barcodes_to_bins_dict = {}
+    if len(barcodes) <= n_subfiles:
+        for barcode_index in range(len(barcodes_list)):
+            barcodes_to_bins_dict[barcodes_list[barcode_index]] = barcode_index
+    else:
+        for barcode_index in range(len(barcodes_list)):
+            file_index = barcode_index % n_subfiles
+            barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
-        # cycler over files to assign new barcodes to next file
-        file_cycler = cycle(files_to_counts.keys())
 
-        # create an empty map for (tag, barcode) to files
-        tags_to_files = {}
 
-        # loop over input; check each tag in priority order and partition barcodes into files based
-        # on the highest priority tag that is identified
-        for alignment in input_alignments:
-
-            for tag in tags:
-                try:
-                    tag_content = tag, alignment.get_tag(tag)
-                    break
-                except KeyError:
-                    tag_content = None
-                    continue  # move on to next tag
-
-            # No provided tag was found on the record that had a non-null value
-            if tag_content is None:
-                if raise_missing:
-                    _cleanup(files_to_counts, files_to_names, rm_all=True)
-                    raise RuntimeError(
-                        'Alignment encountered that is missing {repr(tags)} tag(s).'
-                    )
-                else:
-                    continue  # move on to next alignment
-
-            # find or set the file associated with the tag and write the record to the correct file
-            try:
-                out_file = tags_to_files[tag_content]
-            except KeyError:
-                out_file = next(file_cycler)
-                tags_to_files[tag_content] = out_file
-            out_file.write(alignment)
-            files_to_counts[out_file] += 1
-
-    _cleanup(files_to_counts, files_to_names)
-    return list(files_to_names.values())
 
 
 # todo change this to throw away "None" reads instead of appending them if we are filtering them

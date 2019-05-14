@@ -169,7 +169,7 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-b', '--bamfile', required=True, help='input bamfile')
+        parser.add_argument('-b', '--bamfile', nargs='+', required=True, help='input bamfile')
         parser.add_argument(
             '-p', '--output-prefix', required=True, help='prefix for output chunks'
         )
@@ -206,7 +206,7 @@ class GenericPlatform:
             args.output_prefix,
             *args.tags,
             approx_mb_per_split=args.subfile_size,
-            raise_missing=args.raise_missing,
+            raise_missing=args.drop_missing,
         )
 
         print(' '.join(filenames))
