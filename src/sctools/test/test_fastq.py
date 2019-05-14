@@ -210,6 +210,19 @@ def embedded_barcode_generator():
 
 
 @pytest.fixture(scope='function')
+def variable_embedded_barcode_generator():
+    all_barcodes = fastq.VariableEmbeddedBarcode(
+        cell_quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        cell_sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+        molecule_quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        molecule_sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY
+    )
+    return fastq.EmbeddedBarcodeGenerator(
+        data_dir + 'indropindrop.fastq', [all_barcodes], fastq.extract_variable_barcode
+    )
+
+
+@pytest.fixture(scope='function')
 def barcode_generator_with_corrected_cell_barcodes():
     cell_barcode = fastq.EmbeddedBarcode(
         start=0,
@@ -229,6 +242,23 @@ def barcode_generator_with_corrected_cell_barcodes():
         data_dir + '1k-august-2016.txt',
         [molecule_barcode],
     )
+
+
+@pytest.fixture(scope='function')
+def variable_barcode_generator_with_corrected_cell_barcodes():
+    all_barcodes = fastq.VariableEmbeddedBarcode(
+        cell_quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        cell_sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+        molecule_quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        molecule_sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY
+    )
+    return fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+        data_dir + "indropindrop.fastq",
+        all_barcodes,
+        data_dir + 'indrop_whitelist.txt',
+        [],
+        is_variable=True
+        )
 
 
 def test_embedded_barcode_generator_produces_outputs_of_expected_size(
@@ -265,9 +295,50 @@ def test_embedded_barcode_generator_produces_outputs_of_expected_size(
         break  # just the first tag is fine
 
 
+def test_variable_embedded_barcode_generator_produces_outputs_of_expected_size(
+        variable_embedded_barcode_generator
+):
+    for cell_seq, cell_qual, umi_seq, umi_qual in variable_embedded_barcode_generator:
+
+        # correct values
+        correct_cell_barcode_length = (16, 17, 18, 19)
+        correct_umi_length = 6
+
+        # note that all barcodes are strings and therefore should get 'Z' values
+
+        # test cell tags
+        assert cell_seq[0] == consts.RAW_CELL_BARCODE_TAG_KEY
+        assert len(cell_seq[1]) in correct_cell_barcode_length
+        assert all(v in 'ACGTN' for v in cell_seq[1])
+        assert cell_seq[2] == 'Z'
+        assert cell_qual[0] == consts.QUALITY_CELL_BARCODE_TAG_KEY
+        assert len(cell_qual[1]) in correct_cell_barcode_length
+        assert all(v in string.printable for v in cell_qual[1])
+        assert cell_seq[2] == 'Z'
+
+        # test umi tags
+        assert umi_seq[0] == consts.RAW_MOLECULE_BARCODE_TAG_KEY
+        assert len(umi_seq[1]) == correct_umi_length
+        assert all(v in 'ACGTN' for v in umi_seq[1])
+        assert umi_seq[2] == 'Z'
+        assert umi_qual[0] == consts.QUALITY_MOLECULE_BARCODE_TAG_KEY
+        assert len(umi_qual[1]) == correct_umi_length
+        assert all(v in string.printable for v in umi_qual[1])
+        assert umi_seq[2] == 'Z'
+
 def test_corrects_barcodes(barcode_generator_with_corrected_cell_barcodes):
     success = False
     for barcode_sets in barcode_generator_with_corrected_cell_barcodes:
+        for barcode_set in barcode_sets:
+            if barcode_set[0] == consts.CELL_BARCODE_TAG_KEY:
+                success = True
+                break
+    assert success
+
+
+def test_corrects_variable_barcodes(variable_barcode_generator_with_corrected_cell_barcodes):
+    success = False
+    for barcode_sets in variable_barcode_generator_with_corrected_cell_barcodes:
         for barcode_set in barcode_sets:
             if barcode_set[0] == consts.CELL_BARCODE_TAG_KEY:
                 success = True

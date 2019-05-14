@@ -111,7 +111,7 @@ def test_correct_barcode_finds_and_corrects_1_base_errors(trivial_whitelist):
 
 
 def test_correct_barcode_raises_keyerror_when_barcode_not_correct_length(
-    trivial_whitelist
+        trivial_whitelist
 ):
     with pytest.raises(KeyError):
         trivial_whitelist.get_corrected_barcode('AAA')
@@ -119,6 +119,7 @@ def test_correct_barcode_raises_keyerror_when_barcode_not_correct_length(
         trivial_whitelist.get_corrected_barcode('AAAAAAAAA')
     with pytest.raises(KeyError):
         trivial_whitelist.get_corrected_barcode('AAAAAAAAAA')
+
 
 
 def test_correct_barcode_raises_keyerror_when_barcode_has_more_than_one_error(

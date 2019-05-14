@@ -561,21 +561,11 @@ class InDrop(GenericPlatform):
     # inDrop contains 2 barcodes embedded within sequencing reads. The below objects define the
     # start and end points of those barcodes relative to the start of the sequence, and the
     # GA4GH standard tags that the extracted barcodes should be labeled with in the BAM file.
-    cell_barcode = fastq.EmbeddedBarcode(
-        start=0,
-        end=-1,
-        quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
-        variable_length=True,
-        type="cell"
-    )
-    molecule_barcode = fastq.EmbeddedBarcode(
-        start=0,
-        end=-1,
-        quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
-        sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY,
-        variable_length=True,
-        type="molecule"
+    all_barcodes = fastq.VariableEmbeddedBarcode(
+        cell_quality_tag=consts.QUALITY_CELL_BARCODE_TAG_KEY,
+        cell_sequence_tag=consts.RAW_CELL_BARCODE_TAG_KEY,
+        molecule_quality_tag=consts.QUALITY_MOLECULE_BARCODE_TAG_KEY,
+        molecule_sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY
     )
 
     @classmethod
@@ -605,7 +595,7 @@ class InDrop(GenericPlatform):
 
     @classmethod
     def _make_tag_generators(
-        cls, r1
+        cls, r1, whitelist
     ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
@@ -626,13 +616,26 @@ class InDrop(GenericPlatform):
         """
         tag_generators = []
 
-        tag_generators.append(
-            fastq.EmbeddedBarcodeGenerator(
-                fastq_files=r1,
-                embedded_barcodes=[cls.cell_barcode, cls.molecule_barcode],
-                extract_barcode_function=fastq.extract_variable_barcode
+        if whitelist is not None:
+            tag_generators.append(
+                fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
+                    fastq_files=r1,
+                    embedded_barcodes=[cls.all_barcodes],
+                    whitelist=whitelist,
+                    other_embedded_barcodes=[cls.molecule_barcode],
+                    extract_barcode_function=fastq.extract_variable_barcode,
+                    is_variable=True
+                )
             )
-        )
+        else:
+            tag_generators.append(
+                fastq.EmbeddedBarcodeGenerator(
+                    fastq_files=r1,
+                    embedded_barcodes=[cls.all_barcodes],
+                    extract_barcode_function=fastq.extract_variable_barcode
+
+                )
+            )
 
         return tag_generators
 
@@ -667,6 +670,14 @@ class InDrop(GenericPlatform):
         )
         parser.add_argument(
             '-o', '--output-bamfile', required=True, help='filename for tagged bam'
+        )
+        parser.add_argument(
+            '-w',
+            '--whitelist',
+            default=None,
+            help='optional cell barcode whitelist. If provided, corrected barcodes '
+                 'will also be output when barcodes are observed within 1ED of a '
+                 'whitelisted barcode',
         )
         if args is not None:
             args = parser.parse_args(args)

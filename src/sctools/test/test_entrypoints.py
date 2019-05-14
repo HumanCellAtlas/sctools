@@ -46,6 +46,40 @@ def test_Attach10XBarcodes_entrypoint():
     os.remove('test_tagged_bam.bam')  # clean up
 
 
+
+def test_AttachInDroparcodes_entrypoint():
+    args = [
+        '--r1',
+        data_dir + 'test_r1.fastq',
+        '--i1',
+        data_dir + 'test_i7.fastq',
+        '--u2',
+        data_dir + 'test.bam',
+        '--output-bamfile',
+        'test_tagged_bam.bam',
+        ]
+
+    rc = platform.TenXV2.attach_barcodes(args)
+    assert rc == 0
+    with pysam.AlignmentFile('test_tagged_bam.bam', 'rb', check_sq=False) as f:
+        for alignment in f:
+            # each alignment should now have a tag, and that tag should be a string
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY), str
+            )
+            assert isinstance(alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY), str
+            )
+            assert isinstance(
+                alignment.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY), str
+            )
+            assert isinstance(alignment.get_tag(consts.RAW_SAMPLE_BARCODE_TAG_KEY), str)
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_SAMPLE_BARCODE_TAG_KEY), str
+            )
+    os.remove('test_tagged_bam.bam')  # clean up
+
 def test_Attach10XBarcodes_entrypoint_with_whitelist():
     args = [
         '--r1',

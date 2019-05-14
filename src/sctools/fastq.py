@@ -257,6 +257,16 @@ class EmbeddedBarcode:
         self.end = end
         self.minimum_length = minimum_length
 
+
+class VariableEmbeddedBarcode(EmbeddedBarcode) :
+    def __init__(self, cell_sequence_tag, cell_quality_tag, molecule_sequence_tag, molecule_quality_tag,
+                 minimum_length=8):
+        self.cell_sequence_tag = cell_sequence_tag
+        self.cell_quality_tag = cell_quality_tag
+        self.molecule_sequence_tag = molecule_sequence_tag
+        self.molecule_quality_tag = molecule_quality_tag
+        self.minimum_length = minimum_length
+
 #EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 
 
@@ -292,20 +302,28 @@ def extract_barcode(
 def extract_variable_barcode(
     record, embedded_barcode
 ) -> Tuple[Tuple[str, str, str], Tuple[str, str, str]]:
+
     match = re.search(consts.SPLITTER_REGEX, record.sequence[embedded_barcode.minimum_length:])
     if match:
-        first_end = match.start + embedded_barcode.minimum_length
+        cb_end_1 = match.start() + embedded_barcode.minimum_length + 1
     else:
-        first_end = 8
+        cb_end_1 = 8
 
-    second_start = first_end + 22
-    second_end = second_start + 8
+    cb_start_2 = cb_end_1 + 22
+    cb_end_2 = cb_start_2 + 8
+    mb_start = cb_end_2
+    mb_end = mb_start + 6
 
-    seq = record.sequence[embedded_barcode.start:first_end] + record.sequence[second_start:second_end]
-    qual = record.quality[embedded_barcode.start:first_end] + record.sequence[second_start:second_end]
+    cb_seq = record.sequence[0:cb_end_1] + record.sequence[cb_start_2:cb_end_2]
+    cb_qual = record.quality[0:cb_end_1] + record.quality[cb_start_2:cb_end_2]
+    mb_seq = record.sequence[mb_start:mb_end]
+    mb_qual = record.quality[mb_start:mb_end]
+
     return(
-        (embedded_barcode.sequence_tag, seq, 'Z'),
-        (embedded_barcode.quality_tag, qual, 'Z'),
+        (embedded_barcode.cell_sequence_tag, cb_seq, 'Z'),
+        (embedded_barcode.cell_quality_tag, cb_qual, 'Z'),
+        (embedded_barcode.molecule_sequence_tag, mb_seq, 'Z'),
+        (embedded_barcode.molecule_quality_tag, mb_qual, 'Z'),
     )
 
 
@@ -377,6 +395,7 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         embedded_cell_barcode: EmbeddedBarcode,
         whitelist: str,
         other_embedded_barcodes: Iterable[EmbeddedBarcode] = tuple(),
+        is_variable = False,
         *args,
         **kwargs
     ):
@@ -393,6 +412,7 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
             whitelist
         )
         self.embedded_cell_barcode = embedded_cell_barcode
+        self.is_variable = is_variable
 
     def __iter__(self):
         """iterates over barcodes extracted from fastq"""
@@ -403,7 +423,10 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
                 self.extract_cell_barcode(record, self.embedded_cell_barcode)
             )
             for barcode in self.embedded_barcodes:
-                barcodes.extend(extract_barcode(record, barcode))
+                if self.is_variable :
+                    barcodes.extend(extract_variable_barcode(record, barcode))
+                else :
+                    barcodes.extend(extract_barcode(record, barcode))
 
             yield barcodes
 
@@ -428,9 +451,17 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
             whitelist or within 1 hamming distance of one of its barcodes
 
         """
-        seq_tag, qual_tag = extract_barcode(record, cb)
-        try:
-            corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
-            return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, 'Z')
-        except KeyError:
-            return seq_tag, qual_tag
+        if self.is_variable :
+            seq_tag, qual_tag, seq_tag_2, qual_tag_2 = extract_variable_barcode(record, cb)
+            try:
+                corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
+                return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, 'Z'), seq_tag_2, qual_tag_2
+            except KeyError:
+                return seq_tag, qual_tag, seq_tag_2, qual_tag_2
+        else :
+            seq_tag, qual_tag = extract_barcode(record, cb)
+            try:
+                corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
+                return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, 'Z')
+            except KeyError:
+                return seq_tag, qual_tag
