@@ -182,6 +182,13 @@ class GenericPlatform:
             help='approximate size target for each subfile (in MB)',
         )
         parser.add_argument(
+            '--num-threads',
+            required=False,
+            default=None,
+            type=int,
+            help='Number of threads to parallelize over',
+        )
+        parser.add_argument(
             '-t',
             '--tags',
             nargs='+',
@@ -204,9 +211,10 @@ class GenericPlatform:
         filenames = bam.split(
             args.bamfile,
             args.output_prefix,
-            *args.tags,
+            args.tags,
             approx_mb_per_split=args.subfile_size,
             raise_missing=args.drop_missing,
+            num_threads=args.num_threads,
         )
 
         print(' '.join(filenames))
