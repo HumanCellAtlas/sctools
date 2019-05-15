@@ -42,7 +42,6 @@ import math
 import os
 import warnings
 from abc import abstractmethod
-from itertools import cycle
 from typing import (
     Iterator,
     Iterable,
@@ -58,6 +57,7 @@ from typing import (
 )
 
 import pysam
+import shutil
 import multiprocessing
 
 from . import consts
@@ -262,7 +262,6 @@ def write_barcodes_to_bins(
 ) -> List[str]:
     # create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
-
         dirname = os.path.splitext(os.path.basename(in_bam))[0]
         os.makedirs(dirname)
         # map files to counts
@@ -285,6 +284,7 @@ def write_barcodes_to_bins(
                 out_file.write(alignment)
 
     map(lambda file: file.close(), files)
+
     return list(map(lambda file: file.filename, files))
 
 
@@ -336,32 +336,6 @@ def split(
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
-    def _cleanup(
-        _files_to_counts: Dict[pysam.AlignmentFile, int],
-        _files_to_names: Dict[pysam.AlignmentFile, str],
-        rm_all: bool = False,
-    ) -> None:
-        """Closes file handles and remove any empty files.
-
-        Parameters
-        ----------
-        _files_to_counts : dict
-            Dictionary of file objects to the number of reads each contains.
-        _files_to_names : dict
-            Dictionary of file objects to file handles.
-        rm_all : bool, optional
-            If True, indicates all files should be removed, regardless of count number, else only
-            empty files without counts are removed (default = False)
-
-        """
-        for bamfile, count in _files_to_counts.items():
-            # corner case: clean up files that were created, but didn't get data because
-            # n_cell < n_barcode
-            bamfile.close()
-            if count == 0 or rm_all:
-                os.remove(_files_to_names[bamfile])
-                del _files_to_names[bamfile]
-
     # find correct number of subfiles to spawn
     bam_mb = sum(map(lambda in_bam: os.path.getsize(in_bam) * 1e-6, in_bams))
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
@@ -377,13 +351,16 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
-    # Get all the barcodes over all the bams
     pool = multiprocessing.Pool(num_threads)
+
+    # Get all the barcodes over all the bams
+    os.write(2, b'Retrieving barcodes from bams\n')
     result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
     barcodes = reduce(lambda x, y: x.union(y), result)
     barcodes_list = list(barcodes)
 
     # Create the barcodes to bin mapping
+    os.write(2, b'Allocating bins\n')
     barcodes_to_bins_dict = {}
     if len(barcodes) <= n_subfiles:
         for barcode_index in range(len(barcodes_list)):
@@ -393,6 +370,8 @@ def split(
             file_index = barcode_index % n_subfiles
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
+    # Split the bams by barcode in parallel
+    os.write(2, b'Splitting the bams by barcode\n')
     scattered_split_result = pool.map(
         partial(
             write_barcodes_to_bins,
@@ -410,7 +389,13 @@ def split(
         for file_index in range(len(shard)):
             bins[file_index].append(shard[file_index])
 
+    # Recombine the binned bams
+    os.write(2, b'Merging temporary bam files\n')
     merged_bams = pool.map(partial(merge_bams), bins)
+
+    os.write(2, b'deleting temporary files\n')
+    for paths in scattered_split_result:
+        shutil.rmtree(os.path.dirname(paths[0]))
     return merged_bams
 
 
