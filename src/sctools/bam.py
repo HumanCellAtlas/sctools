@@ -271,9 +271,12 @@ def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], 
     """
     alignment_barcode = None
     for tag in tags:
-        if alignment.has_tag(tag):
+        # The non-existent barcode should be the exceptional case, so try/except is faster
+        try:
             alignment_barcode = alignment.get_tag(tag)
-            break
+            break  # Got the key, don't bother getting the next tag
+        except KeyError:
+            continue  # Try to get the next tag
 
     if raise_missing and alignment_barcode is None:
         raise RuntimeError('Alignment encountered that is missing {} tag(s).'.format(tags))
