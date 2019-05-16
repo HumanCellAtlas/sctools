@@ -62,6 +62,9 @@ import multiprocessing
 
 from . import consts
 
+# File descriptor to write log messages to
+STDERR=2
+
 
 class SubsetAlignments:
     """Wrapper for pysam/htslib that extracts reads corresponding to requested chromosome(s)
@@ -354,18 +357,17 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
-    stderr=2
     pool = multiprocessing.Pool(num_threads)
 
     # Get all the barcodes over all the bams
-    os.write(stderr, b'Retrieving barcodes from bams\n')
+    os.write(STDERR, b'Retrieving barcodes from bams\n')
     result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
     barcodes = reduce(lambda set1, set2: set1.union(set2), result)
     barcodes_list = list(barcodes)
-    os.write(stderr, b'Retrieved barcodes from bams\n')
+    os.write(STDERR, b'Retrieved barcodes from bams\n')
 
     # Create the barcodes to bin mapping
-    os.write(stderr, b'Allocating bins\n')
+    os.write(STDERR, b'Allocating bins\n')
     barcodes_to_bins_dict = {}
     if len(barcodes) <= n_subfiles:
         for barcode_index in range(len(barcodes_list)):
@@ -376,7 +378,7 @@ def split(
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
     # Split the bams by barcode in parallel
-    os.write(stderr, b'Splitting the bams by barcode\n')
+    os.write(STDERR, b'Splitting the bams by barcode\n')
     scattered_split_result = pool.map(
         partial(
             write_barcodes_to_bins,
@@ -395,12 +397,13 @@ def split(
             bins[file_index].append(shard[file_index])
 
     # Recombine the binned bams
-    os.write(stderr, b'Merging temporary bam files\n')
+    os.write(STDERR, b'Merging temporary bam files\n')
     merged_bams = pool.map(partial(merge_bams), bins)
 
-    os.write(stderr, b'deleting temporary files\n')
+    os.write(STDERR, b'deleting temporary files\n')
     for paths in scattered_split_result:
         shutil.rmtree(os.path.dirname(paths[0]))
+
     return merged_bams
 
 
