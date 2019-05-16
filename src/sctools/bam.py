@@ -331,6 +331,19 @@ def write_barcodes_to_bins(
     return filenames
 
 
+def merge_bams(bams: List[str]) -> str:
+    """ Merge input bams using samtools.
+
+    This cannot be a local function within `split` because then Python "cannot pickle a local object".
+    :param bams: Bams to merge.
+    :return: The output bam name.
+    """
+    bam_name = os.path.realpath(bams[0] + ".bam")
+    bams_to_merge = bams[1:]
+    pysam.merge(bam_name, *bams_to_merge)
+    return bam_name
+
+
 def split(
     in_bams: List[str],
     out_prefix: str,
@@ -374,17 +387,6 @@ def split(
         when `raise_missing` is true and any passed read contains no `tags`
 
     """
-
-    def merge_bams(bams: List[str]) -> str:
-        """ Merge input bams using samtools.
-
-        :param bams: Bams to merge.
-        :return: The output bam name.
-        """
-        bam_name = os.path.realpath(bams[0] + ".bam")
-        bams_to_merge = bams[1:]
-        pysam.merge(bam_name, *bams_to_merge)
-        return bam_name
 
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
