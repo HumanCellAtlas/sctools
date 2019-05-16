@@ -218,7 +218,7 @@ def variable_embedded_barcode_generator():
         molecule_sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY
     )
     return fastq.EmbeddedBarcodeGenerator(
-        data_dir + 'indropindrop.fastq', [all_barcodes], fastq.extract_variable_barcode
+        data_dir + 'indrop.fastq', [all_barcodes], fastq.extract_variable_barcode
     )
 
 
@@ -253,11 +253,12 @@ def variable_barcode_generator_with_corrected_cell_barcodes():
         molecule_sequence_tag=consts.RAW_MOLECULE_BARCODE_TAG_KEY
     )
     return fastq.BarcodeGeneratorWithCorrectedCellBarcodes(
-        data_dir + "indropindrop.fastq",
+        data_dir + "indrop.fastq",
         all_barcodes,
         data_dir + 'indrop_whitelist.txt',
         [],
-        is_variable=True
+        is_variable=True,
+        whitelist_2=data_dir + 'indrop_whitelist_2.txt'
         )
 
 

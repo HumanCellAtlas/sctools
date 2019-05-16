@@ -334,6 +334,26 @@ class ErrorsToCorrectBarcodesMap:
                     error_map[barcode[:i] + e + barcode[i + 1 :]] = barcode
         return error_map
 
+    @staticmethod
+    def _prepare_inDrop_single_base_error_hash_table(
+            barcodes: Iterable[str]
+    ) -> Mapping[str, str]:
+
+        error_map = {}
+
+        # add all off by 1 to the dict
+        for barcode in barcodes:
+            off_by_1_barcodes = [barcode[:x] + base + barcode[x + 1:] for base in ['A', 'C', 'G', 'T'] for x in range(0, len(barcode))if barcode[x] != base]
+            for new_barcode in off_by_1_barcodes:
+                if new_barcode not in error_map:
+                    error_map[new_barcode] = [barcode]
+                else:
+                    error_map[new_barcode].append(barcode)
+
+        # remove all non-unique mappings
+        error_map = {k: v[0] for k, v in error_map.items() if len(v) == 1}
+        return error_map
+
     @classmethod
     def single_hamming_errors_from_whitelist(cls, whitelist_file: str):
         """Factory method to generate instance of class from a file containing "correct" barcodes.
@@ -354,7 +374,19 @@ class ErrorsToCorrectBarcodesMap:
                 cls._prepare_single_base_error_hash_table((line[:-1] for line in f))
             )
 
-    def correct_bam(self, bam_file: str, output_bam_file: str) -> None:
+    @classmethod
+    def single_hamming_errors_from_inDrop_whitelist(cls, whitelist_file:str, whitelist_2_file:str):
+        with open(whitelist_file) as barcode1_file, open(whitelist_2_file) as barcode2_file:
+            barcode_1_list = [barcode.strip() for barcode in barcode1_file.readlines()]
+            barcode_2_list = [barcode.strip() for barcode in barcode2_file.readlines()]
+
+        # combine the barcodes for all possible combinations
+        compound_barcode_list = [b1 + b2 for b1 in barcode_1_list for b2 in barcode_2_list]
+        return cls(
+            cls._prepare_inDrop_single_base_error_hash_table((barcode for barcode in compound_barcode_list))
+        )
+
+    def correct_bam(self, bam_file: str, output_bam_file: str, isIndrop = False) -> None:
         """Correct barcodes in a (potentially unaligned) bamfile, given a whitelist.
 
         Parameters

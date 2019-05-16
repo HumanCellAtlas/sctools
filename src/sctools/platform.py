@@ -595,7 +595,7 @@ class InDrop(GenericPlatform):
 
     @classmethod
     def _make_tag_generators(
-        cls, r1, whitelist
+        cls, r1, whitelist, whitelist_2
     ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
@@ -624,7 +624,8 @@ class InDrop(GenericPlatform):
                     whitelist=whitelist,
                     other_embedded_barcodes=[cls.molecule_barcode],
                     extract_barcode_function=fastq.extract_variable_barcode,
-                    is_variable=True
+                    is_variable=True,
+                    whitelist_2=whitelist_2
                 )
             )
         else:
@@ -638,48 +639,6 @@ class InDrop(GenericPlatform):
             )
 
         return tag_generators
-
-    @classmethod
-    def _get_corrected_variable_barcodes(cls, barcode_1_whitelist, barcode_2_whitelist):
-        """Create a map of all acceptable barcodes mapped to the corrected barcodes.
-
-        For each barcode sequence all permutations of off by 1 sequences are generated and mapped to
-        the original (corrected) barcode. Any non-unique permutations are excluded from the mapping.
-
-        Parameters
-        ----------
-        barcode_1_whitelist : str
-            txt file containing all sequences for  barcode 1
-
-        barcode_2_whitelist : str
-            txt file containing all sequences for  barcode 2
-
-        Returns
-        -------
-        compound_barcode_dict :
-            A map of accepted barcodes mapped to the corrected barcode
-"""
-        # read files into a list
-        with open(barcode_1_whitelist) as barcode1_file, open(barcode_2_whitelist) as barcode2_file:
-            barcode_1_list = [barcode.strip() for barcode in barcode1_file.readlines()]
-            barcode_2_list = [barcode.strip() for barcode in barcode2_file.readlines()]
-
-        # combine the barcodes for all possible combinations
-        compound_barcode_list =[b1 + b2 for b1 in barcode_1_list for b2 in barcode_2_list]
-        compound_barcode_dict = {}
-
-        # add all off by 1 to the dict
-        for barcode in compound_barcode_list:
-            compound_barcode_dict[barcode] = [barcode]
-            off_by_1_barcodes = [barcode[:x] + base + barcode[x + 1:] for base in ['A', 'C', 'G', 'T'] for x in range(0, len(barcode))if barcode[x] != base]
-            for new_barcode in off_by_1_barcodes:
-                if new_barcode not in compound_barcode_dict:
-                    compound_barcode_dict[new_barcode] = [barcode]
-                else: compound_barcode_dict[new_barcode].append(barcode)
-
-        # remove all non-unique mappings
-        compound_barcode_dict = {k: v[0] for k, v in compound_barcode_dict.items() if len(v) == 1}
-        return compound_barcode_dict
 
     @classmethod
     def attach_barcodes(cls, args=None):
@@ -718,6 +677,14 @@ class InDrop(GenericPlatform):
             '--whitelist',
             default=None,
             help='optional cell barcode whitelist. If provided, corrected barcodes '
+                 'will also be output when barcodes are observed within 1ED of a '
+                 'whitelisted barcode',
+        )
+        parser.add_argument(
+            '-wt',
+            '--whitelist_two',
+            default=None,
+            help='optional second cell barcode whitelist. If provided, corrected barcodes '
                  'will also be output when barcodes are observed within 1ED of a '
                  'whitelisted barcode',
         )

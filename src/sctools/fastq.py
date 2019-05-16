@@ -395,7 +395,8 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         embedded_cell_barcode: EmbeddedBarcode,
         whitelist: str,
         other_embedded_barcodes: Iterable[EmbeddedBarcode] = tuple(),
-        is_variable = False,
+        is_variable=False,
+        whitelist_2=None,
         *args,
         **kwargs
     ):
@@ -408,9 +409,14 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
                 'if passed, other_embedded_barcodes must be a list or tuple'
             )
 
-        self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
-            whitelist
-        )
+        if is_variable:
+            self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_inDrop_whitelist(
+                whitelist, whitelist_2
+            )
+        else:
+            self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
+                whitelist
+            )
         self.embedded_cell_barcode = embedded_cell_barcode
         self.is_variable = is_variable
 
