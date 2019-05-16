@@ -358,6 +358,7 @@ def split(
     result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
     barcodes = reduce(lambda x, y: x.union(y), result)
     barcodes_list = list(barcodes)
+    os.write(2, b'Retrieved barcodes from bams\n')
 
     # Create the barcodes to bin mapping
     os.write(2, b'Allocating bins\n')
