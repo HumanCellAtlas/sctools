@@ -234,6 +234,18 @@ class Tagger:
 
 
 def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing) -> Set[str]:
+    """ Get all the distinct barcodes from a bam
+
+    :param in_bam: str
+        Input bam file.
+    :param tags: List[str]
+        Tags in the bam that might contain barcodes.
+    :param raise_missing: bool
+        Raise an error if no barcodes can be found.
+    :return: set
+        A set of barcodes found in the bam
+        This set will not contain a None value
+    """
     barcodes = set()
     # Get all the Barcodes from the BAM
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
@@ -246,6 +258,17 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing) -> Set[st
 
 
 def get_barcode_for_alignment(alignment, tags: List[str], raise_missing) -> str:
+    """ Get the barcode for an Alignment
+
+    :param alignment: pysam.Alignment
+        An Alignment from pysam.
+    :param tags: List[str]
+        Tags in the bam that might contain barcodes.
+    :param raise_missing: bool
+        Raise an error if no barcodes can be found.
+    :return: str
+        A barcode for the alignment, or None if one is not found and raise_missing is False.
+    """
     alignment_barcode = None
     for tag in tags:
         try:
@@ -263,6 +286,20 @@ def get_barcode_for_alignment(alignment, tags: List[str], raise_missing) -> str:
 def write_barcodes_to_bins(
         in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing
 ) -> List[str]:
+    """ Write barcodes to appropriate shards as defined by barcodes_to_bins
+
+    :param in_bam: str
+        The bam file to read.
+    :param tags: List[str]
+        Tags in the bam that might contain barcodes.
+    :param barcodes_to_bins: Dict[str, int]
+        A Dict from barcode to bin. All barcodes of the same type need to be written to the same shard.
+        These numbered shards are merged after parallelization so that all alignments with the same
+        barcode are in the same bam.
+    :param raise_missing: bool
+        Raise an error if no barcodes can be found.
+    :return: A list of paths to the written shards
+    """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
         dirname = os.path.splitext(os.path.basename(in_bam))[0]
@@ -293,14 +330,6 @@ def write_barcodes_to_bins(
 
     return filenames
 
-
-def merge_bams(bams: List[str]) -> str:
-    bam_name = os.path.realpath(bams[0] + ".bam")
-    bams_to_merge = bams[1:]
-    pysam.merge(bam_name, *bams_to_merge)
-    return bam_name
-
-
 def split(
     in_bams: List[str], out_prefix: str, tags: List[str], approx_mb_per_split=1000, raise_missing=True, num_threads=None
 ) -> List[str]:
@@ -313,7 +342,7 @@ def split(
     out_prefix : str
         Prefix for all output files; output will be named as prefix_n where n is an integer equal
         to the chunk number.
-    tags : tuple
+    tags : List[str]
         The bam tags to split on. The tags are checked in order, and sorting is done based on the
         first identified tag. Further tags are only checked if the first tag is missing. This is
         useful in cases where sorting is executed over a corrected barcode, but some records only
@@ -339,6 +368,18 @@ def split(
         when `raise_missing` is true and any passed read contains no `tags`
 
     """
+
+    def merge_bams(bams: List[str]) -> str:
+        """ Merge input bams using samtools.
+
+        :param bams: Bams to merge.
+        :return: The output bam name.
+        """
+        bam_name = os.path.realpath(bams[0] + ".bam")
+        bams_to_merge = bams[1:]
+        pysam.merge(bam_name, *bams_to_merge)
+        return bam_name
+
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
@@ -362,14 +403,15 @@ def split(
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
     result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
-    barcodes = reduce(lambda set1, set2: set1.union(set2), result)
-    barcodes_list = list(barcodes)
+
+    barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
     os.write(STDERR, b'Retrieved barcodes from bams\n')
 
     # Create the barcodes to bin mapping
     os.write(STDERR, b'Allocating bins\n')
     barcodes_to_bins_dict = {}
-    if len(barcodes) <= n_subfiles:
+    # barcodes_list will always contain non-None elements from get_barcodes_from_bam
+    if len(barcodes_list) <= n_subfiles:
         for barcode_index in range(len(barcodes_list)):
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = barcode_index
     else:
