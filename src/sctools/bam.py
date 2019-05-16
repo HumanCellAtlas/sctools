@@ -310,6 +310,8 @@ def write_barcodes_to_bins(
         bins = list(set(barcodes_to_bins.values()))
         for i in range(len(bins)):
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
+            # For now, bam writing uses one thread for compression. Better logic could support more threads without
+            # starving the machine for resources
             open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)
             files.append(open_bam)
 
