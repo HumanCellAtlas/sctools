@@ -335,7 +335,7 @@ def split(
     in_bams: List[str],
     out_prefix: str,
     tags: List[str],
-    approx_mb_per_split=1000,
+    approx_mb_per_split: int = 1000,
     raise_missing: bool = True,
     num_threads: int = None
 ) -> List[str]:
