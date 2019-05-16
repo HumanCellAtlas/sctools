@@ -63,7 +63,9 @@ import multiprocessing
 from . import consts
 
 # File descriptor to write log messages to
-STDERR=2
+STDERR = 2
+# Suffix for temporary files used for storing query_name to barcode mappings
+QBCMAP_SUFFIX = ".qbcmap"
 
 
 class SubsetAlignments:
@@ -248,12 +250,15 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> 
     """
     barcodes = set()
     # Get all the Barcodes from the BAM
-    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
-        for alignment in input_alignments:
-            barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
-            # If no provided tag was found on the record that had a non-null value
-            if barcode is not None:
-                barcodes.add(barcode)
+    bam_name = os.path.basename(in_bam) + QBCMAP_SUFFIX
+    with open(bam_name, 'w') as query_name_to_barcode_map_file:
+        with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+            for alignment in input_alignments:
+                barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
+                # If no provided tag was found on the record that had a non-null value
+                if barcode is not None:
+                    barcodes.add(barcode)
+                    query_name_to_barcode_map_file.write("{}\t{}\n".format(alignment.query_name, barcode))
     return barcodes
 
 
@@ -285,7 +290,9 @@ def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], 
 
 
 def write_barcodes_to_bins(
-        in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing: bool
+        in_bam: str,
+        barcodes_to_bins: Dict[str, int],
+        query_names_to_barcodes: Dict[str, str],
 ) -> List[str]:
     """ Write barcodes to appropriate shards as defined by barcodes_to_bins
 
@@ -318,11 +325,12 @@ def write_barcodes_to_bins(
         # Loop over input; check each tag in priority order and partition barcodes into files based
         # on the highest priority tag that is identified
         for alignment in input_alignments:
-            barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
-            if barcode is not None:
+            try:
                 # Find or set the file associated with the tag and write the record to the correct file
-                out_file = files[barcodes_to_bins[barcode]]
+                out_file = files[barcodes_to_bins[query_names_to_barcodes[alignment.query_name]]]
                 out_file.write(alignment)
+            except KeyError:
+                continue
 
     filenames = []
     for file in files:
@@ -415,9 +423,19 @@ def split(
                               tags=tags,
                               raise_missing=raise_missing),
                       in_bams)
-
     barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
     os.write(STDERR, b'Retrieved barcodes from bams\n')
+
+    os.write(STDERR, b'Collecting shard data into in-memory mapping\n')
+    query_name_to_barcode_dict = {}
+    for in_bam in in_bams:
+        qbcmap_file_name = os.path.basename(in_bam) + QBCMAP_SUFFIX
+        with open(qbcmap_file_name, 'r') as qbcmap:
+            for line in qbcmap:
+                values = line.split("\t")
+                if values[0] not in query_name_to_barcode_dict:
+                    query_name_to_barcode_dict[values[0]] = values[1]
+        os.remove(qbcmap_file_name)
 
     # Create the barcodes to bin mapping
     os.write(STDERR, b'Allocating bins\n')
@@ -436,9 +454,8 @@ def split(
     scattered_split_result = pool.map(
         partial(
             write_barcodes_to_bins,
-            tags=list(tags),
-            raise_missing=raise_missing,
-            barcodes_to_bins=barcodes_to_bins_dict),
+            barcodes_to_bins=barcodes_to_bins_dict,
+            query_names_to_barcodes=query_name_to_barcode_dict),
         in_bams
     )
 
