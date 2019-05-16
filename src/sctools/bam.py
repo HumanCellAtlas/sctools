@@ -233,7 +233,7 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing) -> Set[str]:
+def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> Set[str]:
     """ Get all the distinct barcodes from a bam
 
     :param in_bam: str
@@ -257,10 +257,10 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing) -> Set[st
     return barcodes
 
 
-def get_barcode_for_alignment(alignment, tags: List[str], raise_missing) -> str:
+def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], raise_missing: bool) -> str:
     """ Get the barcode for an Alignment
 
-    :param alignment: pysam.Alignment
+    :param alignment: pysam.AlignedSegment
         An Alignment from pysam.
     :param tags: List[str]
         Tags in the bam that might contain barcodes.
@@ -284,7 +284,7 @@ def get_barcode_for_alignment(alignment, tags: List[str], raise_missing) -> str:
 
 
 def write_barcodes_to_bins(
-        in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing
+        in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing: bool
 ) -> List[str]:
     """ Write barcodes to appropriate shards as defined by barcodes_to_bins
 
@@ -298,7 +298,7 @@ def write_barcodes_to_bins(
         barcode are in the same bam.
     :param raise_missing: bool
         Raise an error if no barcodes can be found.
-    :return: A list of paths to the written shards
+    :return: A list of paths to the written shards.
     """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
@@ -315,7 +315,7 @@ def write_barcodes_to_bins(
             files.append(open_bam)
 
         # Loop over input; check each tag in priority order and partition barcodes into files based
-        # On the highest priority tag that is identified
+        # on the highest priority tag that is identified
         for alignment in input_alignments:
             barcode = get_barcode_for_alignment(alignment, tags, raise_missing=raise_missing)
             if barcode is not None:
@@ -330,8 +330,14 @@ def write_barcodes_to_bins(
 
     return filenames
 
+
 def split(
-    in_bams: List[str], out_prefix: str, tags: List[str], approx_mb_per_split=1000, raise_missing=True, num_threads=None
+    in_bams: List[str],
+    out_prefix: str,
+    tags: List[str],
+    approx_mb_per_split=1000,
+    raise_missing: bool = True,
+    num_threads: int = None
 ) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
