@@ -310,7 +310,7 @@ def write_barcodes_to_bins(
         bins = list(set(barcodes_to_bins.values()))
         for i in range(len(bins)):
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
-            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments, threads=2)
+            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)
             files.append(open_bam)
 
         # Loop over input; check each tag in priority order and partition barcodes into files based
