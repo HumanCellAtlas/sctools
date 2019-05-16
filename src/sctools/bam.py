@@ -251,7 +251,7 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> 
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
         for alignment in input_alignments:
             barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
-            # No provided tag was found on the record that had a non-null value
+            # If no provided tag was found on the record that had a non-null value
             if barcode is not None:
                 barcodes.add(barcode)
     return barcodes
@@ -271,6 +271,7 @@ def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], 
     """
     alignment_barcode = None
     for tag in tags:
+        alignment.get_tags()
         if alignment.has_tag(tag):
             alignment_barcode = alignment.get_tag(tag)
             break
@@ -302,14 +303,12 @@ def write_barcodes_to_bins(
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
         dirname = os.path.splitext(os.path.basename(in_bam))[0]
         os.makedirs(dirname)
-        # Cap files to counts
+
         files = []
         bins = list(set(barcodes_to_bins.values()))
         for i in range(len(bins)):
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
-            open_bam = pysam.AlignmentFile(
-                out_bam_name, 'wb', template=input_alignments
-            )
+            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments, threads=2)
             files.append(open_bam)
 
         # Loop over input; check each tag in priority order and partition barcodes into files based
@@ -408,7 +407,10 @@ def split(
 
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
-    result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
+    result = pool.map(partial(get_barcodes_from_bam,
+                              tags=tags,
+                              raise_missing=raise_missing),
+                      in_bams)
 
     barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
     os.write(STDERR, b'Retrieved barcodes from bams\n')
