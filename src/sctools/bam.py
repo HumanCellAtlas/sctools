@@ -242,7 +242,7 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing) -> Set[st
     return barcodes
 
 
-def get_barcode_for_alignment(alignment, tags: List[str], raise_missing):
+def get_barcode_for_alignment(alignment, tags: List[str], raise_missing) -> str:
     alignment_barcode = None
     for tag in tags:
         try:
@@ -260,11 +260,11 @@ def get_barcode_for_alignment(alignment, tags: List[str], raise_missing):
 def write_barcodes_to_bins(
         in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing
 ) -> List[str]:
-    # create all the output files
+    # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
         dirname = os.path.splitext(os.path.basename(in_bam))[0]
         os.makedirs(dirname)
-        # map files to counts
+        # Cap files to counts
         files = []
         bins = list(set(barcodes_to_bins.values()))
         for i in range(len(bins)):
@@ -274,18 +274,21 @@ def write_barcodes_to_bins(
             )
             files.append(open_bam)
 
-        # loop over input; check each tag in priority order and partition barcodes into files based
-        # on the highest priority tag that is identified
+        # Loop over input; check each tag in priority order and partition barcodes into files based
+        # On the highest priority tag that is identified
         for alignment in input_alignments:
             barcode = get_barcode_for_alignment(alignment, tags, raise_missing=raise_missing)
             if barcode is not None:
-                # find or set the file associated with the tag and write the record to the correct file
+                # Find or set the file associated with the tag and write the record to the correct file
                 out_file = files[barcodes_to_bins[barcode]]
                 out_file.write(alignment)
 
-    map(lambda file: file.close(), files)
+    filenames = []
+    for file in files:
+        file.close()
+        filenames.append(file.filename)
 
-    return list(map(lambda file: file.filename, files))
+    return filenames
 
 
 def merge_bams(bams: List[str]) -> str:
@@ -351,17 +354,18 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
+    stderr=2
     pool = multiprocessing.Pool(num_threads)
 
     # Get all the barcodes over all the bams
-    os.write(2, b'Retrieving barcodes from bams\n')
+    os.write(stderr, b'Retrieving barcodes from bams\n')
     result = pool.map(partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams)
-    barcodes = reduce(lambda x, y: x.union(y), result)
+    barcodes = reduce(lambda set1, set2: set1.union(set2), result)
     barcodes_list = list(barcodes)
-    os.write(2, b'Retrieved barcodes from bams\n')
+    os.write(stderr, b'Retrieved barcodes from bams\n')
 
     # Create the barcodes to bin mapping
-    os.write(2, b'Allocating bins\n')
+    os.write(stderr, b'Allocating bins\n')
     barcodes_to_bins_dict = {}
     if len(barcodes) <= n_subfiles:
         for barcode_index in range(len(barcodes_list)):
@@ -372,7 +376,7 @@ def split(
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
     # Split the bams by barcode in parallel
-    os.write(2, b'Splitting the bams by barcode\n')
+    os.write(stderr, b'Splitting the bams by barcode\n')
     scattered_split_result = pool.map(
         partial(
             write_barcodes_to_bins,
@@ -391,10 +395,10 @@ def split(
             bins[file_index].append(shard[file_index])
 
     # Recombine the binned bams
-    os.write(2, b'Merging temporary bam files\n')
+    os.write(stderr, b'Merging temporary bam files\n')
     merged_bams = pool.map(partial(merge_bams), bins)
 
-    os.write(2, b'deleting temporary files\n')
+    os.write(stderr, b'deleting temporary files\n')
     for paths in scattered_split_result:
         shutil.rmtree(os.path.dirname(paths[0]))
     return merged_bams
