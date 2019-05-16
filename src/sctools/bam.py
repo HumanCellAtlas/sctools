@@ -271,7 +271,6 @@ def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], 
     """
     alignment_barcode = None
     for tag in tags:
-        alignment.get_tags()
         if alignment.has_tag(tag):
             alignment_barcode = alignment.get_tag(tag)
             break
