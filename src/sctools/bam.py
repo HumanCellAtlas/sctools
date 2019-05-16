@@ -250,7 +250,7 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> 
     # Get all the Barcodes from the BAM
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
         for alignment in input_alignments:
-            barcode = get_barcode_for_alignment(alignment, tags, raise_missing=raise_missing)
+            barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
             # No provided tag was found on the record that had a non-null value
             if barcode is not None:
                 barcodes.add(barcode)
@@ -317,7 +317,7 @@ def write_barcodes_to_bins(
         # Loop over input; check each tag in priority order and partition barcodes into files based
         # on the highest priority tag that is identified
         for alignment in input_alignments:
-            barcode = get_barcode_for_alignment(alignment, tags, raise_missing=raise_missing)
+            barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
             if barcode is not None:
                 # Find or set the file associated with the tag and write the record to the correct file
                 out_file = files[barcodes_to_bins[barcode]]
