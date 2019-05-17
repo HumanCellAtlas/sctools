@@ -435,7 +435,7 @@ def split(
 
     # Split the bams by barcode in parallel
     os.write(STDERR, b'Splitting the bams by barcode\n')
-    write_pool = multiprocessing.Pool(num_threads / 2)
+    write_pool = multiprocessing.Pool(math.ceil(num_threads / 2))
     scattered_split_result = write_pool.map(
         partial(
             write_barcodes_to_bins,
