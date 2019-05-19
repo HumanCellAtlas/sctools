@@ -407,11 +407,11 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
-    part_one_pool = multiprocessing.Pool(num_threads)
+    full_pool = multiprocessing.Pool(num_threads)
 
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
-    result = part_one_pool.map(partial(get_barcodes_from_bam,
+    result = full_pool.map(partial(get_barcodes_from_bam,
                               tags=tags,
                               raise_missing=raise_missing),
                       in_bams)
@@ -431,10 +431,10 @@ def split(
             file_index = barcode_index % n_subfiles
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
-    part_one_pool.close()
 
     # Split the bams by barcode in parallel
     os.write(STDERR, b'Splitting the bams by barcode\n')
+    # Samtools needs a thread for compression, so we leave half the given threads open.
     write_pool = multiprocessing.Pool(math.ceil(num_threads / 2))
     scattered_split_result = write_pool.map(
         partial(
@@ -457,14 +457,13 @@ def split(
 
     # Recombine the binned bams
     os.write(STDERR, b'Merging temporary bam files\n')
-    merge_pool = multiprocessing.Pool(num_threads)
-    merged_bams = merge_pool.map(partial(merge_bams), bins)
+    merged_bams = full_pool.map(partial(merge_bams), bins)
 
     os.write(STDERR, b'deleting temporary files\n')
     for paths in scattered_split_result:
         shutil.rmtree(os.path.dirname(paths[0]))
 
-    merge_pool.close()
+    full_pool.close()
 
     return merged_bams
 
