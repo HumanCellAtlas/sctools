@@ -435,7 +435,8 @@ def split(
     # Split the bams by barcode in parallel
     os.write(STDERR, b'Splitting the bams by barcode\n')
     # Samtools needs a thread for compression, so we leave half the given threads open.
-    write_pool = multiprocessing.Pool(math.ceil(num_threads / 2))
+    write_pool_threads = math.ceil(num_threads / 2) if num_threads > 2 else 1
+    write_pool = multiprocessing.Pool(write_pool_threads)
     scattered_split_result = write_pool.map(
         partial(
             write_barcodes_to_bins,
