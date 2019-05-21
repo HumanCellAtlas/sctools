@@ -34,7 +34,10 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
         # but only output PAIRED-READS/third line
         contents = parsed['metrics']['contents']
         if class_name == "AlignmentSummaryMetrics":
-            # parse out PE, R1 and R2
+            # parse out PE, R1 and R2. If the reads are unpaired, the contents
+            # will be a single dict rather than a list of dicts.
+            if isinstance(contents, dict):
+                contents = [contents]
             rows = {}
             for m in contents:
                 cat = m['CATEGORY']

@@ -1,0 +1,10 @@
+## htsjdk.samtools.metrics.StringHeader
+# CollectMultipleMetrics INPUT=/cromwell-executions/SmartSeq2SingleCell/a47f1348-ecf5-463e-afee-c3bed51d479d/call-CollectMultipleMetrics/inputs/-1585165421/SRR6258488_qc.bam ASSUME_SORTED=true OUTPUT=SRR6258488_qc METRIC_ACCUMULATION_LEVEL=[ALL_READS] FILE_EXTENSION=.txt PROGRAM=[CollectAlignmentSummaryMetrics, CollectInsertSizeMetrics, CollectGcBiasMetrics, CollectBaseDistributionByCycle, QualityScoreDistribution, MeanQualityByCycle, CollectSequencingArtifactMetrics, CollectQualityYieldMetrics] VALIDATION_STRINGENCY=SILENT REFERENCE_SEQUENCE=/cromwell-executions/SmartSeq2SingleCell/a47f1348-ecf5-463e-afee-c3bed51d479d/call-CollectMultipleMetrics/inputs/-852851197/GRCh38.primary_assembly.genome.fa    STOP_AFTER=0 INCLUDE_UNPAIRED=false VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false GA4GH_CLIENT_SECRETS=client_secrets.json USE_JDK_DEFLATER=false USE_JDK_INFLATER=false
+## htsjdk.samtools.metrics.StringHeader
+# Started on: Tue May 14 15:45:18 UTC 2019
+
+## METRICS CLASS	picard.analysis.GcBiasSummaryMetrics
+ACCUMULATION_LEVEL	READS_USED	WINDOW_SIZE	TOTAL_CLUSTERS	ALIGNED_READS	AT_DROPOUT	GC_DROPOUT	GC_NC_0_19	GC_NC_20_39	GC_NC_40_59	GC_NC_60_79	GC_NC_80_100	SAMPLE	LIBRARY	READ_GROUP
+All Reads	ALL	100	1559752	1244063	13.760859	1.1878	0.219754	0.753171	1.281724	0.883386	0.021428			
+
+

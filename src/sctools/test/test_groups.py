@@ -1,10 +1,12 @@
 import os
 import csv
+import itertools
 from collections import OrderedDict
 from sctools import platform
 
 
 data_dir = os.path.split(__file__)[0] + '/data/group_metrics/'
+unpaired_data_dir = os.path.split(__file__)[0] + '/data/group_metrics_unpaired_ss2/'
 
 
 def check_parsed_metrics_csv(file_name, cell_id, class_name, expected_metrics):
@@ -274,3 +276,63 @@ def test_write_aggregated_qc_metrics():
     # The output file should contain all of the column headers from the input files plus the "joined column" containing row headers
     assert len(output_headers) == len(expected_headers) + 1
     os.remove('output_QCs.csv')
+
+
+def test_unpaired_ss2_write_aggregated_picard_metrics_by_row():
+
+    sources = [
+        unpaired_data_dir + 'SRR6258488_qc.alignment_summary_metrics.txt',
+        unpaired_data_dir + 'SRR6258488_qc.duplicate_metrics.txt',
+        unpaired_data_dir + 'SRR6258488_qc.gc_bias.summary_metrics.txt',
+        unpaired_data_dir + 'SRR6258488_qc.rna_metrics.txt',
+    ]
+
+    args = ['-f', *sources, '-t', 'Picard', '-o', 'output_picard_group_unpaired']
+    return_code = platform.GenericPlatform.group_qc_outputs(args)
+    assert return_code == 0
+
+    expected_metrics = {}
+
+    for source in sources:
+        with open(source) as f:
+            for line in f:
+                if line.startswith("## METRICS CLASS"):
+                    class_ = line.strip().split('\t')[1].split('.')[-1]
+                    break
+            labels = f.readline().strip().split("\t")
+            values = f.readline().strip().split("\t")
+
+            for label, value in itertools.zip_longest(labels, values, fillvalue=""):
+                if label in ("LIBRARY", "SAMPLE", "READ_GROUP", "CATEGORY"):
+                    continue
+                if class_ == "AlignmentSummaryMetrics":
+                    label += ".UNPAIRED"
+                try:
+                    value = str(float(value))
+                except ValueError:
+                    pass
+                expected_metrics[(class_, label)] = value
+    expected_metrics[("Class", "")] = "SRR6258488"
+
+    with open('output_picard_group_unpaired.csv') as f:
+        labels = f.readline().strip().split(',')
+        classes = f.readline().strip().split(',')
+        values = f.readline().strip().split(',')
+        assert len(labels) == len(expected_metrics)
+
+        for class_, label in expected_metrics:
+            if class_ not in classes or label not in labels:
+                print("!", class_, label)
+
+        for class_, label, value in zip(classes, labels, values):
+            assert (class_, label) in expected_metrics
+            try:
+                value = str(float(value))
+            except ValueError:
+                value = value
+            try:
+                expected_value = str(float(expected_metrics[(class_, label)]))
+            except ValueError:
+                expected_value = expected_metrics[(class_, label)]
+            assert value == expected_value
+    os.remove('output_picard_group_unpaired.csv')
