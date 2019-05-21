@@ -400,6 +400,9 @@ def split(
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
+    if num_threads is None:
+        num_threads = multiprocessing.cpu_count()
+
     # find correct number of subfiles to spawn
     bam_mb = sum(map(lambda in_bam: os.path.getsize(in_bam) * 1e-6, in_bams))
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
