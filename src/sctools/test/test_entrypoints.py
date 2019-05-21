@@ -86,6 +86,61 @@ def test_Attach10XBarcodes_entrypoint_with_whitelist():
     os.remove('test_tagged_bam.bam')  # clean up
 
 
+def test_AttachBarcodes_entrypoint_with_whitelist():
+    # test of the BarcodePlatform.attach_barcodes entry point with
+    # sample, cell, and molecule barcodes all specified
+    args = [
+        '--r1',
+        data_dir + 'test_r1.fastq',
+        '--i1',
+        data_dir + 'test_i7.fastq',
+        '--u2',
+        data_dir + 'test.bam',
+        '--output-bamfile',
+        'test_tagged_bam.bam',
+        '--whitelist',
+        data_dir + '1k-august-2016.txt',
+        "--sample-barcode-start-position",
+        "0",
+        "--sample-barcode-length",
+        "8",
+        "--cell-barcode-start-position",
+        "0",
+        "--cell-barcode-length",
+        "16",
+        "--molecule-barcode-start-position",
+        "16",
+        "--molecule-barcode-length",
+        "7",  # changed 10>7 intentionally for test
+    ]
+
+    return_call = platform.BarcodePlatform.attach_barcodes(args)
+    assert return_call == 0
+    success = False
+    with pysam.AlignmentFile('test_tagged_bam.bam', 'rb', check_sq=False) as f:
+        for alignment in f:
+            if alignment.has_tag(consts.CELL_BARCODE_TAG_KEY):
+                success = True
+            # each alignment should now have a tag, and that tag should be a string
+            assert isinstance(alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY), str)
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_CELL_BARCODE_TAG_KEY), str
+            )
+            assert isinstance(
+                alignment.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY), str
+            )
+            assert len(alignment.get_tag(consts.RAW_MOLECULE_BARCODE_TAG_KEY)) == 7
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_MOLECULE_BARCODE_TAG_KEY), str
+            )
+            assert isinstance(alignment.get_tag(consts.RAW_SAMPLE_BARCODE_TAG_KEY), str)
+            assert isinstance(
+                alignment.get_tag(consts.QUALITY_SAMPLE_BARCODE_TAG_KEY), str
+            )
+    assert success
+    os.remove('test_tagged_bam.bam')  # clean up
+
+
 def test_split_bam():
     tag_args = [
         '--r1',

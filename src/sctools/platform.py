@@ -945,15 +945,16 @@ class BarcodePlatform(GenericPlatform):
         barcode_args = {'fastq_files': r1}
 
         if i1:
-            barcode_args['embedded_barcodes'] = [cls.sample_barcode]
-            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**barcode_args))
+            sample_barcode_args = dict(barcode_args)
+            sample_barcode_args['embedded_barcodes'] = [cls.sample_barcode]
+            tag_generators.append(fastq.EmbeddedBarcodeGenerator(**sample_barcode_args))
 
         if whitelist:
             barcode_args['whitelist'] = whitelist
             if cls.cell_barcode:
                 barcode_args['embedded_cell_barcode'] = cls.cell_barcode
             if cls.molecule_barcode:
-                barcode_args['other_embedded_barcodes'] = cls.molecule_barcode
+                barcode_args['other_embedded_barcodes'] = [cls.molecule_barcode]
             tag_generators.append(
                 fastq.BarcodeGeneratorWithCorrectedCellBarcodes(**barcode_args)
             )
