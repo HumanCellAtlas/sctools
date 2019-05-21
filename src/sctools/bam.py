@@ -233,7 +233,9 @@ class Tagger:
                 outbam.write(sam_record)
 
 
-def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> Set[str]:
+def get_barcodes_from_bam(
+    in_bam: str, tags: List[str], raise_missing: bool
+) -> Set[str]:
     """ Get all the distinct barcodes from a bam
 
     :param in_bam: str
@@ -257,7 +259,9 @@ def get_barcodes_from_bam(in_bam: str, tags: List[str], raise_missing: bool) -> 
     return barcodes
 
 
-def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], raise_missing: bool) -> str:
+def get_barcode_for_alignment(
+    alignment: pysam.AlignedSegment, tags: List[str], raise_missing: bool
+) -> str:
     """ Get the barcode for an Alignment
 
     :param alignment: pysam.AlignedSegment
@@ -279,13 +283,15 @@ def get_barcode_for_alignment(alignment: pysam.AlignedSegment, tags: List[str], 
             continue  # Try to get the next tag
 
     if raise_missing and alignment_barcode is None:
-        raise RuntimeError('Alignment encountered that is missing {} tag(s).'.format(tags))
+        raise RuntimeError(
+            'Alignment encountered that is missing {} tag(s).'.format(tags)
+        )
 
     return alignment_barcode
 
 
 def write_barcodes_to_bins(
-        in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing: bool
+    in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing: bool
 ) -> List[str]:
     """ Write barcodes to appropriate shards as defined by barcodes_to_bins
 
@@ -312,7 +318,9 @@ def write_barcodes_to_bins(
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
             # For now, bam writing uses one thread for compression. Better logic could support more threads without
             # starving the machine for resources
-            open_bam = pysam.AlignmentFile(out_bam_name, 'wb', template=input_alignments)
+            open_bam = pysam.AlignmentFile(
+                out_bam_name, 'wb', template=input_alignments
+            )
             files.append(open_bam)
 
         # Loop over input; check each tag in priority order and partition barcodes into files based
@@ -351,7 +359,7 @@ def split(
     tags: List[str],
     approx_mb_per_split: int = 1000,
     raise_missing: bool = True,
-    num_threads: int = None
+    num_threads: int = None,
 ) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
@@ -411,10 +419,9 @@ def split(
 
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
-    result = full_pool.map(partial(get_barcodes_from_bam,
-                                   tags=tags,
-                                   raise_missing=raise_missing),
-                           in_bams)
+    result = full_pool.map(
+        partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams
+    )
 
     barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
     os.write(STDERR, b'Retrieved barcodes from bams\n')
@@ -442,8 +449,9 @@ def split(
             write_barcodes_to_bins,
             tags=list(tags),
             raise_missing=raise_missing,
-            barcodes_to_bins=barcodes_to_bins_dict),
-        in_bams
+            barcodes_to_bins=barcodes_to_bins_dict,
+        ),
+        in_bams,
     )
 
     bin_indices = list(set(barcodes_to_bins_dict.values()))
