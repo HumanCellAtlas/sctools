@@ -1,6 +1,7 @@
 from copy import deepcopy
 import glob
 import os
+import shutil
 
 import pysam
 import pytest
@@ -238,6 +239,69 @@ def test_split_succeeds_with_raise_missing_false_and_no_cr_barcode_passed(tagged
     os.remove(tagged_bam)  # clean up
     for f in glob.glob('test_output_*'):
         os.remove(f)
+
+
+def test_get_barcodes_from_bam(tagged_bam):
+    outputs = bam.get_barcodes_from_bam(
+        tagged_bam,
+        [consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY],
+        raise_missing=True,
+    )
+    assert len(outputs) == 99
+
+
+def test_get_barcodes_from_bam_with_raise_missing_true_raises_warning_without_cr_barcode_passed(
+    tagged_bam
+):
+    with pytest.raises(RuntimeError):
+        bam.get_barcodes_from_bam(
+            tagged_bam, [consts.CELL_BARCODE_TAG_KEY], raise_missing=True
+        )
+
+
+def test_write_barcodes_to_bins(tagged_bam):
+    barcodes = bam.get_barcodes_from_bam(
+        tagged_bam,
+        [consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY],
+        raise_missing=True,
+    )
+
+    test_barcodes_to_bins = {}
+    for barcode in barcodes:
+        test_barcodes_to_bins[barcode] = 0
+
+    filenames = bam.write_barcodes_to_bins(
+        tagged_bam,
+        [consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY],
+        test_barcodes_to_bins,
+        raise_missing=False,
+    )
+
+    assert len(filenames) == 1
+
+    # cleanup
+    for f in filenames:
+        shutil.rmtree(os.path.dirname(f))
+
+
+def test_get_barcode_for_alignment(tagged_bam):
+    with pysam.AlignmentFile(tagged_bam, 'rb', check_sq=False) as input_alignments:
+        for alignment in input_alignments:
+            barcode = bam.get_barcode_for_alignment(
+                alignment,
+                [consts.CELL_BARCODE_TAG_KEY, consts.RAW_CELL_BARCODE_TAG_KEY],
+                raise_missing=False,
+            )
+            assert barcode == "NTAAGAGTCTGCAAGT"
+            break
+
+
+def test_get_barcode_for_alignment_raises_error_for_missing_tag(tagged_bam):
+    with pysam.AlignmentFile(tagged_bam, 'rb', check_sq=False) as input_alignments:
+        for alignment in input_alignments:
+            with pytest.raises(RuntimeError):
+                bam.get_barcode_for_alignment(alignment, TAG_KEYS, raise_missing=True)
+                break
 
 
 # TEST SORTING

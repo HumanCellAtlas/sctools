@@ -309,7 +309,7 @@ def write_barcodes_to_bins(
     """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
-        dirname = os.path.splitext(os.path.basename(in_bam))[0]
+        dirname = os.path.splitext(os.path.basename(in_bam))[0] + "_bin"
         os.makedirs(dirname)
 
         files = []
