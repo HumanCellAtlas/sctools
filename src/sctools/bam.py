@@ -63,7 +63,7 @@ import multiprocessing
 from . import consts
 
 # File descriptor to write log messages to
-STDERR=2
+STDERR = 2
 
 
 class SubsetAlignments:
@@ -412,9 +412,9 @@ def split(
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
     result = full_pool.map(partial(get_barcodes_from_bam,
-                              tags=tags,
-                              raise_missing=raise_missing),
-                      in_bams)
+                                   tags=tags,
+                                   raise_missing=raise_missing),
+                           in_bams)
 
     barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
     os.write(STDERR, b'Retrieved barcodes from bams\n')
@@ -422,6 +422,7 @@ def split(
     # Create the barcodes to bin mapping
     os.write(STDERR, b'Allocating bins\n')
     barcodes_to_bins_dict = {}
+
     # barcodes_list will always contain non-None elements from get_barcodes_from_bam
     if len(barcodes_list) <= n_subfiles:
         for barcode_index in range(len(barcodes_list)):
@@ -430,7 +431,6 @@ def split(
         for barcode_index in range(len(barcodes_list)):
             file_index = barcode_index % n_subfiles
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
-
 
     # Split the bams by barcode in parallel
     os.write(STDERR, b'Splitting the bams by barcode\n')
