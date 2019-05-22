@@ -59,6 +59,7 @@ from typing import (
 import pysam
 import shutil
 import multiprocessing
+import random
 
 from . import consts
 
@@ -309,13 +310,15 @@ def write_barcodes_to_bins(
     """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
-        dirname = os.path.splitext(os.path.basename(in_bam))[0] + "_bin"
+        dirname = os.path.splitext(os.path.basename(in_bam))[0] + "_" + str(random.randint(0, 10000))
         os.makedirs(dirname)
 
         files = []
         bins = list(set(barcodes_to_bins.values()))
+        filepaths = []
         for i in range(len(bins)):
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
+            filepaths.append(out_bam_name)
             # For now, bam writing uses one thread for compression. Better logic could support more threads without
             # starving the machine for resources
             open_bam = pysam.AlignmentFile(
@@ -332,12 +335,10 @@ def write_barcodes_to_bins(
                 out_file = files[barcodes_to_bins[barcode]]
                 out_file.write(alignment)
 
-    filenames = []
     for file in files:
         file.close()
-        filenames.append(file.filename)
 
-    return filenames
+    return filepaths
 
 
 def merge_bams(bams: List[str]) -> str:
