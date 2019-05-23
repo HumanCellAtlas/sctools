@@ -276,7 +276,7 @@ def get_barcode_for_alignment(
     """
     alignment_barcode = None
     for tag in tags:
-        # The non-existent barcode should be the exceptional case, so try/except is faster
+        # The non-existent barcode should be the exceptional case, so try/except is faster than if/else
         try:
             alignment_barcode = alignment.get_tag(tag)
             break  # Got the key, don't bother getting the next tag
