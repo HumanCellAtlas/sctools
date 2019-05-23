@@ -352,7 +352,7 @@ def merge_bams(bams: List[str]) -> str:
     """
     bam_name = os.path.realpath(bams[0] + ".bam")
     bams_to_merge = bams[1:]
-    pysam.merge(bam_name, *bams_to_merge)
+    pysam.merge('-c', '-p', bam_name, *bams_to_merge)
     return bam_name
 
 
