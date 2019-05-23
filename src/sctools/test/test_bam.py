@@ -203,7 +203,7 @@ def test_split_with_raise_missing_true_raises_warning_without_cr_barcode_passed(
 ):
     split_size = 1024  # our test data is very small, this value should yield 1 file
     with pytest.raises(RuntimeError):
-        outputs = bam.split(
+        bam.split(
             [tagged_bam],
             'test_output',
             [consts.CELL_BARCODE_TAG_KEY],
@@ -301,7 +301,6 @@ def test_get_barcode_for_alignment_raises_error_for_missing_tag(tagged_bam):
         for alignment in input_alignments:
             with pytest.raises(RuntimeError):
                 bam.get_barcode_for_alignment(alignment, TAG_KEYS, raise_missing=True)
-                break
 
 
 # TEST SORTING
