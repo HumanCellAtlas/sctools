@@ -310,6 +310,8 @@ def write_barcodes_to_bins(
     """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+
+        # We need a random int appended to the dirname to make sure input bams with the same name don't clash
         dirname = os.path.splitext(os.path.basename(in_bam))[0] + "_" + str(random.randint(0, 10000))
         os.makedirs(dirname)
 
