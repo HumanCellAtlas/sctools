@@ -313,9 +313,7 @@ def write_barcodes_to_bins(
 
         # We need a random int appended to the dirname to make sure input bams with the same name don't clash
         dirname = (
-            os.path.splitext(os.path.basename(in_bam))[0]
-            + "_"
-            + str(uuid.uuid4())
+            os.path.splitext(os.path.basename(in_bam))[0] + "_" + str(uuid.uuid4())
         )
         os.makedirs(dirname)
 
@@ -325,7 +323,7 @@ def write_barcodes_to_bins(
         # barcode_to_bins is a dict of barcodes to ints. The ints are contiguous and are used as indices
         # in the files array. The files array is an array of open file handles to write to.
         for i in range(len(bins)):
-            out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
+            out_bam_name = os.path.join(f"{dirname}", f"{dirname}_{i}.bam")
             filepaths.append(out_bam_name)
             # For now, bam writing uses one thread for compression. Better logic could support more processes without
             # starving the machine for resources
