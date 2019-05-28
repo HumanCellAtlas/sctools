@@ -36,8 +36,7 @@ htslib : https://github.com/samtools/htslib
 """
 
 import functools
-from functools import partial
-from functools import reduce
+from functools import partial, reduce
 import math
 import os
 import warnings
@@ -59,7 +58,7 @@ from typing import (
 import pysam
 import shutil
 import multiprocessing
-import random
+import uuid
 
 from . import consts
 
@@ -237,7 +236,7 @@ class Tagger:
 def get_barcodes_from_bam(
     in_bam: str, tags: List[str], raise_missing: bool
 ) -> Set[str]:
-    """ Get all the distinct barcodes from a bam
+    """Get all the distinct barcodes from a bam
 
     :param in_bam: str
         Input bam file.
@@ -268,7 +267,8 @@ def get_barcode_for_alignment(
     :param alignment: pysam.AlignedSegment
         An Alignment from pysam.
     :param tags: List[str]
-        Tags in the bam that might contain barcodes.
+        Tags in the bam that might contain barcodes. If multiple Tags are passed, will
+        return the contents of the first tag that contains a barcode.
     :param raise_missing: bool
         Raise an error if no barcodes can be found.
     :return: str
@@ -294,19 +294,19 @@ def get_barcode_for_alignment(
 def write_barcodes_to_bins(
     in_bam: str, tags: List[str], barcodes_to_bins: Dict[str, int], raise_missing: bool
 ) -> List[str]:
-    """ Write barcodes to appropriate shards as defined by barcodes_to_bins
+    """ Write barcodes to appropriate bins as defined by barcodes_to_bins
 
     :param in_bam: str
         The bam file to read.
     :param tags: List[str]
         Tags in the bam that might contain barcodes.
     :param barcodes_to_bins: Dict[str, int]
-        A Dict from barcode to bin. All barcodes of the same type need to be written to the same shard.
-        These numbered shards are merged after parallelization so that all alignments with the same
+        A Dict from barcode to bin. All barcodes of the same type need to be written to the same bin.
+        These numbered bins are merged after parallelization so that all alignments with the same
         barcode are in the same bam.
     :param raise_missing: bool
         Raise an error if no barcodes can be found.
-    :return: A list of paths to the written shards.
+    :return: A list of paths to the written bins.
     """
     # Create all the output files
     with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
@@ -315,17 +315,19 @@ def write_barcodes_to_bins(
         dirname = (
             os.path.splitext(os.path.basename(in_bam))[0]
             + "_"
-            + str(random.randint(0, 10000))
+            + str(uuid.uuid4())
         )
         os.makedirs(dirname)
 
         files = []
         bins = list(set(barcodes_to_bins.values()))
         filepaths = []
+        # barcode_to_bins is a dict of barcodes to ints. The ints are contiguous and are used as indices
+        # in the files array. The files array is an array of open file handles to write to.
         for i in range(len(bins)):
             out_bam_name = os.path.realpath(dirname) + ("/" + dirname + '_%d.bam' % i)
             filepaths.append(out_bam_name)
-            # For now, bam writing uses one thread for compression. Better logic could support more threads without
+            # For now, bam writing uses one thread for compression. Better logic could support more processes without
             # starving the machine for resources
             open_bam = pysam.AlignmentFile(
                 out_bam_name, 'wb', template=input_alignments
@@ -351,7 +353,8 @@ def merge_bams(bams: List[str]) -> str:
     """ Merge input bams using samtools.
 
     This cannot be a local function within `split` because then Python "cannot pickle a local object".
-    :param bams: Bams to merge.
+    :param bams: Name of the  final bam + bams to merge.
+        Because of how its called using multiprocessing, the bam basename is the first element of the list.
     :return: The output bam name.
     """
     bam_name = os.path.realpath(bams[0] + ".bam")
@@ -366,7 +369,7 @@ def split(
     tags: List[str],
     approx_mb_per_split: float = 1000,
     raise_missing: bool = True,
-    num_threads: int = None,
+    num_processes: int = None,
 ) -> List[str]:
     """split `in_bam` by tag into files of `approx_mb_per_split`
 
@@ -387,8 +390,8 @@ def split(
     raise_missing : bool, optional
         if True, raise a RuntimeError if a record is encountered without a tag. Else silently
         discard the record (default = True)
-    num_threads : int, optional
-        The number of threads to parallelize over. If not set, will use all available threads.
+    num_processes : int, optional
+        The number of processes to parallelize over. If not set, will use all available processes.
 
     Returns
     -------
@@ -407,11 +410,11 @@ def split(
     if len(tags) == 0:
         raise ValueError('At least one tag must be passed')
 
-    if num_threads is None:
-        num_threads = multiprocessing.cpu_count()
+    if num_processes is None:
+        num_processes = multiprocessing.cpu_count()
 
     # find correct number of subfiles to spawn
-    bam_mb = sum(map(lambda in_bam: os.path.getsize(in_bam) * 1e-6, in_bams))
+    bam_mb = sum(os.path.getsize(b) * 1e-6 for b in in_bams)
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN:
         warnings.warn(
@@ -425,7 +428,7 @@ def split(
             f'think about increasing max_mb_per_split.'
         )
 
-    full_pool = multiprocessing.Pool(num_threads)
+    full_pool = multiprocessing.Pool(num_processes)
 
     # Get all the barcodes over all the bams
     os.write(STDERR, b'Retrieving barcodes from bams\n')
@@ -451,9 +454,9 @@ def split(
 
     # Split the bams by barcode in parallel
     os.write(STDERR, b'Splitting the bams by barcode\n')
-    # Samtools needs a thread for compression, so we leave half the given threads open.
-    write_pool_threads = math.ceil(num_threads / 2) if num_threads > 2 else 1
-    write_pool = multiprocessing.Pool(write_pool_threads)
+    # Samtools needs a thread for compression, so we leave half the given processes open.
+    write_pool_processes = math.ceil(num_processes / 2) if num_processes > 2 else 1
+    write_pool = multiprocessing.Pool(write_pool_processes)
     scattered_split_result = write_pool.map(
         partial(
             write_barcodes_to_bins,
@@ -465,8 +468,11 @@ def split(
     )
 
     bin_indices = list(set(barcodes_to_bins_dict.values()))
-    bins = list(map(lambda index: ["{}_{}".format(out_prefix, index)], bin_indices))
+    # Create a list of lists, where the first element of every sub-list is the name of the final output bam
+    bins = list([f"{out_prefix}_{index}"] for index in bin_indices)
 
+    # A shard is the computation of writing barcodes to bins
+    # Gather all the files for each bin into the same sub-list.
     for shard_index in range(len(scattered_split_result)):
         shard = scattered_split_result[shard_index]
         for file_index in range(len(shard)):
