@@ -169,7 +169,9 @@ class GenericPlatform:
 
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-b', '--bamfile', required=True, help='input bamfile')
+        parser.add_argument(
+            '-b', '--bamfile', nargs='+', required=True, help='input bamfile'
+        )
         parser.add_argument(
             '-p', '--output-prefix', required=True, help='prefix for output chunks'
         )
@@ -180,6 +182,13 @@ class GenericPlatform:
             default=1000,
             type=float,
             help='approximate size target for each subfile (in MB)',
+        )
+        parser.add_argument(
+            '--num-processes',
+            required=False,
+            default=None,
+            type=int,
+            help='Number of processes to parallelize over',
         )
         parser.add_argument(
             '-t',
@@ -204,9 +213,10 @@ class GenericPlatform:
         filenames = bam.split(
             args.bamfile,
             args.output_prefix,
-            *args.tags,
+            args.tags,
             approx_mb_per_split=args.subfile_size,
-            raise_missing=args.raise_missing,
+            raise_missing=args.drop_missing,
+            num_processes=args.num_processes,
         )
 
         print(' '.join(filenames))
