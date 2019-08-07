@@ -297,3 +297,43 @@ def extract_gene_names(
         gene_name_to_index[gene_name] = gene_index
         gene_index += 1
     return gene_name_to_index
+
+def extract_extended_gene_names(
+    files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
+) -> Dict[str, tuple]:
+    """Extract extended gene names from GTF file(s) and returns a map from gene names to their corresponding
+    occurrence locations the given file(s).
+
+    Parameters
+    ----------
+    files : Union[str, List], optional
+        File(s) to read. If '-', read sys.stdin (default = '-')
+    mode : {'r', 'rb'}, optional
+        Open mode. If 'r', read strings. If 'rb', read bytes (default = 'r').
+    header_comment_char : str, optional
+        lines beginning with this character are skipped (default = '#')
+
+    Returns
+    -------
+    List[tuple(int,int), key]
+        A map from gene names to their start and end tuples
+    """
+    gene_name_to_start_end: Dict[str, int] = dict()
+    for record in Reader(files, mode, header_comment_char).filter(
+        retain_types=['gene']
+    ):
+        gene_name = record.get_attribute('gene_name')
+        if gene_name is None:
+            raise ValueError(
+                f'Malformed GTF file detected. Record is of type gene but does not have a '
+                f'"gene_name" field: {record}'
+            )
+        if gene_name in gene_name_to_start_end:
+            _resolve_multiple_gene_names(gene_name)
+            continue
+        gene_name_to_start_end[gene_name] = (record.start, record.end)
+
+    gene_locs = [ (locs, key) for key, locs in  gene_name_to_start_end.items() ] 
+    gene_locs.sort(key =lambda x: x[0])
+
+    return gene_locs

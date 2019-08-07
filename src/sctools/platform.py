@@ -430,6 +430,12 @@ class GenericPlatform:
             args.gtf_annotation_file
         )
 
+        # load gene locations from the annotation file
+        gene_locations: List[ tuple, str] = gtf.extract_extended_gene_names(
+            args.gtf_annotation_file
+        )
+
+        matrix = count.CountMatrix.from_sorted_tagged_bam(
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
             gene_name_to_index=gene_name_to_index,
