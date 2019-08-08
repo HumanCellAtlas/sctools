@@ -390,6 +390,7 @@ class GenericPlatform:
             cell_barcode_tag=consts.CELL_BARCODE_TAG_KEY,
             molecule_barcode_tag=consts.MOLECULE_BARCODE_TAG_KEY,
             gene_name_tag=consts.GENE_NAME_TAG_KEY,
+            sn_rna_seq_support=False
         )
         parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
         parser.add_argument(
@@ -417,6 +418,13 @@ class GenericPlatform:
             help=f'tag that identifies the gene name (default = {consts.GENE_NAME_TAG_KEY})',
         )
 
+        parser.add_argument(
+            '-n',
+            '--sn-rna-seq-support',
+            action='store_true',
+            help=f'snRNA Seq suporrt (default = False)',
+        )
+
         if args is not None:
             args = parser.parse_args(args)
         else:
@@ -431,14 +439,17 @@ class GenericPlatform:
         )
 
         # load gene locations from the annotation file
-        gene_locations: List[ tuple, str] = gtf.extract_extended_gene_names(
-            args.gtf_annotation_file
-        )
+        if args.sn_rna_seq_support:
+            gene_locations: List[ tuple, str] = gtf.extract_extended_gene_names(
+                args.gtf_annotation_file
+            )
+        else:
+            gene_locations=None
 
-        matrix = count.CountMatrix.from_sorted_tagged_bam(
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
             gene_name_to_index=gene_name_to_index,
+            gene_locations=gene_locations,
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
             gene_name_tag=args.gene_name_tag,

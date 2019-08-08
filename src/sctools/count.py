@@ -91,7 +91,7 @@ class CountMatrix:
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
     @classmethod
-    def _binaryOverlap(array, l, r, x):
+    def _binaryOverlap(cls, array, l, r, x):
           while l <=r:
                m = int((l +r)/2)
                if array[m][0][0] < x and x < array[m][0][1]:
@@ -113,11 +113,11 @@ class CountMatrix:
         cls,
         bam_file: str,
         gene_name_to_index: Dict[str, int],
-        gene_locations: List[ (tuple, str) ] = None,
+        gene_locations: List[tuple] = None,
         cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
         molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
         gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
-        open_mode: str = 'rb',
+        open_mode: str = 'rb'
     ) -> 'CountMatrix':
         """Generate a count matrix from a sorted, tagged bam file
 
@@ -226,15 +226,19 @@ class CountMatrix:
         ) in grouped_records_generator:
 
             #modify alignments to include the gene name to the alignments to INTRONIC regions
-            alignments =[]
-            for alignment in _alignments:
-               if alignment.has_tag('XF'):
-                  aln_type = alignment.get_tag('XF')
-                  if aln_type=='INTRONIC':
-                     gene_name=cls._binaryOverlap(gene_locations, 0, len(gene_locations)-1, alignment.reference_start)
-                     if gene_name:
-                        alignment.set_tag('GE', gene_name)
-               alignments.append(alignment)
+            if gene_locations:
+                 alignments =[]
+                 for alignment in _alignments:
+                    #print(alignment.reference_name, alignment.reference_start)
+                    if alignment.has_tag('XF'):
+                       aln_type = alignment.get_tag('XF')
+                       if alignment.reference_name and  aln_type=='INTRONIC' and alignment.reference_name in gene_locations:
+                          gene_name=cls._binaryOverlap(gene_locations[alignment.reference_name], 0, len(gene_locations[alignment.reference_name])-1, alignment.reference_start)
+                          if gene_name:
+                             alignment.set_tag('GE', gene_name)
+                    alignments.append(alignment)
+            else:
+                 alignments = _alignments 
 
             if (
                 cell_barcode is None or molecule_barcode is None

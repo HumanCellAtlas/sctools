@@ -318,7 +318,7 @@ def extract_extended_gene_names(
     List[tuple(int,int), key]
         A map from gene names to their start and end tuples
     """
-    gene_name_to_start_end: Dict[str, int] = dict()
+    gene_name_to_start_end: Dict[str, List[tuple]] = dict()
     for record in Reader(files, mode, header_comment_char).filter(
         retain_types=['gene']
     ):
@@ -331,9 +331,14 @@ def extract_extended_gene_names(
         if gene_name in gene_name_to_start_end:
             _resolve_multiple_gene_names(gene_name)
             continue
-        gene_name_to_start_end[gene_name] = (record.start, record.end)
 
-    gene_locs = [ (locs, key) for key, locs in  gene_name_to_start_end.items() ] 
-    gene_locs.sort(key =lambda x: x[0])
+        if not record.chromosome in gene_name_to_start_end: 
+           gene_name_to_start_end[record.chromosome] = dict()
+        gene_name_to_start_end[record.chromosome][gene_name] = (record.start, record.end)
 
-    return gene_locs
+    gene_locations = dict()
+    for chromosome in gene_name_to_start_end: 
+        gene_locations[chromosome] = [ (locs, key) for key, locs in  gene_name_to_start_end[chromosome].items() ] 
+        gene_locations[chromosome].sort(key =lambda x: x[0])
+
+    return gene_locations
