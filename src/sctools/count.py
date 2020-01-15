@@ -167,6 +167,9 @@ class CountMatrix:
         bam_file : str
             input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
             order
+        gene_locations : List[tuple]
+            Location of genes
+            (default = None)
         cell_barcode_tag : str, optional
             Tag that specifies the cell barcode for each read. Reads without this tag will be ignored
             (default = consts.CELL_BARCODE_TAG_KEY)
@@ -244,7 +247,7 @@ class CountMatrix:
 
             # modify alignments to include the gene name to the alignments to INTRONIC regions
             if gene_locations:
-                alignments =[]
+                alignments = []
                 for alignment in input_alignments:
                     if alignment.has_tag('XF'):
                         aln_type = alignment.get_tag('XF')
