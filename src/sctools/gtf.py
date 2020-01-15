@@ -18,7 +18,7 @@ https://useast.ensembl.org/info/website/upload/gff.html
 
 import logging
 import string
-from typing import List, Dict, Generator, Iterable, Union, Any
+from typing import List, Dict, Generator, Iterable, Union
 
 from . import reader
 

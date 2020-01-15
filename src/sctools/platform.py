@@ -843,7 +843,7 @@ class BarcodePlatform(GenericPlatform):
 
         """
         barcode_start_pos_exists = bool(barcode_start_position) or (
-                barcode_start_position == 0
+            barcode_start_position == 0
         )
         barcode_length_exists = bool(barcode_length)
         # (XOR boolean logic)

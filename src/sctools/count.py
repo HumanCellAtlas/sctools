@@ -91,7 +91,7 @@ class CountMatrix:
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
     """Looks through a list of gene location to fine the one that the given read_start ovelaps
-    
+
     Parameters
     ----------
     gene_locations: Array
@@ -102,11 +102,11 @@ class CountMatrix:
         index of gene up to which to search to
     read_start:
         position at which the read starts at
-        
+
     Returns
     -------
         name of gene with overlap or None if no overlap is found
-    
+
     """
 
     @classmethod
@@ -324,16 +324,16 @@ class CountMatrix:
             [
                 k
                 for k, v in sorted(
-                gene_name_to_index.items(), key=operator.itemgetter(1)
-            )
+                    gene_name_to_index.items(), key=operator.itemgetter(1)
+                )
             ]
         )
         row_index = np.asarray(
             [
                 k
                 for k, v in sorted(
-                cell_barcode_to_index.items(), key=operator.itemgetter(1)
-            )
+                    cell_barcode_to_index.items(), key=operator.itemgetter(1)
+                )
             ]
         )
 
