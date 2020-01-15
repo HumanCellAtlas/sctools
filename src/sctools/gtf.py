@@ -261,7 +261,7 @@ def _resolve_multiple_gene_names(gene_name: str):
 
 
 def extract_gene_names(
-    files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
+        files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
 ) -> Dict[str, int]:
     """Extract gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence orders in the given file(s).
@@ -283,7 +283,7 @@ def extract_gene_names(
     gene_name_to_index: Dict[str, int] = dict()
     gene_index = 0
     for record in Reader(files, mode, header_comment_char).filter(
-        retain_types=['gene']
+            retain_types=['gene']
     ):
         gene_name = record.get_attribute('gene_name')
         if gene_name is None:
@@ -300,7 +300,7 @@ def extract_gene_names(
 
 
 def extract_extended_gene_names(
-    files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
+        files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
 ) -> Dict[str, List[tuple]]:
     """Extract extended gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence locations the given file(s).
@@ -323,7 +323,7 @@ def extract_extended_gene_names(
     """
     gene_name_to_start_end = dict()
     for record in Reader(files, mode, header_comment_char).filter(
-        retain_types=['gene']
+            retain_types=['gene']
     ):
         gene_name = record.get_attribute('gene_name')
         if gene_name is None:
@@ -340,7 +340,7 @@ def extract_extended_gene_names(
         gene_name_to_start_end[record.chromosome][gene_name] = (record.start, record.end)
     gene_locations = dict()
     # For each chromosome invert the map to be in List[( (start,end), genename )] and sort it by start
-    for chromosome in gene_name_to_start_end: 
+    for chromosome in gene_name_to_start_end:
         gene_locations[chromosome] = [(locs, key) for key, locs in gene_name_to_start_end[chromosome].items()]
         # Sort by starting location
         gene_locations[chromosome].sort(key=lambda x: x[0])

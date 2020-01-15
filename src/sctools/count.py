@@ -34,7 +34,7 @@ from sctools import consts, bam
 
 class CountMatrix:
     def __init__(
-        self, matrix: sp.csr_matrix, row_index: np.ndarray, col_index: np.ndarray
+            self, matrix: sp.csr_matrix, row_index: np.ndarray, col_index: np.ndarray
     ):
         self._matrix = matrix
         self._row_index = row_index
@@ -54,10 +54,10 @@ class CountMatrix:
 
     @staticmethod
     def _get_alignments_grouped_by_query_name_generator(
-        bam_file: str,
-        cell_barcode_tag: str,
-        molecule_barcode_tag: str,
-        open_mode: str = 'rb',
+            bam_file: str,
+            cell_barcode_tag: str,
+            molecule_barcode_tag: str,
+            open_mode: str = 'rb',
     ) -> Generator[
         Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None
     ]:
@@ -79,7 +79,7 @@ class CountMatrix:
         """
         with pysam.AlignmentFile(bam_file, mode=open_mode) as bam_records:
             for (query_name, grouper) in itertools.groupby(
-                bam_records, key=lambda record: record.query_name
+                    bam_records, key=lambda record: record.query_name
             ):
                 alignments: List[pysam.AlignedSegment] = list(grouper)
                 cell_barcode: Optional[str] = bam.get_tag_or_default(
@@ -108,6 +108,7 @@ class CountMatrix:
         name of gene with overlap or None if no overlap is found
     
     """
+
     @classmethod
     def binary_overlap(cls, gene_locations, search_start, search_end, read_start):
         while search_start <= search_end:
@@ -127,14 +128,14 @@ class CountMatrix:
     # todo once the stringent checks are in place, safely move on to the hashset-free implementation
     @classmethod
     def from_sorted_tagged_bam(
-        cls,
-        bam_file: str,
-        gene_name_to_index: Dict[str, int],
-        gene_locations: List[tuple] = None,
-        cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
-        molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
-        gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
-        open_mode: str = 'rb'
+            cls,
+            bam_file: str,
+            gene_name_to_index: Dict[str, int],
+            gene_locations: List[tuple] = None,
+            cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
+            molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
+            gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
+            open_mode: str = 'rb'
     ) -> 'CountMatrix':
         """Generate a count matrix from a sorted, tagged bam file
 
@@ -239,10 +240,10 @@ class CountMatrix:
         )
 
         for (
-            query_name,
-            cell_barcode,
-            molecule_barcode,
-            input_alignments,
+                query_name,
+                cell_barcode,
+                molecule_barcode,
+                input_alignments,
         ) in grouped_records_generator:
 
             # modify alignments to include the gene name to the alignments to INTRONIC regions
@@ -285,9 +286,9 @@ class CountMatrix:
                     continue  # drop query
 
             if (
-                cell_barcode,
-                molecule_barcode,
-                gene_name,
+                    cell_barcode,
+                    molecule_barcode,
+                    gene_name,
             ) in observed_cell_molecule_gene_set:
                 continue  # optical/PCR duplicate -> drop query
             else:
@@ -323,16 +324,16 @@ class CountMatrix:
             [
                 k
                 for k, v in sorted(
-                    gene_name_to_index.items(), key=operator.itemgetter(1)
-                )
+                gene_name_to_index.items(), key=operator.itemgetter(1)
+            )
             ]
         )
         row_index = np.asarray(
             [
                 k
                 for k, v in sorted(
-                    cell_barcode_to_index.items(), key=operator.itemgetter(1)
-                )
+                cell_barcode_to_index.items(), key=operator.itemgetter(1)
+            )
             ]
         )
 
@@ -364,7 +365,7 @@ class CountMatrix:
 
     @classmethod
     def from_mtx(
-        cls, matrix_mtx: str, row_index_file: str, col_index_file: str
+            cls, matrix_mtx: str, row_index_file: str, col_index_file: str
     ) -> 'CountMatrix':
         """
 

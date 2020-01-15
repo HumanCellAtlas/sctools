@@ -195,15 +195,15 @@ class GenericPlatform:
             '--tags',
             nargs='+',
             help='tag(s) to split bamfile over. Tags are checked sequentially, '
-            'and tags after the first are only checked if the first tag is '
-            'not present.',
+                 'and tags after the first are only checked if the first tag is '
+                 'not present.',
         )
         parser.set_defaults(raise_missing=True)
         parser.add_argument(
             '--drop-missing',
             action='store_false',
             help='drop records without tag specified by -t/--tag (default '
-            'behavior is to raise an exception',
+                 'behavior is to raise an exception',
         )
         if args is not None:
             args = parser.parse_args(args)
@@ -485,8 +485,8 @@ class GenericPlatform:
             '--input-prefixes',
             nargs='+',
             help='prefix for count matrices to be concatenated. e.g. test_counts '
-            'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
-            'row_index.npy',
+                 'for test_counts.npz, test_counts_col_index.npy, and test_counts_'
+                 'row_index.npy',
         )
         parser.add_argument(
             '-o', '--output-stem', help='file stem for merged csr matrix', required=True
@@ -613,10 +613,10 @@ class TenXV2(GenericPlatform):
 
     @classmethod
     def _tag_bamfile(
-        cls,
-        input_bamfile_name: str,
-        output_bamfile_name: str,
-        tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
+            cls,
+            input_bamfile_name: str,
+            output_bamfile_name: str,
+            tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
     ) -> None:
         """Adds tags from fastq file(s) to a bam file.
 
@@ -638,7 +638,7 @@ class TenXV2(GenericPlatform):
 
     @classmethod
     def _make_tag_generators(
-        cls, r1, i1=None, whitelist=None
+            cls, r1, i1=None, whitelist=None
     ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
@@ -717,7 +717,7 @@ class TenXV2(GenericPlatform):
             '--u2',
             required=True,
             help='unaligned bam containing cDNA fragments. Can be converted from fastq read 2'
-            'using picard FastqToSam',
+                 'using picard FastqToSam',
         )
         parser.add_argument(
             '--i1',
@@ -732,8 +732,8 @@ class TenXV2(GenericPlatform):
             '--whitelist',
             default=None,
             help='optional cell barcode whitelist. If provided, corrected barcodes '
-            'will also be output when barcodes are observed within 1ED of a '
-            'whitelisted barcode',
+                 'will also be output when barcodes are observed within 1ED of a '
+                 'whitelisted barcode',
         )
         if args is not None:
             args = parser.parse_args(args)
@@ -824,7 +824,7 @@ class BarcodePlatform(GenericPlatform):
 
     @classmethod
     def _validate_barcode_length_and_position(
-        cls, barcode_start_position, barcode_length
+            cls, barcode_start_position, barcode_length
     ):
         """Checks that either that both barcode length and position are given or that neither are given as arguments
 
@@ -843,7 +843,7 @@ class BarcodePlatform(GenericPlatform):
 
         """
         barcode_start_pos_exists = bool(barcode_start_position) or (
-            barcode_start_position == 0
+                barcode_start_position == 0
         )
         barcode_length_exists = bool(barcode_length)
         # (XOR boolean logic)
@@ -911,10 +911,10 @@ class BarcodePlatform(GenericPlatform):
 
     @classmethod
     def _tag_bamfile(
-        cls,
-        input_bamfile_name: str,
-        output_bamfile_name: str,
-        tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
+            cls,
+            input_bamfile_name: str,
+            output_bamfile_name: str,
+            tag_generators: Iterable[fastq.EmbeddedBarcodeGenerator],
     ) -> None:
         """Adds tags from fastq file(s) to a bam file.
 
@@ -936,7 +936,7 @@ class BarcodePlatform(GenericPlatform):
 
     @classmethod
     def _make_tag_generators(
-        cls, r1, i1=None, whitelist=None
+            cls, r1, i1=None, whitelist=None
     ) -> List[fastq.EmbeddedBarcodeGenerator]:
         """Create tag generators from fastq files.
 
@@ -1013,7 +1013,7 @@ class BarcodePlatform(GenericPlatform):
             '--u2',
             required=True,
             help='unaligned bam, can be converted from fastq read 2'
-            'using picard FastqToSam',
+                 'using picard FastqToSam',
         )
         parser.add_argument(
             '-o', '--output-bamfile', required=True, help='filename for tagged bam'
@@ -1023,8 +1023,8 @@ class BarcodePlatform(GenericPlatform):
             '--whitelist',
             default=None,
             help='optional cell barcode whitelist. If provided, corrected barcodes '
-            'will also be output when barcodes are observed within 1ED of a '
-            'whitelisted barcode',
+                 'will also be output when barcodes are observed within 1ED of a '
+                 'whitelisted barcode',
         )
         parser.add_argument(
             '--i1',
@@ -1064,7 +1064,7 @@ class BarcodePlatform(GenericPlatform):
             dest='molecule_barcode_start_pos',
             default=None,
             help='the user defined start position, in base pairs, of the molecule barcode '
-            '(must be not overlap cell barcode if cell barcode is provided)',
+                 '(must be not overlap cell barcode if cell barcode is provided)',
             type=cls._validate_barcode_start_pos,
         )
         parser.add_argument(
