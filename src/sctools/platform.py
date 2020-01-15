@@ -390,7 +390,7 @@ class GenericPlatform:
             cell_barcode_tag=consts.CELL_BARCODE_TAG_KEY,
             molecule_barcode_tag=consts.MOLECULE_BARCODE_TAG_KEY,
             gene_name_tag=consts.GENE_NAME_TAG_KEY,
-            sn_rna_seq_support=False
+            sn_rna_seq_mode=False
         )
         parser.add_argument('-b', '--bam-file', help='input_bam_file', required=True)
         parser.add_argument(
@@ -420,9 +420,9 @@ class GenericPlatform:
 
         parser.add_argument(
             '-n',
-            '--sn-rna-seq-support',
+            '--sn-rna-seq-mode',
             action='store_true',
-            help=f'snRNA Seq suporrt (default = False)',
+            help=f'snRNA Seq mode (default = False)',
         )
 
         if args is not None:
@@ -439,7 +439,7 @@ class GenericPlatform:
         )
 
         # For snRNA-seq we need the extended gene information
-        if args.sn_rna_seq_support:
+        if args.sn_rna_seq_mode:
             gene_locations = gtf.extract_extended_gene_names(
                 args.gtf_annotation_file
             )
