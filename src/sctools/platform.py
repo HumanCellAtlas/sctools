@@ -440,7 +440,7 @@ class GenericPlatform:
 
         # load gene locations from the annotation file
         if args.sn_rna_seq_support:
-            gene_locations: List[ tuple, str] = gtf.extract_extended_gene_names(
+            gene_locations: Dict[tuple, str] = gtf.extract_extended_gene_names(
                 args.gtf_annotation_file
             )
         else:
