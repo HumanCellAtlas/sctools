@@ -90,18 +90,35 @@ class CountMatrix:
                 )
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
+    """Looks through a list of gene location to fine the one that the given read_start ovelaps
+    
+    Parameters
+    ----------
+    gene_locations: Array
+        array with gene start end locations and names
+    search_start:
+        index of gene to start searching form
+    search_end:
+        index of gene up to which to search to
+    read_start:
+        position at which the read starts at
+        
+    Returns
+    -------
+        name of gene with overlap or None if no overlap is found
+    
+    """
     @classmethod
-    def _binaryOverlap(cls, array, l, r, x):
-          while l <=r:
-               m = int((l +r)/2)
-               if array[m][0][0] < x and x < array[m][0][1]:
-                    return array[m][1]
-               elif array[m][0][0] < x:
-                    l = m + 1
-               else:
-                    r = m - 1
-         
-          return None
+    def binary_overlap(cls, gene_locations, search_start, search_end, read_start):
+        while search_start <= search_end:
+            current_gene_index = int((search_start + search_end) / 2)
+            if gene_locations[current_gene_index][0][0] < read_start < gene_locations[current_gene_index][0][1]:
+                return gene_locations[current_gene_index][1]
+            elif gene_locations[current_gene_index][0][0] < read_start:
+                search_start = current_gene_index + 1
+            else:
+                search_end = current_gene_index - 1
+        return None
 
     # todo add support for generating a matrix of invalid barcodes
     # todo add support for splitting spliced and unspliced reads
@@ -233,7 +250,7 @@ class CountMatrix:
                     if alignment.has_tag('XF'):
                        aln_type = alignment.get_tag('XF')
                        if alignment.reference_name and  aln_type=='INTRONIC' and alignment.reference_name in gene_locations:
-                          gene_name=cls._binaryOverlap(gene_locations[alignment.reference_name], 0, len(gene_locations[alignment.reference_name])-1, alignment.reference_start)
+                          gene_name=cls.binary_overlap(gene_locations[alignment.reference_name], 0, len(gene_locations[alignment.reference_name]) - 1, alignment.reference_start)
                           if gene_name:
                              alignment.set_tag('GE', gene_name)
                     alignments.append(alignment)
