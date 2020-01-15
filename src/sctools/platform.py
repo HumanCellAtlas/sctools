@@ -438,13 +438,13 @@ class GenericPlatform:
             args.gtf_annotation_file
         )
 
-        # load gene locations from the annotation file
+        # For snRNA-seq we need the extended gene information
         if args.sn_rna_seq_support:
-            gene_locations: Dict[tuple, str] = gtf.extract_extended_gene_names(
+            gene_locations = gtf.extract_extended_gene_names(
                 args.gtf_annotation_file
             )
         else:
-            gene_locations=None
+            gene_locations = None
 
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,

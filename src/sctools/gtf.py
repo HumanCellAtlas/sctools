@@ -18,7 +18,7 @@ https://useast.ensembl.org/info/website/upload/gff.html
 
 import logging
 import string
-from typing import List, Dict, Generator, Iterable, Union
+from typing import List, Dict, Generator, Iterable, Union, Any
 
 from . import reader
 
@@ -298,9 +298,10 @@ def extract_gene_names(
         gene_index += 1
     return gene_name_to_index
 
+
 def extract_extended_gene_names(
     files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
-) -> Dict[str, tuple]:
+) -> Dict[str, List[tuple]]:
     """Extract extended gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence locations the given file(s).
 
@@ -315,10 +316,12 @@ def extract_extended_gene_names(
 
     Returns
     -------
-    List[tuple(int,int), key]
-        A map from gene names to their start and end tuples
+    Dict[str, List[tuple]]
+        A dictionary of chromosome names mapping to a List of tuples, each containing
+        a range as the the first element and a gene name as the second.
+        Dict[str, List(Tuple((start,end), gene)))
     """
-    gene_name_to_start_end: Dict[str, List[tuple]] = dict()
+    gene_name_to_start_end = dict()
     for record in Reader(files, mode, header_comment_char).filter(
         retain_types=['gene']
     ):
@@ -328,17 +331,17 @@ def extract_extended_gene_names(
                 f'Malformed GTF file detected. Record is of type gene but does not have a '
                 f'"gene_name" field: {record}'
             )
+        # find gene collisions
         if gene_name in gene_name_to_start_end:
             _resolve_multiple_gene_names(gene_name)
             continue
-
-        if not record.chromosome in gene_name_to_start_end: 
-           gene_name_to_start_end[record.chromosome] = dict()
+        if record.chromosome not in gene_name_to_start_end:
+            gene_name_to_start_end[record.chromosome] = dict()
         gene_name_to_start_end[record.chromosome][gene_name] = (record.start, record.end)
-
     gene_locations = dict()
+    # For each chromosome invert the map to be in List[( (start,end), genename )] and sort it by start
     for chromosome in gene_name_to_start_end: 
-        gene_locations[chromosome] = [ (locs, key) for key, locs in  gene_name_to_start_end[chromosome].items() ] 
-        gene_locations[chromosome].sort(key =lambda x: x[0])
-
+        gene_locations[chromosome] = [(locs, key) for key, locs in gene_name_to_start_end[chromosome].items()]
+        # Sort by starting location
+        gene_locations[chromosome].sort(key=lambda x: x[0])
     return gene_locations
