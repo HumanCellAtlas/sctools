@@ -239,27 +239,30 @@ class CountMatrix:
             query_name,
             cell_barcode,
             molecule_barcode,
-            _alignments,
+            input_alignments,
         ) in grouped_records_generator:
 
-            #modify alignments to include the gene name to the alignments to INTRONIC regions
+            # modify alignments to include the gene name to the alignments to INTRONIC regions
             if gene_locations:
-                 alignments =[]
-                 for alignment in _alignments:
-                    #print(alignment.reference_name, alignment.reference_start)
+                alignments =[]
+                for alignment in input_alignments:
                     if alignment.has_tag('XF'):
-                       aln_type = alignment.get_tag('XF')
-                       if alignment.reference_name and  aln_type=='INTRONIC' and alignment.reference_name in gene_locations:
-                          gene_name=cls.binary_overlap(gene_locations[alignment.reference_name], 0, len(gene_locations[alignment.reference_name]) - 1, alignment.reference_start)
-                          if gene_name:
-                             alignment.set_tag('GE', gene_name)
+                        aln_type = alignment.get_tag('XF')
+                        if alignment.reference_name and \
+                                aln_type == 'INTRONIC' and \
+                                alignment.reference_name in gene_locations:
+                            gene_name = cls.binary_overlap(gene_locations[alignment.reference_name],
+                                                           0,
+                                                           len(gene_locations[alignment.reference_name]) - 1,
+                                                           alignment.reference_start)
+                            if gene_name:
+                                alignment.set_tag('GE', gene_name)
                     alignments.append(alignment)
             else:
-                 alignments = _alignments 
+                alignments = input_alignments
 
-            if (
-                cell_barcode is None or molecule_barcode is None
-            ):  # only keep queries w/ well-formed UMIs
+            # only keep queries w/ well-formed UMIs
+            if cell_barcode is None or molecule_barcode is None:
                 continue
 
             if len(alignments) == 1:
