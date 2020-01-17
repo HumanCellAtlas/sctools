@@ -90,12 +90,12 @@ class Barcodes:
             distances.append(TwoBit.hamming_distance(a, b))
 
         keys: Tuple = (
-            'minimum',
-            '25th percentile',
-            'median',
-            '75th percentile',
-            'maximum',
-            'average',
+            "minimum",
+            "25th percentile",
+            "median",
+            "75th percentile",
+            "maximum",
+            "average",
         )
         values: List = list(np.percentile(distances, [0, 25, 50, 75, 100]))
         values.append(np.mean(distances))
@@ -185,7 +185,7 @@ class Barcodes:
 
         """
         tbe = TwoBit(barcode_length)
-        with open(file_, 'rb') as f:
+        with open(file_, "rb") as f:
             return cls(
                 Counter(tbe.encode(barcode[:-1]) for barcode in f), barcode_length
             )
@@ -277,7 +277,7 @@ class ErrorsToCorrectBarcodesMap:
         if not isinstance(errors_to_barcodes, Mapping):
             raise TypeError(
                 f'The argument "errors_to_barcodes" must be a mapping of erroneous barcodes to correct '
-                f'barcodes, not {type(errors_to_barcodes)}'
+                f"barcodes, not {type(errors_to_barcodes)}"
             )
         self._map = errors_to_barcodes
 
@@ -309,7 +309,7 @@ class ErrorsToCorrectBarcodesMap:
 
     @staticmethod
     def _prepare_single_base_error_hash_table(
-        barcodes: Iterable[str]
+        barcodes: Iterable[str],
     ) -> Mapping[str, str]:
         """Generate a map of correct barcodes and single base error codes to whitelist barcodes
 
@@ -328,7 +328,7 @@ class ErrorsToCorrectBarcodesMap:
 
             # include all single-base errors
             for i, nucleotide in enumerate(barcode):
-                errors = set('ACGTN')
+                errors = set("ACGTN")
                 errors.discard(nucleotide)
                 for e in errors:
                     error_map[barcode[:i] + e + barcode[i + 1 :]] = barcode
@@ -349,7 +349,7 @@ class ErrorsToCorrectBarcodesMap:
             instance of cls, built from whitelist
 
         """
-        with open(whitelist_file, 'r') as f:
+        with open(whitelist_file, "r") as f:
             return cls(
                 cls._prepare_single_base_error_hash_table((line[:-1] for line in f))
             )
@@ -365,15 +365,15 @@ class ErrorsToCorrectBarcodesMap:
             BAM format file containing cell, umi, and sample tags.
 
         """
-        with pysam.AlignmentFile(bam_file, 'rb') as fin, pysam.AlignmentFile(
-            output_bam_file, 'wb', template=fin
+        with pysam.AlignmentFile(bam_file, "rb") as fin, pysam.AlignmentFile(
+            output_bam_file, "wb", template=fin
         ) as fout:
             for alignment in fin:
                 try:
-                    tag = self.get_corrected_barcode(alignment.get_tag('CR'))
+                    tag = self.get_corrected_barcode(alignment.get_tag("CR"))
                 except KeyError:  # pass through the uncorrected barcode.
                     tag = alignment.get_tag(consts.RAW_CELL_BARCODE_TAG_KEY)
                 alignment.set_tag(
-                    tag=consts.CELL_BARCODE_TAG_KEY, value=tag, value_type='Z'
+                    tag=consts.CELL_BARCODE_TAG_KEY, value=tag, value_type="Z"
                 )
                 fout.write(alignment)

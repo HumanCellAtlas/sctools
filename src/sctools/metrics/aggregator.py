@@ -319,8 +319,8 @@ class MetricAggregator:
                 self.reads_mapped_uniquely += 1
             else:
                 self.reads_mapped_multiple += (
-                    1
-                )  # todo without multi-mapping, this number is zero!
+                    1  # todo without multi-mapping, this number is zero!
+                )
 
             if record.is_duplicate:
                 self.duplicate_reads += 1
@@ -366,17 +366,17 @@ class MetricAggregator:
         try:
             self.reads_per_molecule: float = self.n_reads / self.n_molecules
         except ZeroDivisionError:
-            self.reads_per_molecule: float = float('nan')
+            self.reads_per_molecule: float = float("nan")
 
         try:
             self.reads_per_fragment: float = self.n_reads / self.n_fragments
         except ZeroDivisionError:
-            self.reads_per_fragment: float = float('nan')
+            self.reads_per_fragment: float = float("nan")
 
         try:
             self.fragments_per_molecule: float = self.n_fragments / self.n_molecules
         except ZeroDivisionError:
-            self.fragments_per_molecule: float = float('nan')
+            self.fragments_per_molecule: float = float("nan")
 
         self.fragments_with_single_read_evidence: int = sum(
             1 for v in self._fragment_histogram.values() if v == 1

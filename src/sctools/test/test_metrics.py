@@ -27,7 +27,7 @@ to re-calculate the values found in this file.
 """
 
 # set the input and output directories, using a tempdir to automatically clean up generated files
-_data_dir = os.path.split(__file__)[0] + '/data'
+_data_dir = os.path.split(__file__)[0] + "/data"
 _test_dir = tempfile.mkdtemp()
 os.makedirs(_test_dir, exist_ok=True)
 
@@ -35,17 +35,17 @@ os.makedirs(_test_dir, exist_ok=True)
 # samtools view <filename> | less
 
 # set the input files
-_gene_sorted_bam = os.path.join(_data_dir, 'small-gene-sorted.bam')
-_cell_sorted_bam = os.path.join(_data_dir, 'small-cell-sorted.bam')
+_gene_sorted_bam = os.path.join(_data_dir, "small-gene-sorted.bam")
+_cell_sorted_bam = os.path.join(_data_dir, "small-cell-sorted.bam")
 _cell_sorted_bam_missing_cell_barcodes = os.path.join(
-    _data_dir, 'cell-sorted-missing-cb.bam'
+    _data_dir, "cell-sorted-missing-cb.bam"
 )
 
 # specify filenames for temporary metrics outputs that are used in the following tests
-_gene_metric_output_file = os.path.join(_test_dir, 'gene_metrics.csv.gz')
-_cell_metric_output_file = os.path.join(_test_dir, 'cell_metrics.csv.gz')
+_gene_metric_output_file = os.path.join(_test_dir, "gene_metrics.csv.gz")
+_cell_metric_output_file = os.path.join(_test_dir, "cell_metrics.csv.gz")
 _cell_metric_output_file_missing_cell_barcodes = os.path.join(
-    _test_dir, 'cell_metrics_missing_cb.csv.gz'
+    _test_dir, "cell_metrics_missing_cb.csv.gz"
 )
 
 # run the gene metrics suite
@@ -71,28 +71,28 @@ _cell_metrics_missing_cbs = pd.read_csv(
 
 def test_calculate_cell_metrics_cli():
     """test the sctools cell metrics CLI invocation"""
-    cell_metrics_csv = os.path.join(_test_dir, 'cell_metrics.csv')
+    cell_metrics_csv = os.path.join(_test_dir, "cell_metrics.csv")
     return_call = TenXV2.calculate_cell_metrics(
-        args=['-i', _cell_sorted_bam, '-o', cell_metrics_csv]
+        args=["-i", _cell_sorted_bam, "-o", cell_metrics_csv]
     )
     assert return_call == 0
 
 
 def test_calculate_gene_metrics_cli():
     """test the sctools gene metrics CLI invocation"""
-    gene_metrics_csv = os.path.join(_test_dir, 'gene_metrics.csv')
+    gene_metrics_csv = os.path.join(_test_dir, "gene_metrics.csv")
     return_call = TenXV2.calculate_gene_metrics(
-        args=['-i', _gene_sorted_bam, '-o', gene_metrics_csv]
+        args=["-i", _gene_sorted_bam, "-o", gene_metrics_csv]
     )
     assert return_call == 0
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 300), (_cell_metrics, 656)]
+    "metrics, expected_value", [(_gene_metrics, 300), (_cell_metrics, 656)]
 )
 def test_metrics_n_reads(metrics, expected_value):
     """test that the metrics identify the correct read number"""
-    assert metrics['n_reads'].sum() == expected_value
+    assert metrics["n_reads"].sum() == expected_value
 
 
 def test_cell_metrics_mean_n_genes_observed():
@@ -100,8 +100,8 @@ def test_cell_metrics_mean_n_genes_observed():
     test that the GatherCellMetrics method identifies the correct number of genes per cell, on
     average.
     """
-    genes_observed = _cell_metrics['n_genes'].mean()
-    assert math.isclose(genes_observed, 1.9827, abs_tol=1e-4), '%f != %f' % (
+    genes_observed = _cell_metrics["n_genes"].mean()
+    assert math.isclose(genes_observed, 1.9827, abs_tol=1e-4), "%f != %f" % (
         genes_observed,
         1.9827,
     )
@@ -114,19 +114,19 @@ def test_gene_metrics_n_genes():
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 88), (_cell_metrics, 249)]
+    "metrics, expected_value", [(_gene_metrics, 88), (_cell_metrics, 249)]
 )
 def test_metrics_n_molecules(metrics, expected_value):
     """Test that each metric identifies the total number of molecules in the test file
 
     Molecules are defined as a unique combination of {cell barcode, molecule barcode, gene}
     """
-    molecules_observed = metrics['n_molecules'].sum()
+    molecules_observed = metrics["n_molecules"].sum()
     assert molecules_observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 217), (_cell_metrics, 499)]
+    "metrics, expected_value", [(_gene_metrics, 217), (_cell_metrics, 499)]
 )
 def test_metrics_n_fragments(metrics, expected_value):
     """Test that each metric identifies the total number of fragments in the test file.
@@ -134,37 +134,37 @@ def test_metrics_n_fragments(metrics, expected_value):
     Fragments are defined as a unique combination of {cell barcode, molecule barcode, strand,
     position, chromosome}
     """
-    fragments_observed = metrics['n_fragments'].sum()
+    fragments_observed = metrics["n_fragments"].sum()
     assert fragments_observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
-    [(_gene_metrics, 'AL627309.7'), (_cell_metrics, 'AAACCTGGTAGAAGGA')],
+    "metrics, expected_value",
+    [(_gene_metrics, "AL627309.7"), (_cell_metrics, "AAACCTGGTAGAAGGA")],
 )
 def test_metrics_highest_expression_class(metrics, expected_value):
     """
     for gene metrics, this is the highest expression gene. For cell metrics, this is the highest
     expression cell.
     """
-    observed_max_gene = metrics['n_reads'].idxmax()
+    observed_max_gene = metrics["n_reads"].idxmax()
     assert observed_max_gene == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 245), (_cell_metrics, 94)]
+    "metrics, expected_value", [(_gene_metrics, 245), (_cell_metrics, 94)]
 )
 def test_metrics_highest_read_count(metrics, expected_value):
     """
     Test that each metric identifies the what the highest read count associated with any single
     entity
     """
-    observed_max_gene_reads = metrics['n_reads'].max()
+    observed_max_gene_reads = metrics["n_reads"].max()
     assert observed_max_gene_reads == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [
         (
             _gene_metrics,
@@ -175,22 +175,22 @@ def test_metrics_highest_read_count(metrics, expected_value):
 )
 def test_metrics_number_perfect_molecule_barcodes(metrics, expected_value):
     """Test that each metric correctly identifies the number of perfect molecule barcodes where UB == UR"""
-    observed_perfect_barcodes = metrics['perfect_molecule_barcodes'].sum()
+    observed_perfect_barcodes = metrics["perfect_molecule_barcodes"].sum()
     assert observed_perfect_barcodes == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [(_cell_metrics, 650), (_cell_metrics_missing_cbs, 12861)],
 )
 def test_metrics_number_perfect_cell_barcodes(metrics, expected_value):
     """Test that each metric correctly identifies the number of perfect cell barcodes where CB == CR"""
-    observed_perfect_cell_barcodes = metrics['perfect_cell_barcodes'].sum()
+    observed_perfect_cell_barcodes = metrics["perfect_cell_barcodes"].sum()
     assert observed_perfect_cell_barcodes == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [
         (
             _gene_metrics,
@@ -201,32 +201,32 @@ def test_metrics_number_perfect_cell_barcodes(metrics, expected_value):
 )
 def test_reads_mapped_exonic(metrics, expected_value):
     """Test that each metric identifies the number of reads mapped to an exon (XF=='CODING')"""
-    observed = metrics['reads_mapped_exonic'].sum()
+    observed = metrics["reads_mapped_exonic"].sum()
     assert observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [(_gene_metrics, 0), (_cell_metrics, 28)],  # todo null case
 )
 def test_reads_mapped_intronic(metrics, expected_value):
     """Test that each metric identifies the number of reads mapped to an intron (XF=='INTRONIC')"""
-    observed = metrics['reads_mapped_intronic'].sum()
+    observed = metrics["reads_mapped_intronic"].sum()
     assert observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [(_gene_metrics, 0), (_cell_metrics, 19)],  # todo null case
 )
 def test_reads_mapped_utr(metrics, expected_value):
     """Test that each metric identifies the number of reads mapped to a UTR (XF=='UTR')"""
-    observed = metrics['reads_mapped_utr'].sum()
+    observed = metrics["reads_mapped_utr"].sum()
     assert observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value',
+    "metrics, expected_value",
     [
         (_gene_metrics, 300),  # todo need to include at least 1 multi-mapper
         (_cell_metrics, 656),
@@ -234,27 +234,27 @@ def test_reads_mapped_utr(metrics, expected_value):
 )
 def test_reads_mapped_uniquely(metrics, expected_value):
     """Uniquely mapping reads will be tagged with NH==1"""
-    observed = metrics['reads_mapped_uniquely'].sum()
+    observed = metrics["reads_mapped_uniquely"].sum()
     assert observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 90), (_cell_metrics, 107)]
+    "metrics, expected_value", [(_gene_metrics, 90), (_cell_metrics, 107)]
 )
 def test_duplicate_records(metrics, expected_value):
     """Duplicate records are identified by the 1024 bit being set in the sam flag"""
-    observed = metrics['duplicate_reads'].sum()
+    observed = metrics["duplicate_reads"].sum()
     assert observed == expected_value
 
 
 @pytest.mark.parametrize(
-    'metrics, expected_value', [(_gene_metrics, 29), (_cell_metrics, 2)]
+    "metrics, expected_value", [(_gene_metrics, 29), (_cell_metrics, 2)]
 )
 def test_spliced_reads(metrics, expected_value):
     """
     This pipeline defines spliced reads as containing an N segment of any length in the cigar string
     """
-    observed = metrics['spliced_reads'].sum()
+    observed = metrics["spliced_reads"].sum()
     assert observed == expected_value
 
 
@@ -275,23 +275,23 @@ def test_spliced_reads(metrics, expected_value):
 #     assert reads == dup_and_fragments
 
 
-@pytest.mark.parametrize('metrics', [_gene_metrics, _cell_metrics])
+@pytest.mark.parametrize("metrics", [_gene_metrics, _cell_metrics])
 def test_fragments_number_is_greater_than_molecule_number(metrics):
     """
     There should always be more fragments than molecules, as the minimum definition of a molecule is
     a fragment covered by a single read
     """
-    assert np.all(metrics['n_molecules'] >= 1)
-    assert np.all(metrics['n_fragments'] >= 1)
-    assert np.all(metrics['n_fragments'] >= metrics['n_molecules'])
+    assert np.all(metrics["n_molecules"] >= 1)
+    assert np.all(metrics["n_fragments"] >= 1)
+    assert np.all(metrics["n_fragments"] >= metrics["n_molecules"])
 
 
 @pytest.mark.parametrize(
-    'metrics, key, expected_value',
+    "metrics, key, expected_value",
     [
         (
             _cell_metrics,
-            'molecule_barcode_fraction_bases_above_30_mean',
+            "molecule_barcode_fraction_bases_above_30_mean",
             np.array(
                 [
                     1.0000,
@@ -368,7 +368,7 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         #       0.0018, 0.0007, 0.0306])),
         (
             _cell_metrics,
-            'genomic_reads_fraction_bases_quality_above_30_mean',
+            "genomic_reads_fraction_bases_quality_above_30_mean",
             np.array(
                 [
                     0.3980,
@@ -434,7 +434,7 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         ),
         (
             _cell_metrics,
-            'genomic_reads_fraction_bases_quality_above_30_variance',
+            "genomic_reads_fraction_bases_quality_above_30_variance",
             np.array(
                 [
                     np.nan,
@@ -500,7 +500,7 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         ),
         (
             _cell_metrics,
-            'genomic_read_quality_mean',
+            "genomic_read_quality_mean",
             np.array(
                 [
                     25.3776,
@@ -566,7 +566,7 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         ),
         (
             _cell_metrics,
-            'genomic_read_quality_variance',
+            "genomic_read_quality_variance",
             np.array(
                 [
                     np.nan,
@@ -643,7 +643,7 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         #       11.0000, 4.0000, 1.5000])),
         (
             _cell_metrics,
-            'reads_per_fragment',
+            "reads_per_fragment",
             np.array(
                 [
                     1.0000,
@@ -717,51 +717,51 @@ def test_fragments_number_is_greater_than_molecule_number(metrics):
         #       7.0000, 2.7143, 1.3571])),
         (
             _gene_metrics,
-            'molecule_barcode_fraction_bases_above_30_mean',
+            "molecule_barcode_fraction_bases_above_30_mean",
             np.array([1.0000, 1.0000, 0.8000, 0.9885, 0.9833, 0.9857, 0.7000, 0.9444]),
         ),
         (
             _gene_metrics,
-            'molecule_barcode_fraction_bases_above_30_variance',
+            "molecule_barcode_fraction_bases_above_30_variance",
             np.array([np.nan, np.nan, np.nan, 0.0011, 0.0051, 0.0014, np.nan, 0.0120]),
         ),
         (
             _gene_metrics,
-            'genomic_reads_fraction_bases_quality_above_30_mean',
+            "genomic_reads_fraction_bases_quality_above_30_mean",
             np.array([0.8878, 0.3980, 0.4271, 0.8148, 0.7681, 0.7216, 0.1546, 0.5089]),
         ),
         (
             _gene_metrics,
-            'genomic_reads_fraction_bases_quality_above_30_variance',
+            "genomic_reads_fraction_bases_quality_above_30_variance",
             np.array([np.nan, np.nan, np.nan, 0.0282, 0.0346, 0.0537, np.nan, 0.0849]),
         ),
         (
             _gene_metrics,
-            'genomic_read_quality_mean',
+            "genomic_read_quality_mean",
             np.array(
                 [36.2143, 24.8469, 25.4792, 35.3664, 34.0956, 33.0364, 20.7423, 27.3078]
             ),
         ),
         (
             _gene_metrics,
-            'genomic_read_quality_variance',
+            "genomic_read_quality_variance",
             np.array(
                 [np.nan, np.nan, np.nan, 18.4553, 21.6745, 33.6572, np.nan, 53.5457]
             ),
         ),
         (
             _gene_metrics,
-            'reads_per_molecule',
+            "reads_per_molecule",
             np.array([1.0000, 1.0000, 1.0000, 3.2500, 4.1525, 1.7500, 1.0000, 1.3846]),
         ),
         (
             _gene_metrics,
-            'reads_per_fragment',
+            "reads_per_fragment",
             np.array([1.0000, 1.0000, 1.0000, 1.7333, 1.3920, 1.4000, 1.0000, 1.0588]),
         ),
         (
             _gene_metrics,
-            'fragments_per_molecule',
+            "fragments_per_molecule",
             np.array([1.0000, 1.0000, 1.0000, 1.8750, 2.9831, 1.2500, 1.0000, 1.3077]),
         ),
     ],
@@ -790,14 +790,14 @@ def test_higher_order_metrics_by_gene(metrics, key, expected_value):
 
 
 @pytest.mark.parametrize(
-    'metrics, key, expected_value',
+    "metrics, key, expected_value",
     [
         # todo failing; suspect related to problem with how fragments are defined
         # (_cell_metrics, 'fragments_with_single_read_evidence', 345),
         # todo failing. Does not make sense that this would also be a fragment issue.
         # (_cell_metrics, 'molecules_with_single_read_evidence', 130),
-        (_gene_metrics, 'fragments_with_single_read_evidence', 155),
-        (_gene_metrics, 'molecules_with_single_read_evidence', 42),
+        (_gene_metrics, "fragments_with_single_read_evidence", 155),
+        (_gene_metrics, "molecules_with_single_read_evidence", 42),
     ],
 )
 def test_single_read_evidence(metrics, key, expected_value):
@@ -816,24 +816,24 @@ def split_metrics_file(metrics_file):
     1/2 of the metrics in the two files overlap
     """
     with fileinput.FileInput(
-        [metrics_file], mode='r', openhook=fileinput.hook_compressed
+        [metrics_file], mode="r", openhook=fileinput.hook_compressed
     ) as f:
         data = [line for line in f]
 
     header, data = data[0], data[1:]
 
     low_split, high_split = round(len(data) * 0.25), round(len(data) * 0.75)
-    file_1, file_2 = [_test_dir + 'metrics_for_merging_%d.csv' % i for i in (1, 2)]
+    file_1, file_2 = [_test_dir + "metrics_for_merging_%d.csv" % i for i in (1, 2)]
 
-    with open(file_1, 'wb') as f:
-        f.write(header + b'\n')
+    with open(file_1, "wb") as f:
+        f.write(header + b"\n")
         for line in data[:high_split]:
-            f.write(line + b'\n')
+            f.write(line + b"\n")
 
-    with open(file_2, 'wb') as f:
-        f.write(header + b'\n')
+    with open(file_2, "wb") as f:
+        f.write(header + b"\n")
         for line in data[low_split:]:
-            f.write(line + b'\n')
+            f.write(line + b"\n")
 
     return file_1, file_2
 
@@ -851,7 +851,7 @@ def mergeable_gene_metrics():
 def test_merge_cell_metrics_cli(mergeable_cell_metrics):
     """test the sctools merge cell metrics CLI invocation"""
     return_call = TenXV2.merge_cell_metrics(
-        args=['-o', _test_dir + '/merged-cell-metrics.csv.gz']
+        args=["-o", _test_dir + "/merged-cell-metrics.csv.gz"]
         + list(mergeable_cell_metrics)
     )
     assert return_call == 0
@@ -860,7 +860,7 @@ def test_merge_cell_metrics_cli(mergeable_cell_metrics):
 def test_merge_gene_metrics_cli(mergeable_gene_metrics):
     """test the sctools merge gene metrics CLI invocation"""
     return_call = TenXV2.merge_gene_metrics(
-        args=['-o', _test_dir + '/merged-gene-metrics.csv.gz']
+        args=["-o", _test_dir + "/merged-gene-metrics.csv.gz"]
         + list(mergeable_gene_metrics)
     )
     assert return_call == 0
@@ -871,7 +871,7 @@ def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):
     test takes offset cell metrics outputs and merges them. Cell metrics does not check for
     duplication, so should return a 2x length file.
     """
-    output_file = os.path.join(_test_dir, 'merged_metrics.csv.gz')
+    output_file = os.path.join(_test_dir, "merged_metrics.csv.gz")
     m = MergeCellMetrics(mergeable_cell_metrics, output_file)
     m.execute()
 
@@ -888,9 +888,9 @@ def test_merge_cell_metrics_does_not_correct_duplicates(mergeable_cell_metrics):
 
 
 def test_merge_gene_metrics_averages_over_multiply_detected_genes(
-    mergeable_gene_metrics
+    mergeable_gene_metrics,
 ):
-    output_file = os.path.join(_test_dir, 'merged_metrics.csv.gz')
+    output_file = os.path.join(_test_dir, "merged_metrics.csv.gz")
     m = MergeGeneMetrics(mergeable_gene_metrics, output_file)
     m.execute()
 
@@ -904,11 +904,11 @@ def test_merge_gene_metrics_averages_over_multiply_detected_genes(
         input_genes = input_genes.union(pd.read_csv(f, index_col=0).index)
     target_rows = len(input_genes)
 
-    assert merged_data.shape == (target_rows, target_cols), '%s' % repr(merged_data)
+    assert merged_data.shape == (target_rows, target_cols), "%s" % repr(merged_data)
 
 
 @pytest.mark.parametrize(
-    'bam, gatherer',
+    "bam, gatherer",
     [(_gene_sorted_bam, GatherGeneMetrics), (_cell_sorted_bam, GatherCellMetrics)],
 )
 def test_gzip_compression(bam: str, gatherer: Callable):
@@ -917,12 +917,12 @@ def test_gzip_compression(bam: str, gatherer: Callable):
     uncompressed version
     """
 
-    gz_fout = _test_dir + 'test_bam.csv.gz'
+    gz_fout = _test_dir + "test_bam.csv.gz"
     g: MetricGatherer = gatherer(bam, gz_fout, compress=True)
     g.extract_metrics()
     gz_metrics = pd.read_csv(gz_fout, index_col=0)
 
-    fout = _test_dir + 'test_bam.csv'
+    fout = _test_dir + "test_bam.csv"
     g: MetricGatherer = gatherer(bam, fout, compress=False)
     g.extract_metrics()
     metrics = pd.read_csv(fout, index_col=0)
