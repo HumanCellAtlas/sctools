@@ -1,7 +1,6 @@
 import os
 import csv
 import itertools
-from collections import OrderedDict
 from sctools import platform
 
 
@@ -72,7 +71,7 @@ def test_write_aggregated_picard_metrics_by_table():
     assert return_code == 0
 
     expected_metrics = [
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "C"),
@@ -83,7 +82,7 @@ def test_write_aggregated_picard_metrics_by_table():
                 ("SUBSTITUTION_RATE", "6.9e-05"),
             ]
         ),
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "G"),
@@ -94,7 +93,7 @@ def test_write_aggregated_picard_metrics_by_table():
                 ("SUBSTITUTION_RATE", "0.000673"),
             ]
         ),
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "T"),
@@ -105,7 +104,7 @@ def test_write_aggregated_picard_metrics_by_table():
                 ("SUBSTITUTION_RATE", "6.9e-05"),
             ]
         ),
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "A"),
@@ -116,7 +115,7 @@ def test_write_aggregated_picard_metrics_by_table():
                 ("SUBSTITUTION_RATE", "9.2e-05"),
             ]
         ),
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "G"),
@@ -127,7 +126,7 @@ def test_write_aggregated_picard_metrics_by_table():
                 ("SUBSTITUTION_RATE", "8.1e-05"),
             ]
         ),
-        OrderedDict(
+        dict(
             [
                 ("Sample", "test"),
                 ("ALT_BASE", "T"),
@@ -162,8 +161,8 @@ def are_ordered_dict_equal(ordered_dict1, ordered_dict2):
     MAX_TOLERANCE = 1e-10
     """ Compares two ordered dictionaries
     Args:
-         ordered_dict1 (OrderedDict): first ordered dict
-         ordered_dict2 (OrderedDict): first ordered dict
+         ordered_dict1 (dict): first ordered dict
+         ordered_dict2 (dict): first ordered dict
     Returns:
          True if they are equal, False otherwise
     """
