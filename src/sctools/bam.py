@@ -726,6 +726,5 @@ def verify_sort(records: Iterable[TagSortableRecord], tag_keys: Iterable[str]) -
             raise SortError(msg.format(i - 1, i, record, old_record))
         old_record = record
 
-
 class SortError(Exception):
     pass

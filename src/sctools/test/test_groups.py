@@ -142,9 +142,52 @@ def test_write_aggregated_picard_metrics_by_table():
 
     with open('output_picard_group_error_summary_metrics.csv') as f:
         reader = csv.DictReader(f)
+
+        i = 0
+        match_list =[]
         for line in reader:
-            assert line in expected_metrics
+            print('line', line)
+            print('testing')
+            for ordered_dict in expected_metrics:
+              if are_ordered_dict_equal(line, ordered_dict):
+                 match_list.append(i)
+                 break
+
+            i = i + 1
+                
+        
+        print('mathces', match_list)
+        assert list(range(len(match_list))) ==match_list
+            #assert line in expected_metrics
     os.remove('output_picard_group_error_summary_metrics.csv')
+
+def are_ordered_dict_equal(ordered_dict1, ordered_dict2):
+    MAX_TOLERANCE = 1e-10
+    """ Compares two ordered dictionaries
+    Args: 
+         ordered_dict1 (OrderedDict): first ordered dict
+         ordered_dict2 (OrderedDict): first ordered dict
+    Returns:
+         True if they are equal, False otherwise
+    """
+    
+    # are the set of keys equal in both ordered dictinaries
+    if set(ordered_dict1.keys())!=set(ordered_dict2.keys()):
+        return False
+
+    for key in ordered_dict1:
+       # if they are float then we check equality up to a tolerance 
+       if isinstance(ordered_dict1[key], float) and isinstance(ordered_dict2[key], float):
+         if (ordered_dict1[key]-ordered_dict2[key]) > MAX_TOLERANCE:
+          return False
+       else:
+          if ordered_dict1[key]!=ordered_dict2[key]:
+            return False
+
+    # no mismatches found
+    return True
+
+
 
 
 def test_parse_hisat2_paired_end_log():

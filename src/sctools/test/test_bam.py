@@ -335,9 +335,8 @@ def test_tag_sortable_records_str():
 
 def test_verify_sort_on_unsorted_records_raises_error():
     records = make_records_from_values(TAG_KEYS, UNSORTED_VALUES)
-    with pytest.raises(bam.SortError) as e:
+    with pytest.raises(bam.SortError):
         bam.verify_sort(records, TAG_KEYS)
-    assert 'are not in correct order' in str(e)
 
 
 def test_verify_sort_raises_no_error_on_sorted_records():
