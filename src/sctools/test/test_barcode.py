@@ -24,9 +24,13 @@ def short_barcode_set_from_iterable(request):
     with open(data_dir + "1k-august-2016.txt", request.param) as f:
         barcodes = [l.strip() for l in f.readlines()[:50]]
     if isinstance(barcodes[0], bytes):
-        return barcode.Barcodes.from_iterable_bytes(barcodes, barcode_length=16)
+        return barcode.Barcodes.from_iterable_bytes(
+            barcodes, barcode_length=16
+        )
     else:
-        return barcode.Barcodes.from_iterable_strings(barcodes, barcode_length=16)
+        return barcode.Barcodes.from_iterable_strings(
+            barcodes, barcode_length=16
+        )
 
 
 @pytest.fixture(scope="module")
@@ -63,7 +67,9 @@ def test_summarize_hamming_distances_gives_reasonable_results(
     short_barcode_set_from_iterable,
 ):
 
-    hamming_summary = short_barcode_set_from_iterable.summarize_hamming_distances()
+    hamming_summary = (
+        short_barcode_set_from_iterable.summarize_hamming_distances()
+    )
 
     # we know 10x barcodes have at least this much distance
     assert hamming_summary["minimum"] >= 2
@@ -148,7 +154,9 @@ def tagged_bamfile():
     os.remove(outbam)
 
 
-def test_correct_bam_produces_cb_tags(tagged_bamfile, truncated_whitelist_from_10x):
+def test_correct_bam_produces_cb_tags(
+    tagged_bamfile, truncated_whitelist_from_10x
+):
     outbam = data_dir + "bam_with_cb_tags.bam"
     truncated_whitelist_from_10x.correct_bam(tagged_bamfile, outbam)
     success = False
