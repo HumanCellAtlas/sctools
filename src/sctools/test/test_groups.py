@@ -161,7 +161,7 @@ def test_write_aggregated_picard_metrics_by_table():
 def are_ordered_dict_equal(ordered_dict1, ordered_dict2):
     MAX_TOLERANCE = 1e-10
     """ Compares two ordered dictionaries
-    Args: 
+    Args:
          ordered_dict1 (OrderedDict): first ordered dict
          ordered_dict2 (OrderedDict): first ordered dict
     Returns:

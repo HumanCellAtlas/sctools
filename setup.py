@@ -13,8 +13,7 @@ setup(
     name="sctools",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    description="Utilities for large-scale distributed single cell" +
-                "data processing",
+    description="Utilities for large-scale distributed single cell" + "data processing",
     url="https://github.com/humancellatlas/sctools.git",
     author="Ambrose J. Carr",
     author_email="mail@ambrosejcarr.com",
@@ -37,22 +36,21 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "AttachBarcodes = sctools.platform:BarcodePlatform." +
-            "attach_barcodes",
+            "AttachBarcodes = sctools.platform:BarcodePlatform." + "attach_barcodes",
             "Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes",
             "SplitBam = sctools.platform:GenericPlatform.split_bam",
-            "CalculateGeneMetrics = sctools.platform:GenericPlatform." +
-            "calculate_gene_metrics",
-            "CalculateCellMetrics = sctools.platform:GenericPlatform." +
-            "calculate_cell_metrics",
-            "MergeGeneMetrics = sctools.platform:GenericPlatform." +
-            "merge_gene_metrics",
-            "MergeCellMetrics = sctools.platform:GenericPlatform." +
-            "merge_cell_metrics",
-            "CreateCountMatrix = sctools.platform:GenericPlatform." +
-            "bam_to_count_matrix",
-            "MergeCountMatrices = sctools.platform:GenericPlatform." +
-            "merge_count_matrices",
+            "CalculateGeneMetrics = sctools.platform:GenericPlatform."
+            + "calculate_gene_metrics",
+            "CalculateCellMetrics = sctools.platform:GenericPlatform."
+            + "calculate_cell_metrics",
+            "MergeGeneMetrics = sctools.platform:GenericPlatform."
+            + "merge_gene_metrics",
+            "MergeCellMetrics = sctools.platform:GenericPlatform."
+            + "merge_cell_metrics",
+            "CreateCountMatrix = sctools.platform:GenericPlatform."
+            + "bam_to_count_matrix",
+            "MergeCountMatrices = sctools.platform:GenericPlatform."
+            + "merge_count_matrices",
             "TagSortBam = sctools.platform:GenericPlatform.tag_sort_bam",
             "VerifyBamSort = sctools.platform:GenericPlatform.verify_bam_sort",
             "GroupQCs = sctools.platform:GenericPlatform.group_qc_outputs",

@@ -55,9 +55,7 @@ UNSORTED_VALUES = [
 # TEST SUBSETALIGNMENTS
 
 
-@pytest.fixture(
-    scope="module", params=[data_dir + "test.sam", data_dir + "test.bam"]
-)
+@pytest.fixture(scope="module", params=[data_dir + "test.sam", data_dir + "test.bam"])
 def sa_object(request):
     """fixture returns SubsetAlignments objects for testing"""
     return bam.SubsetAlignments(request.param)
@@ -89,17 +87,13 @@ def n_specific():
 
 
 def test_incorrect_extension_does_not_raise_when_open_mode_is_specified():
-    sa = bam.SubsetAlignments(
-        data_dir + "/is_actually_a_samfile.wrong_extensions", "r"
-    )
+    sa = bam.SubsetAlignments(data_dir + "/is_actually_a_samfile.wrong_extensions", "r")
     assert isinstance(sa, bam.SubsetAlignments)
 
 
 def test_incorrect_extension_without_open_mode_raises_value_error():
     with pytest.raises(ValueError):
-        _ = bam.SubsetAlignments(
-            data_dir + "/is_actually_a_samfile.wrong_extensions"
-        )
+        _ = bam.SubsetAlignments(data_dir + "/is_actually_a_samfile.wrong_extensions")
 
 
 def test_str_and_int_chromosomes_both_function(sa_object):
@@ -107,9 +101,7 @@ def test_str_and_int_chromosomes_both_function(sa_object):
     _ = sa_object.indices_by_chromosome(10, 19, include_other=10)
 
 
-def test_correct_number_of_indices_are_extracted(
-    sa_object, n_specific, n_nonspecific
-):
+def test_correct_number_of_indices_are_extracted(sa_object, n_specific, n_nonspecific):
     ind_specific, ind_nonspecific = sa_object.indices_by_chromosome(
         n_specific, "19", include_other=n_nonspecific
     )
@@ -117,9 +109,7 @@ def test_correct_number_of_indices_are_extracted(
     assert len(ind_nonspecific) == n_nonspecific
 
 
-def test_indices_are_all_greater_than_zero(
-    sa_object, n_specific, n_nonspecific
-):
+def test_indices_are_all_greater_than_zero(sa_object, n_specific, n_nonspecific):
     ind_specific, ind_nonspecific = sa_object.indices_by_chromosome(
         n_specific, "19", include_other=n_nonspecific
     )
@@ -136,17 +126,15 @@ def test_chromosome_19_comes_before_21(indices):
 # TEST SPLIT
 
 
-@pytest.fixture(
-    scope="module", params=[data_dir + "test.sam", data_dir + "test.bam"]
-)
+@pytest.fixture(scope="module", params=[data_dir + "test.sam", data_dir + "test.bam"])
 def bamfile(request):
     return request.param
 
 
-def test_split_bam_raises_value_error_when_passed_bam_without_barcodes(
-    bamfile,
-):
-    split_size = 0.02  # our test data is very small, 0.01mb = ~10kb, which should yield 5 files.
+def test_split_bam_raises_value_error_when_passed_bam_without_barcodes(bamfile,):
+    split_size = (
+        0.02  # our test data is very small, 0.01mb = ~10kb, which should yield 5 files.
+    )
     with pytest.raises(RuntimeError):
         bam.split(
             [bamfile],
@@ -175,9 +163,7 @@ def tagged_bam():
 
 
 def test_split_on_tagged_bam(tagged_bam):
-    split_size = (
-        0.005  # our test data is very small, this value should yield 3 files
-    )
+    split_size = 0.005  # our test data is very small, this value should yield 3 files
     outputs = bam.split(
         [tagged_bam],
         "test_output",
@@ -193,9 +179,7 @@ def test_split_on_tagged_bam(tagged_bam):
 
 
 def test_split_with_large_chunk_size_generates_one_file(tagged_bam):
-    split_size = (
-        1024  # our test data is very small, this value should yield 1 file
-    )
+    split_size = 1024  # our test data is very small, this value should yield 1 file
     outputs = bam.split(
         [tagged_bam],
         "test_output",
@@ -217,9 +201,7 @@ def test_split_with_large_chunk_size_generates_one_file(tagged_bam):
 def test_split_with_raise_missing_true_raises_warning_without_cr_barcode_passed(
     tagged_bam,
 ):
-    split_size = (
-        1024  # our test data is very small, this value should yield 1 file
-    )
+    split_size = 1024  # our test data is very small, this value should yield 1 file
     with pytest.raises(RuntimeError):
         bam.split(
             [tagged_bam],
@@ -235,12 +217,8 @@ def test_split_with_raise_missing_true_raises_warning_without_cr_barcode_passed(
         os.remove(f)
 
 
-def test_split_succeeds_with_raise_missing_false_and_no_cr_barcode_passed(
-    tagged_bam,
-):
-    split_size = (
-        1024  # our test data is very small, this value should yield 1 file
-    )
+def test_split_succeeds_with_raise_missing_false_and_no_cr_barcode_passed(tagged_bam,):
+    split_size = 1024  # our test data is very small, this value should yield 1 file
     outputs = bam.split(
         [tagged_bam],
         "test_output",
@@ -307,9 +285,7 @@ def test_write_barcodes_to_bins(tagged_bam):
 
 
 def test_get_barcode_for_alignment(tagged_bam):
-    with pysam.AlignmentFile(
-        tagged_bam, "rb", check_sq=False
-    ) as input_alignments:
+    with pysam.AlignmentFile(tagged_bam, "rb", check_sq=False) as input_alignments:
         for alignment in input_alignments:
             barcode = bam.get_barcode_for_alignment(
                 alignment,
@@ -321,14 +297,10 @@ def test_get_barcode_for_alignment(tagged_bam):
 
 
 def test_get_barcode_for_alignment_raises_error_for_missing_tag(tagged_bam):
-    with pysam.AlignmentFile(
-        tagged_bam, "rb", check_sq=False
-    ) as input_alignments:
+    with pysam.AlignmentFile(tagged_bam, "rb", check_sq=False) as input_alignments:
         for alignment in input_alignments:
             with pytest.raises(RuntimeError):
-                bam.get_barcode_for_alignment(
-                    alignment, TAG_KEYS, raise_missing=True
-                )
+                bam.get_barcode_for_alignment(alignment, TAG_KEYS, raise_missing=True)
 
 
 # TEST SORTING
@@ -355,9 +327,7 @@ def test_tag_sortable_records_raises_error_on_different_tag_lists():
 
 
 def test_tag_sortable_records_str():
-    record = bam.TagSortableRecord(
-        TAG_KEYS, SORTED_VALUES[0][0], SORTED_VALUES[0][1]
-    )
+    record = bam.TagSortableRecord(TAG_KEYS, SORTED_VALUES[0][0], SORTED_VALUES[0][1])
     s = record.__str__()
     assert "TagSortableRecord" in s
     assert "['FOO', 'BAR', 'BAZ']" in s
@@ -380,8 +350,7 @@ def test_sort_by_tags_and_queryname_sorts_correctly_from_file():
         records = f.fetch(until_eof=True)
         sorted_records = bam.sort_by_tags_and_queryname(records, tag_keys)
     tag_sortable_records = (
-        bam.TagSortableRecord.from_aligned_segment(r, tag_keys)
-        for r in sorted_records
+        bam.TagSortableRecord.from_aligned_segment(r, tag_keys) for r in sorted_records
     )
     bam.verify_sort(tag_sortable_records, tag_keys)
 
@@ -392,8 +361,7 @@ def test_sort_by_tags_and_queryname_sorts_correctly_from_file_no_tag_keys():
         records = f.fetch(until_eof=True)
         sorted_records = bam.sort_by_tags_and_queryname(records, tag_keys)
     tag_sortable_records = (
-        bam.TagSortableRecord.from_aligned_segment(r, tag_keys)
-        for r in sorted_records
+        bam.TagSortableRecord.from_aligned_segment(r, tag_keys) for r in sorted_records
     )
     bam.verify_sort(tag_sortable_records, tag_keys)
 
@@ -425,9 +393,7 @@ def test_tag_sortable_record_missing_tag_value_is_empty_string():
     with pysam.AlignmentFile(data_dir + "unsorted.bam", "rb") as f:
         records = f.fetch(until_eof=True)
         first_record = next(iter(records))
-        sortable_record = bam.TagSortableRecord.from_aligned_segment(
-            first_record, tags
-        )
+        sortable_record = bam.TagSortableRecord.from_aligned_segment(first_record, tags)
         assert sortable_record.tag_values[0] == ""
 
 
