@@ -146,19 +146,15 @@ def test_write_aggregated_picard_metrics_by_table():
         i = 0
         match_list =[]
         for line in reader:
-            print('line', line)
-            print('testing')
             for ordered_dict in expected_metrics:
+              # if it matches keep add the index and break
               if are_ordered_dict_equal(line, ordered_dict):
                  match_list.append(i)
                  break
-
             i = i + 1
-                
-        
-        print('mathces', match_list)
+        # expect the same set, list to be precise,  of indices                
         assert list(range(len(match_list))) ==match_list
-            #assert line in expected_metrics
+
     os.remove('output_picard_group_error_summary_metrics.csv')
 
 def are_ordered_dict_equal(ordered_dict1, ordered_dict2):
