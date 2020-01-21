@@ -97,7 +97,7 @@ class CountMatrix:
     gene_locations: Array
         array with gene start end locations and names
     search_start:
-        index of gene to start searching form
+        index of gene to start searching from
     search_end:
         index of gene up to which to search to
     read_start:
