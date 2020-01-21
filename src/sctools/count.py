@@ -90,7 +90,7 @@ class CountMatrix:
                 )
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
-    """Looks through a list of gene location to fine the one that the given read_start ovelaps
+    """Looks through a list of gene locations to find the one that the given read_start ovelaps
 
     Parameters
     ----------
