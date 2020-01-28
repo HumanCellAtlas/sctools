@@ -26,6 +26,7 @@ from typing import List, Dict, Tuple, Set, Optional, Generator
 
 import numpy as np
 import pysam
+import os
 import scipy.sparse as sp
 from scipy.io import mmread
 
@@ -94,7 +95,7 @@ class CountMatrix:
 
     Parameters
     ----------
-    gene_locations: Array
+    _gene_locations: Array
         array with gene start end locations and names
     search_start:
         index of gene to start searching form
@@ -110,16 +111,16 @@ class CountMatrix:
     """
 
     @classmethod
-    def binary_overlap(cls, gene_locations, search_start, search_end, read_start):
+    def binary_overlap(cls, _gene_locations, search_start, search_end, read_start):
         while search_start <= search_end:
             current_gene_index = int((search_start + search_end) / 2)
             if (
-                gene_locations[current_gene_index][0][0]
+                _gene_locations[current_gene_index][0][0]
                 < read_start
-                < gene_locations[current_gene_index][0][1]
+                < _gene_locations[current_gene_index][0][1]
             ):
-                return gene_locations[current_gene_index][1]
-            elif gene_locations[current_gene_index][0][0] < read_start:
+                return _gene_locations[current_gene_index][1]
+            elif _gene_locations[current_gene_index][0][0] < read_start:
                 search_start = current_gene_index + 1
             else:
                 search_end = current_gene_index - 1
@@ -135,7 +136,7 @@ class CountMatrix:
         cls,
         bam_file: str,
         gene_name_to_index: Dict[str, int],
-        gene_locations: List[tuple] = None,
+        gene_locations: Dict[str, List[tuple]] = None,
         cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
         molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
         gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
@@ -172,8 +173,8 @@ class CountMatrix:
         bam_file : str
             input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
             order
-        gene_locations : List[tuple]
-            Location of genes
+        gene_locations : dict
+            Location of genes by chromosome
             (default = None)
         cell_barcode_tag : str, optional
             Tag that specifies the cell barcode for each read. Reads without this tag will be ignored
