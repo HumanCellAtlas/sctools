@@ -149,7 +149,7 @@ def test_write_aggregated_picard_metrics_by_table():
             i = i + 1
 
         # expect the same set, list to be precise,  of indices
-        assert list(range(len(match_list))) == match_list
+        assert i == len(expected_metrics)
 
     os.remove("output_picard_group_error_summary_metrics.csv")
 
