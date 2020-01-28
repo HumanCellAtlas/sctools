@@ -145,45 +145,13 @@ def test_write_aggregated_picard_metrics_by_table():
         i = 0
         match_list = []
         for line in reader:
-            for unordered_dict in expected_metrics:
-                # if it matches keep add the index and break
-                if are_unordered_dict_equal(line, unordered_dict):
-                    match_list.append(i)
-                    break
+            assert line in expected_metrics
             i = i + 1
+
         # expect the same set, list to be precise,  of indices
         assert list(range(len(match_list))) == match_list
 
     os.remove("output_picard_group_error_summary_metrics.csv")
-
-
-def are_unordered_dict_equal(unordered_dict1, unordered_dict2):
-    MAX_TOLERANCE = 1e-10
-    """ Compares two unordered dictionaries
-    Args:
-         unordered_dict1 (dict): first unordered dict
-         unordered_dict2 (dict): first unordered dict
-    Returns:
-         True if they are equal, False otherwise
-    """
-
-    # are the set of keys equal in both unordered dictinaries
-    if set(unordered_dict1.keys()) != set(unordered_dict2.keys()):
-        return False
-
-    for key in unordered_dict1:
-        # if they are float then we check equality up to a tolerance
-        if isinstance(unordered_dict1[key], float) and isinstance(
-            unordered_dict2[key], float
-        ):
-            if (unordered_dict1[key] - unordered_dict2[key]) > MAX_TOLERANCE:
-                return False
-        else:
-            if unordered_dict1[key] != unordered_dict2[key]:
-                return False
-
-    # no mismatches found
-    return True
 
 
 def test_parse_hisat2_paired_end_log():

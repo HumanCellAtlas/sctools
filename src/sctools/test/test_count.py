@@ -51,7 +51,7 @@ Notes
 """
 
 import operator
-import os, sys
+import os
 import tempfile
 from typing import Callable, Optional, List, Set, Tuple, Dict, Generator
 
@@ -344,7 +344,6 @@ class SyntheticTaggedBAMGenerator:
             max_gene_hits_per_multiple_gene_alignments,
             necessary_alignment_record_tags_set,
         )
-        #os.write(1, ("num multiple gene alignments {}\n\n max gene hits per multiple {}\n\n necessary set {}\n".format(multiple_alignment_tags_list, max_gene_hits_per_multiple_gene_alignments, necessary_alignment_record_tags_set).encode()))
 
         return SyntheticDataBundle(
             count_matrix,
@@ -432,10 +431,6 @@ class SyntheticTaggedBAMGenerator:
                     rng,
                 )
             i_query += 1
-
-
-        # intronic alignments
-
 
     @staticmethod
     def _generate_aligned_segment_from_tags(
@@ -729,8 +724,6 @@ def _get_sorted_count_matrix(
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
     ids=["query_name_sort_order", "cell_molecule_gene_query_name_sort_order"],
 )
-
-
 def test_count_matrix_from_bam(
     alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index
 ):

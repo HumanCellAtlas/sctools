@@ -26,7 +26,6 @@ from typing import List, Dict, Tuple, Set, Optional, Generator
 
 import numpy as np
 import pysam
-import os
 import scipy.sparse as sp
 from scipy.io import mmread
 
