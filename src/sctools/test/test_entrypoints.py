@@ -282,9 +282,8 @@ def test_verify_bam_sort_raises_error_on_unsorted():
         consts.MOLECULE_BARCODE_TAG_KEY,
     ]
 
-    with pytest.raises(bam.SortError) as e:
+    with pytest.raises(bam.SortError):
         platform.GenericPlatform.verify_bam_sort(args)
-    assert 'are not in correct order' in str(e)
 
 
 def test_count_merge():

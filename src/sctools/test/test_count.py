@@ -63,8 +63,8 @@ from sctools import gtf, bam, consts
 from sctools.count import CountMatrix
 
 # set the input and output directories
-_test_data_dir = os.path.join(os.path.split(__file__)[0], 'data')
-_test_annotation_file = os.path.join(_test_data_dir, 'chr1.30k_records.gtf.gz')
+_test_data_dir = os.path.join(os.path.split(__file__)[0], "data")
+_test_annotation_file = os.path.join(_test_data_dir, "chr1.30k_records.gtf.gz")
 
 # constants
 _test_num_cells = 50
@@ -76,7 +76,7 @@ _test_num_multiple_gene_alignments = 20
 _test_max_gene_hits_per_multiple_gene_alignments = 5
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def gene_name_to_index() -> Dict[str, int]:
     return gtf.extract_gene_names(_test_annotation_file)
 
@@ -99,9 +99,9 @@ class AlignmentRecordTags:
 
     def __repr__(self):
         return (
-            f'{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, '
-            f'{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, '
-            f'{consts.GENE_NAME_TAG_KEY}: {self.gene_name}'
+            f"{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, "
+            f"{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, "
+            f"{consts.GENE_NAME_TAG_KEY}: {self.gene_name}"
         )
 
 
@@ -125,22 +125,22 @@ class CellMoleculeGeneQueryNameSortOrder(bam.AlignmentSortOrder):
         self, alignment: pysam.AlignedSegment
     ) -> Tuple[str, str, str, str]:
         return (
-            bam.get_tag_or_default(alignment, self.cell_barcode_tag_key, default='N'),
+            bam.get_tag_or_default(alignment, self.cell_barcode_tag_key, default="N"),
             bam.get_tag_or_default(
-                alignment, self.molecule_barcode_tag_key, default='N'
+                alignment, self.molecule_barcode_tag_key, default="N"
             ),
-            bam.get_tag_or_default(alignment, self.gene_name_tag_key, default='N'),
+            bam.get_tag_or_default(alignment, self.gene_name_tag_key, default="N"),
             alignment.query_name,
         )
 
     @property
     def key_generator(
-        self
+        self,
     ) -> Callable[[pysam.AlignedSegment], Tuple[str, str, str, str]]:
         return self._get_sort_key
 
     def __repr__(self) -> str:
-        return 'hierarchical__cell_molecule_gene_query_name'
+        return "hierarchical__cell_molecule_gene_query_name"
 
 
 class SyntheticTaggedBAMGenerator:
@@ -170,7 +170,7 @@ class SyntheticTaggedBAMGenerator:
     count.from_sorted_tagged_bam
     """
 
-    OUTPUT_PREFIX = 'synthetic_'
+    OUTPUT_PREFIX = "synthetic_"
     SYNTHETIC_SEQUENCE_NAME = "SYNTHETIC_SEQUENCE"
     SYNTHETIC_SEQUENCE_LENGTH = 100
     NECESSARY_QUERY_NAME_PREFIX = "NECESSARY_QUERY_"
@@ -178,10 +178,10 @@ class SyntheticTaggedBAMGenerator:
     INCOMPLETE_QUERY_NAME_PREFIX = "INCOMPLETE_QUERY_"
     MULTI_GENE_QUERY_NAME_PREFIX = "MULTI_GENE_QUERY_"
 
-    bam_output_filename = OUTPUT_PREFIX + 'records.bam'
-    count_matrix_output_filename = OUTPUT_PREFIX + 'count_matrix.npy'
-    row_index_output_filename = OUTPUT_PREFIX + '_row_index.npy'
-    col_index_output_filename = OUTPUT_PREFIX + '_col_index.npy'
+    bam_output_filename = OUTPUT_PREFIX + "records.bam"
+    count_matrix_output_filename = OUTPUT_PREFIX + "count_matrix.npy"
+    row_index_output_filename = OUTPUT_PREFIX + "_row_index.npy"
+    col_index_output_filename = OUTPUT_PREFIX + "_col_index.npy"
 
     def __init__(
         self,
@@ -280,7 +280,7 @@ class SyntheticTaggedBAMGenerator:
         # write BAM file
         with pysam.AlignmentFile(
             os.path.join(output_path, self.bam_output_filename),
-            mode='wb',
+            mode="wb",
             reference_names=[self.SYNTHETIC_SEQUENCE_NAME],
             reference_lengths=[self.SYNTHETIC_SEQUENCE_LENGTH],
         ) as bo:
@@ -307,7 +307,7 @@ class SyntheticTaggedBAMGenerator:
         num_missing_some_tags: int,
         num_multiple_gene_alignments: int,
         max_gene_hits_per_multiple_gene_alignments: int,
-    ) -> 'SyntheticDataBundle':
+    ) -> "SyntheticDataBundle":
 
         # generate count matrix
         count_matrix: np.ndarray = self._generate_random_count_matrix()
@@ -377,7 +377,7 @@ class SyntheticTaggedBAMGenerator:
 
     @staticmethod
     def _get_bam_records_generator(
-        synthetic_data_bundle: 'SyntheticDataBundle', rng_seed: int = 777
+        synthetic_data_bundle: "SyntheticDataBundle", rng_seed: int = 777
     ) -> Generator[pysam.AlignedSegment, None, None]:
         """Returns a generator of pysam.AlignedSegment instances created from the alignment tags
         provided to the initializer.
@@ -469,13 +469,13 @@ class SyntheticTaggedBAMGenerator:
         """
         tags = []
         if alignment_tags.cell_barcode:
-            tags.append((consts.CELL_BARCODE_TAG_KEY, alignment_tags.cell_barcode, 'Z'))
+            tags.append((consts.CELL_BARCODE_TAG_KEY, alignment_tags.cell_barcode, "Z"))
         if alignment_tags.molecule_barcode:
             tags.append(
-                (consts.MOLECULE_BARCODE_TAG_KEY, alignment_tags.molecule_barcode, 'Z')
+                (consts.MOLECULE_BARCODE_TAG_KEY, alignment_tags.molecule_barcode, "Z")
             )
         if alignment_tags.gene_name:
-            tags.append((consts.GENE_NAME_TAG_KEY, alignment_tags.gene_name, 'Z'))
+            tags.append((consts.GENE_NAME_TAG_KEY, alignment_tags.gene_name, "Z"))
         record = pysam.AlignedSegment()
         record.query_name = SyntheticTaggedBAMGenerator._generate_query_name(
             query_prefix, i_query, num_queries
@@ -624,7 +624,7 @@ class SyntheticTaggedBAMGenerator:
         return self._generate_random_genomic_sequences(length)
 
     def _generate_random_genomic_sequences(self, length: int):
-        return ''.join(self.rng.choice(['A', 'C', 'T', 'G'], size=length))
+        return "".join(self.rng.choice(["A", "C", "T", "G"], size=length))
 
 
 class SyntheticDataBundle:
@@ -720,9 +720,9 @@ def _get_sorted_count_matrix(
 
 
 @pytest.mark.parametrize(
-    'alignment_sort_order',
+    "alignment_sort_order",
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
-    ids=['query_name_sort_order', 'cell_molecule_gene_query_name_sort_order'],
+    ids=["query_name_sort_order", "cell_molecule_gene_query_name_sort_order"],
 )
 def test_count_matrix_from_bam(
     alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index

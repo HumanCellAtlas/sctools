@@ -96,14 +96,14 @@ class SubsetAlignments:
 
     def __init__(self, alignment_file: str, open_mode: str = None):
         if open_mode is None:
-            if alignment_file.endswith('.bam'):
-                open_mode = 'rb'
-            elif alignment_file.endswith('.sam'):
-                open_mode = 'r'
+            if alignment_file.endswith(".bam"):
+                open_mode = "rb"
+            elif alignment_file.endswith(".sam"):
+                open_mode = "r"
             else:
                 raise ValueError(
-                    f'Could not autodetect file type for alignment_file {alignment_file} (detectable suffixes: '
-                    f'.sam, .bam)'
+                    f"Could not autodetect file type for alignment_file {alignment_file} (detectable suffixes: "
+                    f".sam, .bam)"
                 )
         self._file: str = alignment_file
         self._open_mode: str = open_mode
@@ -134,15 +134,15 @@ class SubsetAlignments:
         """
 
         # acceptable chromosomes
-        valid_chromosomes = [str(i) for i in range(1, 23)] + ['M', 'MT', 'X', 'Y']
-        valid_chromosomes.extend(['chr' + v for v in valid_chromosomes])
+        valid_chromosomes = [str(i) for i in range(1, 23)] + ["M", "MT", "X", "Y"]
+        valid_chromosomes.extend(["chr" + v for v in valid_chromosomes])
 
         # check chromosome
         if isinstance(chromosome, int) and chromosome < 23:
             chromosome = str(chromosome)  # try to convert
         if chromosome not in valid_chromosomes:
             warnings.warn(
-                'chromsome %s not in list of expected chromosomes: %r'
+                "chromsome %s not in list of expected chromosomes: %r"
                 % (chromosome, valid_chromosomes)
             )
 
@@ -171,8 +171,8 @@ class SubsetAlignments:
 
         if len(chromosome_indices) < n_specific or len(other_indices) < include_other:
             warnings.warn(
-                'Only %d unaligned and %d reads aligned to chromosome %s were found in'
-                '%s'
+                "Only %d unaligned and %d reads aligned to chromosome %s were found in"
+                "%s"
                 % (len(other_indices), len(chromosome_indices), chromosome, self._file)
             )
 
@@ -220,9 +220,9 @@ class Tagger:
 
         """
         with pysam.AlignmentFile(
-            self.bam_file, 'rb', check_sq=False
+            self.bam_file, "rb", check_sq=False
         ) as inbam, pysam.AlignmentFile(
-            output_bam_name, 'wb', template=inbam
+            output_bam_name, "wb", template=inbam
         ) as outbam:
 
             # zip up all the iterators
@@ -250,7 +250,7 @@ def get_barcodes_from_bam(
     """
     barcodes = set()
     # Get all the Barcodes from the BAM
-    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+    with pysam.AlignmentFile(in_bam, "rb", check_sq=False) as input_alignments:
         for alignment in input_alignments:
             barcode = get_barcode_for_alignment(alignment, tags, raise_missing)
             # If no provided tag was found on the record that had a non-null value
@@ -285,7 +285,7 @@ def get_barcode_for_alignment(
 
     if raise_missing and alignment_barcode is None:
         raise RuntimeError(
-            'Alignment encountered that is missing {} tag(s).'.format(tags)
+            "Alignment encountered that is missing {} tag(s).".format(tags)
         )
 
     return alignment_barcode
@@ -309,7 +309,7 @@ def write_barcodes_to_bins(
     :return: A list of paths to the written bins.
     """
     # Create all the output files
-    with pysam.AlignmentFile(in_bam, 'rb', check_sq=False) as input_alignments:
+    with pysam.AlignmentFile(in_bam, "rb", check_sq=False) as input_alignments:
 
         # We need a random int appended to the dirname to make sure input bams with the same name don't clash
         dirname = (
@@ -328,7 +328,7 @@ def write_barcodes_to_bins(
             # For now, bam writing uses one thread for compression. Better logic could support more processes without
             # starving the machine for resources
             open_bam = pysam.AlignmentFile(
-                out_bam_name, 'wb', template=input_alignments
+                out_bam_name, "wb", template=input_alignments
             )
             files.append(open_bam)
 
@@ -357,7 +357,7 @@ def merge_bams(bams: List[str]) -> str:
     """
     bam_name = os.path.realpath(bams[0] + ".bam")
     bams_to_merge = bams[1:]
-    pysam.merge('-c', '-p', bam_name, *bams_to_merge)
+    pysam.merge("-c", "-p", bam_name, *bams_to_merge)
     return bam_name
 
 
@@ -406,7 +406,7 @@ def split(
     """
 
     if len(tags) == 0:
-        raise ValueError('At least one tag must be passed')
+        raise ValueError("At least one tag must be passed")
 
     if num_processes is None:
         num_processes = multiprocessing.cpu_count()
@@ -416,29 +416,29 @@ def split(
     n_subfiles = int(math.ceil(bam_mb / approx_mb_per_split))
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN:
         warnings.warn(
-            f'Number of requested subfiles ({n_subfiles}) exceeds '
-            f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN}; this may cause OS errors by exceeding fid limits'
+            f"Number of requested subfiles ({n_subfiles}) exceeds "
+            f"{consts.MAX_BAM_SPLIT_SUBFILES_TO_WARN}; this may cause OS errors by exceeding fid limits"
         )
     if n_subfiles > consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE:
         raise ValueError(
-            f'Number of requested subfiles ({n_subfiles}) exceeds '
-            f'{consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE}; this will usually cause OS errors, '
-            f'think about increasing max_mb_per_split.'
+            f"Number of requested subfiles ({n_subfiles}) exceeds "
+            f"{consts.MAX_BAM_SPLIT_SUBFILES_TO_RAISE}; this will usually cause OS errors, "
+            f"think about increasing max_mb_per_split."
         )
 
     full_pool = multiprocessing.Pool(num_processes)
 
     # Get all the barcodes over all the bams
-    os.write(STDERR, b'Retrieving barcodes from bams\n')
+    os.write(STDERR, b"Retrieving barcodes from bams\n")
     result = full_pool.map(
         partial(get_barcodes_from_bam, tags=tags, raise_missing=raise_missing), in_bams
     )
 
     barcodes_list = list(reduce(lambda set1, set2: set1.union(set2), result))
-    os.write(STDERR, b'Retrieved barcodes from bams\n')
+    os.write(STDERR, b"Retrieved barcodes from bams\n")
 
     # Create the barcodes to bin mapping
-    os.write(STDERR, b'Allocating bins\n')
+    os.write(STDERR, b"Allocating bins\n")
     barcodes_to_bins_dict = {}
 
     # barcodes_list will always contain non-None elements from get_barcodes_from_bam
@@ -451,7 +451,7 @@ def split(
             barcodes_to_bins_dict[barcodes_list[barcode_index]] = file_index
 
     # Split the bams by barcode in parallel
-    os.write(STDERR, b'Splitting the bams by barcode\n')
+    os.write(STDERR, b"Splitting the bams by barcode\n")
     # Samtools needs a thread for compression, so we leave half the given processes open.
     write_pool_processes = math.ceil(num_processes / 2) if num_processes > 2 else 1
     write_pool = multiprocessing.Pool(write_pool_processes)
@@ -479,10 +479,10 @@ def split(
     write_pool.close()
 
     # Recombine the binned bams
-    os.write(STDERR, b'Merging temporary bam files\n')
+    os.write(STDERR, b"Merging temporary bam files\n")
     merged_bams = full_pool.map(partial(merge_bams), bins)
 
-    os.write(STDERR, b'deleting temporary files\n')
+    os.write(STDERR, b"deleting temporary files\n")
     for paths in scattered_split_result:
         shutil.rmtree(os.path.dirname(paths[0]))
 
@@ -635,7 +635,7 @@ class QueryNameSortOrder(AlignmentSortOrder):
         return QueryNameSortOrder.get_sort_key
 
     def __repr__(self) -> str:
-        return 'query_name'
+        return "query_name"
 
 
 @functools.total_ordering
@@ -657,10 +657,10 @@ class TagSortableRecord(object):
     @classmethod
     def from_aligned_segment(
         cls, record: pysam.AlignedSegment, tag_keys: Iterable[str]
-    ) -> 'TagSortableRecord':
+    ) -> "TagSortableRecord":
         """Create a TagSortableRecord from a pysam.AlignedSegment and list of tag keys"""
         assert record is not None
-        tag_values = [get_tag_or_default(record, key, '') for key in tag_keys]
+        tag_values = [get_tag_or_default(record, key, "") for key in tag_keys]
         query_name = record.query_name
         return cls(tag_keys, tag_values, query_name, record)
 
@@ -687,14 +687,14 @@ class TagSortableRecord(object):
 
     def __verify_tag_keys_match(self, other) -> None:
         if self.tag_keys != other.tag_keys:
-            format_str = 'Cannot compare records using different tag lists: {0}, {1}'
+            format_str = "Cannot compare records using different tag lists: {0}, {1}"
             raise ValueError(format_str.format(self.tag_keys, other.tag_keys))
 
     def __str__(self) -> str:
         return self.__repr__()
 
     def __repr__(self) -> str:
-        format_str = 'TagSortableRecord(tags: {0}, tag_values: {1}, query_name: {2}'
+        format_str = "TagSortableRecord(tags: {0}, tag_values: {1}, query_name: {2}"
         return format_str.format(self.tag_keys, self.tag_values, self.query_name)
 
 
@@ -716,13 +716,13 @@ def verify_sort(records: Iterable[TagSortableRecord], tag_keys: Iterable[str]) -
     """Raise AssertionError if the given records are not correctly sorted by the given tags and query name"""
     # Setting tag values and query name to empty string ensures first record will never be less than old_record
     old_record = TagSortableRecord(
-        tag_keys=tag_keys, tag_values=['' for _ in tag_keys], query_name='', record=None
+        tag_keys=tag_keys, tag_values=["" for _ in tag_keys], query_name="", record=None
     )
     i = 0
     for record in records:
         i += 1
         if not record >= old_record:
-            msg = 'Records {0} and {1} are not in correct order:\n{1}:{2} \nis less than \n{0}:{3}'
+            msg = "Records {0} and {1} are not in correct order:\n{1}:{2} \nis less than \n{0}:{3}"
             raise SortError(msg.format(i - 1, i, record, old_record))
         old_record = record
 

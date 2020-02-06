@@ -57,7 +57,7 @@ class CountMatrix:
         bam_file: str,
         cell_barcode_tag: str,
         molecule_barcode_tag: str,
-        open_mode: str = 'rb',
+        open_mode: str = "rb",
     ) -> Generator[
         Tuple[str, Optional[str], Optional[str], List[pysam.AlignedSegment]], None, None
     ]:
@@ -90,6 +90,41 @@ class CountMatrix:
                 )
                 yield query_name, cell_barcode, molecule_barcode, alignments
 
+    """Looks through a list of gene locations to find the one that the given read_start ovelaps
+
+    Parameters
+    ----------
+    _gene_locations: Array
+        array with gene start end locations and names
+    search_start:
+        index of gene to start searching from
+    search_end:
+        index of gene up to which to search to
+    read_start:
+        position at which the read starts at
+
+    Returns
+    -------
+        name of gene with overlap or None if no overlap is found
+
+    """
+
+    @classmethod
+    def binary_overlap(cls, _gene_locations, search_start, search_end, read_start):
+        while search_start <= search_end:
+            current_gene_index = int((search_start + search_end) / 2)
+            if (
+                _gene_locations[current_gene_index][0][0]
+                < read_start
+                < _gene_locations[current_gene_index][0][1]
+            ):
+                return _gene_locations[current_gene_index][1]
+            elif _gene_locations[current_gene_index][0][0] < read_start:
+                search_start = current_gene_index + 1
+            else:
+                search_end = current_gene_index - 1
+        return None
+
     # todo add support for generating a matrix of invalid barcodes
     # todo add support for splitting spliced and unspliced reads
     # todo add support for generating a map of cell barcodes
@@ -100,11 +135,12 @@ class CountMatrix:
         cls,
         bam_file: str,
         gene_name_to_index: Dict[str, int],
+        gene_locations: Dict[str, List[tuple]] = None,
         cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
         molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
         gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
-        open_mode: str = 'rb',
-    ) -> 'CountMatrix':
+        open_mode: str = "rb",
+    ) -> "CountMatrix":
         """Generate a count matrix from a sorted, tagged bam file
 
         Notes
@@ -136,6 +172,9 @@ class CountMatrix:
         bam_file : str
             input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
             order
+        gene_locations : dict
+            Location of genes by chromosome
+            (default = None)
         cell_barcode_tag : str, optional
             Tag that specifies the cell barcode for each read. Reads without this tag will be ignored
             (default = consts.CELL_BARCODE_TAG_KEY)
@@ -185,7 +224,6 @@ class CountMatrix:
         [2] https://github.com/10XGenomics/cellranger/blob/aba5d379169ff0d4bee60e3d100df35752b90383/lib/rust/
                 annotate_reads/src/main.rs
         """
-
         # map the gene from reach record to an index in the sparse matrix
         n_genes = len(gene_name_to_index)
 
@@ -209,12 +247,34 @@ class CountMatrix:
             query_name,
             cell_barcode,
             molecule_barcode,
-            alignments,
+            input_alignments,
         ) in grouped_records_generator:
 
-            if (
-                cell_barcode is None or molecule_barcode is None
-            ):  # only keep queries w/ well-formed UMIs
+            # modify alignments to include the gene name to the alignments to INTRONIC regions
+            if gene_locations:
+                alignments = []
+                for alignment in input_alignments:
+                    if alignment.has_tag("XF"):
+                        aln_type = alignment.get_tag("XF")
+                        if (
+                            alignment.reference_name
+                            and aln_type == "INTRONIC"
+                            and alignment.reference_name in gene_locations
+                        ):
+                            gene_name = cls.binary_overlap(
+                                gene_locations[alignment.reference_name],
+                                0,
+                                len(gene_locations[alignment.reference_name]) - 1,
+                                alignment.reference_start,
+                            )
+                            if gene_name:
+                                alignment.set_tag("GE", gene_name)
+                    alignments.append(alignment)
+            else:
+                alignments = input_alignments
+
+            # only keep queries w/ well-formed UMIs
+            if cell_barcode is None or molecule_barcode is None:
                 continue
 
             if len(alignments) == 1:
@@ -288,24 +348,24 @@ class CountMatrix:
         return cls(coordinate_matrix.tocsr(), row_index, col_index)
 
     def save(self, prefix: str) -> None:
-        sp.save_npz(prefix + '.npz', self._matrix, compressed=True)
-        np.save(prefix + '_row_index.npy', self._row_index)
-        np.save(prefix + '_col_index.npy', self._col_index)
+        sp.save_npz(prefix + ".npz", self._matrix, compressed=True)
+        np.save(prefix + "_row_index.npy", self._row_index)
+        np.save(prefix + "_col_index.npy", self._col_index)
 
     @classmethod
-    def load(cls, prefix: str) -> 'CountMatrix':
-        matrix = sp.load_npz(prefix + '.npz')
-        row_index = np.load(prefix + '_row_index.npy')
-        col_index = np.load(prefix + '_col_index.npy')
+    def load(cls, prefix: str) -> "CountMatrix":
+        matrix = sp.load_npz(prefix + ".npz")
+        row_index = np.load(prefix + "_row_index.npy")
+        col_index = np.load(prefix + "_col_index.npy")
         return cls(matrix, row_index, col_index)
 
     @classmethod
-    def merge_matrices(cls, input_prefixes: str) -> 'CountMatrix':
-        col_indices = [np.load(p + '_col_index.npy') for p in input_prefixes]
-        row_indices = [np.load(p + '_row_index.npy') for p in input_prefixes]
-        matrices = [sp.load_npz(p + '.npz') for p in input_prefixes]
+    def merge_matrices(cls, input_prefixes: str) -> "CountMatrix":
+        col_indices = [np.load(p + "_col_index.npy") for p in input_prefixes]
+        row_indices = [np.load(p + "_row_index.npy") for p in input_prefixes]
+        matrices = [sp.load_npz(p + ".npz") for p in input_prefixes]
 
-        matrix: sp.csr_matrix = sp.vstack(matrices, format='csr')
+        matrix: sp.csr_matrix = sp.vstack(matrices, format="csr")
         # todo test that col_indices are all same shape
         col_index = col_indices[0]
         row_index = np.concatenate(row_indices)
@@ -314,7 +374,7 @@ class CountMatrix:
     @classmethod
     def from_mtx(
         cls, matrix_mtx: str, row_index_file: str, col_index_file: str
-    ) -> 'CountMatrix':
+    ) -> "CountMatrix":
         """
 
         Parameters
@@ -332,8 +392,8 @@ class CountMatrix:
             instance of class
         """
         matrix: sp.csr_matrix = mmread(matrix_mtx).tocsr()
-        with open(row_index_file, 'r') as fin:
+        with open(row_index_file, "r") as fin:
             row_index = np.array(fin.readlines())
-        with open(col_index_file, 'r') as fin:
+        with open(col_index_file, "r") as fin:
             col_index = np.array(fin.readlines())
         return cls(matrix, row_index, col_index)

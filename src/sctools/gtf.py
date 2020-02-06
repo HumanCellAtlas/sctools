@@ -71,22 +71,22 @@ class GTFRecord:
 
     """
 
-    __slots__ = ['_fields', '_attributes']
+    __slots__ = ["_fields", "_attributes"]
 
     _del_letters: str = string.ascii_letters
-    _del_non_letters: str = ''.join(
+    _del_non_letters: str = "".join(
         set(string.printable).difference(string.ascii_letters)
     )
 
     def __init__(self, record: str):
-        fields: List[str] = record.strip(';\n').split('\t')
+        fields: List[str] = record.strip(";\n").split("\t")
 
         self._fields: List[str] = fields[:8]
 
         self._attributes: Dict[str, str] = {}
-        for field in fields[8].split(';'):
+        for field in fields[8].split(";"):
             try:
-                key, _, value = field.strip().partition(' ')
+                key, _, value = field.strip().partition(" ")
                 self._attributes[key] = value.strip('"')
             except Exception:
                 raise RuntimeError(
@@ -94,19 +94,19 @@ class GTFRecord:
                 )
 
     def __repr__(self):
-        return '<Record: %s>' % self.__str__()
+        return "<Record: %s>" % self.__str__()
 
     def __bytes__(self):
         return self.__str__().encode()
 
     def __str__(self):
-        return '\t'.join(self._fields) + self._format_attribute() + '\n'
+        return "\t".join(self._fields) + self._format_attribute() + "\n"
 
     def __hash__(self) -> int:
         return hash(self.__str__())
 
     def _format_attribute(self):
-        return ' '.join('%s "%s";' % (k, v) for k, v in self._attributes.items())
+        return " ".join('%s "%s";' % (k, v) for k, v in self._attributes.items())
 
     @property
     def seqname(self) -> str:
@@ -148,7 +148,7 @@ class GTFRecord:
     def size(self) -> int:
         size = self.end - self.start
         if size < 0:
-            raise ValueError(f'Invalid record: negative size {size} (start > end)')
+            raise ValueError(f"Invalid record: negative size {size} (start > end)")
         else:
             return size
 
@@ -220,7 +220,7 @@ class Reader(reader.Reader):
 
     """
 
-    def __init__(self, files='-', mode='r', header_comment_char='#'):
+    def __init__(self, files="-", mode="r", header_comment_char="#"):
         super().__init__(
             files, mode, header_comment_char
         )  # has different default args from super
@@ -255,13 +255,13 @@ class Reader(reader.Reader):
 def _resolve_multiple_gene_names(gene_name: str):
     _logger.warning(
         f'Multiple entries encountered for "{gene_name}". Please validate the input GTF file(s). '
-        f'Skipping the record for now; in the future, this will be considered as a '
-        f'malformed GTF file.'
+        f"Skipping the record for now; in the future, this will be considered as a "
+        f"malformed GTF file."
     )
 
 
 def extract_gene_names(
-    files: Union[str, List[str]] = '-', mode: str = 'r', header_comment_char: str = '#'
+    files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
 ) -> Dict[str, int]:
     """Extract gene names from GTF file(s) and returns a map from gene names to their corresponding
     occurrence orders in the given file(s).
@@ -283,12 +283,12 @@ def extract_gene_names(
     gene_name_to_index: Dict[str, int] = dict()
     gene_index = 0
     for record in Reader(files, mode, header_comment_char).filter(
-        retain_types=['gene']
+        retain_types=["gene"]
     ):
-        gene_name = record.get_attribute('gene_name')
+        gene_name = record.get_attribute("gene_name")
         if gene_name is None:
             raise ValueError(
-                f'Malformed GTF file detected. Record is of type gene but does not have a '
+                f"Malformed GTF file detected. Record is of type gene but does not have a "
                 f'"gene_name" field: {record}'
             )
         if gene_name in gene_name_to_index:
@@ -297,3 +297,56 @@ def extract_gene_names(
         gene_name_to_index[gene_name] = gene_index
         gene_index += 1
     return gene_name_to_index
+
+
+def extract_extended_gene_names(
+    files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
+) -> Dict[str, List[tuple]]:
+    """Extract extended gene names from GTF file(s) and returns a map from gene names to their corresponding
+    occurrence locations the given file(s).
+
+    Parameters
+    ----------
+    files : Union[str, List], optional
+        File(s) to read. If '-', read sys.stdin (default = '-')
+    mode : {'r', 'rb'}, optional
+        Open mode. If 'r', read strings. If 'rb', read bytes (default = 'r').
+    header_comment_char : str, optional
+        lines beginning with this character are skipped (default = '#')
+
+    Returns
+    -------
+    Dict[str, List[tuple]]
+        A dictionary of chromosome names mapping to a List of tuples, each containing
+        a range as the the first element and a gene name as the second.
+        Dict[str, List(Tuple((start,end), gene)))
+    """
+    gene_name_to_start_end = dict()
+    for record in Reader(files, mode, header_comment_char).filter(
+        retain_types=["gene"]
+    ):
+        gene_name = record.get_attribute("gene_name")
+        if gene_name is None:
+            raise ValueError(
+                f"Malformed GTF file detected. Record is of type gene but does not have a "
+                f'"gene_name" field: {record}'
+            )
+        # find gene collisions
+        if gene_name in gene_name_to_start_end:
+            _resolve_multiple_gene_names(gene_name)
+            continue
+        if record.chromosome not in gene_name_to_start_end:
+            gene_name_to_start_end[record.chromosome] = dict()
+        gene_name_to_start_end[record.chromosome][gene_name] = (
+            record.start,
+            record.end,
+        )
+    gene_locations = dict()
+    # For each chromosome invert the map to be in List[( (start,end), genename )] and sort it by start
+    for chromosome in gene_name_to_start_end:
+        gene_locations[chromosome] = [
+            (locs, key) for key, locs in gene_name_to_start_end[chromosome].items()
+        ]
+        # Sort by starting location
+        gene_locations[chromosome].sort(key=lambda x: x[0])
+    return gene_locations
