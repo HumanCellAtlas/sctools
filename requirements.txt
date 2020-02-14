@@ -1,5 +1,5 @@
 gffutils>=0.9
-pysam>=0.14
+pysam==0.15.1
 numpy>=1.17.5
 pandas>=0.22.0
 pytest>=3.4.2
