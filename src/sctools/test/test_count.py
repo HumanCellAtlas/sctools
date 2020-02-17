@@ -81,8 +81,6 @@ _test_num_only_introns = 10
 _test_both_exons_introns = 10
 
 
-
-
 @pytest.fixture(scope="module")
 def gene_name_to_index() -> Dict[str, int]:
     return gtf.extract_gene_names(_test_annotation_file)
@@ -96,7 +94,7 @@ class AlignmentRecordTags:
         cell_barcode: Optional[str],
         molecule_barcode: Optional[str],
         gene_name: Optional[str],
-        alignment_location: Optional[str] = "EXONIC"
+        alignment_location: Optional[str] = "EXONIC",
     ) -> None:
         self.cell_barcode = cell_barcode
         self.molecule_barcode = molecule_barcode
@@ -111,7 +109,7 @@ class AlignmentRecordTags:
             f"{consts.CELL_BARCODE_TAG_KEY}: {self.cell_barcode}, "
             f"{consts.MOLECULE_BARCODE_TAG_KEY}: {self.molecule_barcode}, "
             f"{consts.GENE_NAME_TAG_KEY}: {self.gene_name}",
-            f"{consts.ALIGNMENT_LOCATION_TAG_KEY}: {self.alignment_location}"
+            f"{consts.ALIGNMENT_LOCATION_TAG_KEY}: {self.alignment_location}",
         )
 
 
@@ -451,7 +449,7 @@ class SyntheticTaggedBAMGenerator:
         num_queries: int,
         rng: np.random.RandomState,
         record_reference_id: Optional[int] = 0,
-        reference_start: Optional[int] = -1
+        reference_start: Optional[int] = -1,
     ) -> pysam.AlignedSegment:
         """Generates pysam.AlignedSegment instances from alignment_tags.
 
@@ -491,7 +489,13 @@ class SyntheticTaggedBAMGenerator:
             tags.append((consts.GENE_NAME_TAG_KEY, alignment_tags.gene_name, "Z"))
 
         if alignment_tags.alignment_location:
-            tags.append((consts.ALIGNMENT_LOCATION_TAG_KEY, alignment_tags.alignment_location, "Z"))
+            tags.append(
+                (
+                    consts.ALIGNMENT_LOCATION_TAG_KEY,
+                    alignment_tags.alignment_location,
+                    "Z",
+                )
+            )
 
         record = pysam.AlignedSegment()
         record.query_name = SyntheticTaggedBAMGenerator._generate_query_name(
@@ -500,12 +504,14 @@ class SyntheticTaggedBAMGenerator:
 
         if reference_start == -1:
             record.reference_start = rng.randint(
-              low=0, high=SyntheticTaggedBAMGenerator.SYNTHETIC_SEQUENCE_LENGTH
+                low=0, high=SyntheticTaggedBAMGenerator.SYNTHETIC_SEQUENCE_LENGTH
             )
         else:
             record.reference_start = reference_start
 
-        record.reference_id = record_reference_id  # note: we only use one synthetic sequence
+        record.reference_id = (
+            record_reference_id  # note: we only use one synthetic sequence
+        )
         if len(tags) > 0:
             record.set_tags(tags)
         return record
@@ -740,6 +746,7 @@ def _get_sorted_count_matrix(
         col_index[sorted_col_indices],
     )
 
+
 @pytest.mark.parametrize(
     "alignment_sort_order",
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
@@ -835,6 +842,7 @@ def test_count_matrix_from_bam(
         ]
     )
 
+
 @pytest.mark.parametrize(
     "alignment_sort_order",
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
@@ -843,22 +851,30 @@ def test_count_matrix_from_bam(
 def test_count_matrix_with_introns(
     alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index
 ):
-    _count_matrix_with_introns(alignment_sort_order, gene_name_to_index, 0)
-    _count_matrix_with_introns(alignment_sort_order, gene_name_to_index, 1)
+    _count_matrix_with_introns(
+        alignment_sort_order, gene_name_to_index, consts.SINGLE_CELL_COUNT_MATRIX
+    )
+    _count_matrix_with_introns(
+        alignment_sort_order, gene_name_to_index, consts.SINGLE_NUCLEI_COUNT_MATRIX
+    )
+
 
 def _count_matrix_with_introns(
     alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index, test_index
 ):
 
-    chromosomes_gene_locations_extended = gtf.extract_extended_gene_names(_test_annotation_file)
+    chromosomes_gene_locations_extended = gtf.extract_extended_gene_names(
+        _test_annotation_file
+    )
     chromosomes_gene_exons = gtf.extract_gene_exons(_test_annotation_file)
-    _test_chromosomes_gene_non_exons = gtf.extract_gene_non_exons(chromosomes_gene_exons,
-                                                                  chromosomes_gene_locations_extended
-                                                                  )
+
+    _test_chromosomes_gene_non_exons = gtf.extract_gene_non_exons(
+        chromosomes_gene_exons, chromosomes_gene_locations_extended
+    )
 
     _test_chromosomes_gene_exons = {}
     for chromosome in chromosomes_gene_exons:
-        _test_chromosomes_gene_exons[chromosome]={}
+        _test_chromosomes_gene_exons[chromosome] = {}
         for gene_exons in chromosomes_gene_exons[chromosome]:
             _test_chromosomes_gene_exons[chromosome][gene_exons[1]] = gene_exons[0]
 
@@ -866,46 +882,49 @@ def _count_matrix_with_introns(
     chromosome = list(_test_chromosomes_gene_exons.keys())[0]
 
     synthetic_data_generator = SyntheticTaggedAlignmentTypeBAMGenerator(
-        _test_num_cells, _test_max_genes, _test_chromosomes_gene_exons[chromosome],
-        _test_chromosomes_gene_non_exons[chromosome]
+        _test_num_cells,
+        _test_max_genes,
+        _test_chromosomes_gene_exons[chromosome],
+        _test_chromosomes_gene_non_exons[chromosome],
     )
 
     _test_temp_dir = tempfile.TemporaryDirectory()
     try:
         # generate test data
-        filename= synthetic_data_generator.generate_synthetic_bam_and_counts_matrix(
+        synthetic_data_generator.generate_synthetic_bam_and_counts_matrix(
             _test_temp_dir.name,
-            _test_num_only_exons,
-            _test_num_only_introns,
-            _test_both_exons_introns,
             gene_name_to_index,
             test_index,
-            alignment_sort_order=alignment_sort_order
+            alignment_sort_order=alignment_sort_order,
         )
 
         # test data paths
         test_bam_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedAlignmentTypeBAMGenerator.bam_output_filename
+            _test_temp_dir.name,
+            SyntheticTaggedAlignmentTypeBAMGenerator.bam_output_filename,
         )
         test_count_matrix_path = os.path.join(
             _test_temp_dir.name,
             SyntheticTaggedAlignmentTypeBAMGenerator.count_matrix_output_filename,
         )
         test_row_index_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedAlignmentTypeBAMGenerator.row_index_output_filename
+            _test_temp_dir.name,
+            SyntheticTaggedAlignmentTypeBAMGenerator.row_index_output_filename,
         )
         test_col_index_path = os.path.join(
-            _test_temp_dir.name, SyntheticTaggedAlignmentTypeBAMGenerator.col_index_output_filename
+            _test_temp_dir.name,
+            SyntheticTaggedAlignmentTypeBAMGenerator.col_index_output_filename,
         )
         # create CountMatrix from the synthetic bam
-        if test_index==0:
-           count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(
-              test_bam_path, gene_name_to_index
-           )
-        if test_index==1:
+        if test_index == consts.SINGLE_CELL_COUNT_MATRIX:
             count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(
-               test_bam_path, gene_name_to_index,
-               chromosomes_gene_locations_extended=chromosomes_gene_locations_extended
+                test_bam_path, gene_name_to_index
+            )
+        if test_index == consts.SINGLE_NUCLEI_COUNT_MATRIX:
+            count_matrix_from_bam: CountMatrix = CountMatrix.from_sorted_tagged_bam(
+                test_bam_path,
+                gene_name_to_index,
+                chromosomes_gene_locations_extended=chromosomes_gene_locations_extended,
             )
 
         # load the test counts matrix
@@ -913,7 +932,9 @@ def _count_matrix_with_introns(
         row_index_expected = np.load(test_row_index_path)
         col_index_expected = np.load(test_col_index_path)
 
-        count_matrix_data_expected = CountMatrix(_count_matrix_data_expected, row_index_expected, col_index_expected)
+        count_matrix_data_expected = CountMatrix(
+            _count_matrix_data_expected, row_index_expected, col_index_expected
+        )
         count_matrix_data_expected = count_matrix_data_expected.matrix.todense()
 
     finally:
@@ -944,25 +965,22 @@ def _count_matrix_with_introns(
         [
             row_name_from_bam == row_name_expected
             for row_name_from_bam, row_name_expected in zip(
-            sorted_row_index_from_bam, sorted_row_index_expected
-        )
+                sorted_row_index_from_bam, sorted_row_index_expected
+            )
         ]
     )
     assert all(
         [
             col_name_from_bam == col_name_expected
             for col_name_from_bam, col_name_expected in zip(
-            sorted_col_index_from_bam, sorted_col_index_expected
-        )
+                sorted_col_index_from_bam, sorted_col_index_expected
+            )
         ]
     )
 
     assert np.allclose(
         sorted_count_matrix_data_from_bam, sorted_count_matrix_data_expected
     )
-
-
-
 
 
 class SyntheticTaggedAlignmentTypeBAMGenerator:
@@ -975,8 +993,12 @@ class SyntheticTaggedAlignmentTypeBAMGenerator:
         number of real cells
     max-genes : int
         maximum number of genes to use to generate synthetic counts
-
-
+    chromosomes_gene_exons : Dict[str, Dict[str, List[tuple]]]
+        keys at the first level refers to chromosome number, keys at the
+        second level refers to a gene and with the list of exonic regions as values
+    chromosomes_gene_non_exons : Dict[str, Dict[str, List[tuple]]]
+        keys at the first level refers to chromosome number, keys at the
+        second level refers to a gene and with the list of intronic regions as values
 
     rng_seed : int
         random number generator seed
@@ -994,11 +1016,8 @@ class SyntheticTaggedAlignmentTypeBAMGenerator:
     OUTPUT_PREFIX = "intronic_"
     SYNTHETIC_SEQUENCE_LENGTH = 5
     REFERENCE_SEQUENCE_NAME = "1"
-    EXONIC_SEQUENCE_NAME = "EXONIC_SEQUENCE"
+    # EXONIC_SEQUENCE_NAME = "EXONIC_SEQUENCE"
     SYNTHETIC_SEQUENCE_LENGTH = 100
-    EXONIC_QUERY_NAME_PREFIX = "EXONIC_QUERY_"
-    INTRONIC_QUERY_NAME_PREFIX = "INTRONIC_QUERY_"
-    EXONIC_INTRONIC_QUERY_NAME_PREFIX = "EXONIC_INTRONIC_QUERY_"
 
     bam_output_filename = OUTPUT_PREFIX + "records.bam"
     count_matrix_output_filename = OUTPUT_PREFIX + "count_matrix.npy"
@@ -1048,64 +1067,58 @@ class SyntheticTaggedAlignmentTypeBAMGenerator:
         return "".join(self.rng.choice(["A", "C", "T", "G"], size=length))
 
     def _generate_location_based_tag_list(
-            self,
-            num_alignments: int,
-            gene_names: List[str],
-            alignment_location: str
+        self, num_alignments: int, gene_names: List[str], alignment_location: str
     ):
         alignment_record_tags = []
         for i in range(num_alignments):
-            alignment_record_tags.append(AlignmentRecordTags(
-                                                        self._generate_random_cell_barcode(),
-                                                        self._generate_random_molecule_barcode(),
-                                                        gene_names[i],
-                                                        alignment_location
-                                                        )
+            alignment_record_tags.append(
+                AlignmentRecordTags(
+                    self._generate_random_cell_barcode(),
+                    self._generate_random_molecule_barcode(),
+                    gene_names[i],
+                    alignment_location,
+                )
             )
 
         return alignment_record_tags
 
-    def _add_alignment_start_coordinates(self,
-        alignment_tags, alignment_location
-    ):
+    def _add_alignment_start_coordinates(self, alignment_tags, alignment_location):
         _alignment_tags = []
 
         for alignment_tag in alignment_tags:
-           if alignment_location=='EXONIC':
-               if alignment_tag.gene_name in self.chromosomes_gene_exons:
-                   coord= self.chromosomes_gene_exons[alignment_tag.gene_name]
-                   setattr(alignment_tag, 'coordinate', coord[0][0] + 1)
-                   _alignment_tags.append(alignment_tag)
+            if alignment_location == "EXONIC":
+                if alignment_tag.gene_name in self.chromosomes_gene_exons:
+                    coord = self.chromosomes_gene_exons[alignment_tag.gene_name]
+                    setattr(alignment_tag, "coordinate", coord[0][0] + 1)
+                    _alignment_tags.append(alignment_tag)
 
-           if alignment_location=='INTRONIC':
-               if alignment_tag.gene_name in self.chromosomes_gene_non_exons:
-                   coord= self.chromosomes_gene_non_exons[alignment_tag.gene_name]
-                   if coord:
-                     setattr(alignment_tag, 'coordinate', coord[0][0] +1)
-                     alignment_tag.gene_name = ""
-                     _alignment_tags.append(alignment_tag)
+            if alignment_location == "INTRONIC":
+                if alignment_tag.gene_name in self.chromosomes_gene_non_exons:
+                    coord = self.chromosomes_gene_non_exons[alignment_tag.gene_name]
+                    if coord:
+                        setattr(alignment_tag, "coordinate", coord[0][0] + 1)
+                        alignment_tag.gene_name = ""
+                        _alignment_tags.append(alignment_tag)
 
         return _alignment_tags
 
-
-
     def generate_synthetic_bam_and_counts_matrix(
-                self,
-                output_path: str,
-                num_only_exons: int,
-                num_only_introns: int,
-                num_both_exons_introns: int,
-                gene_name_to_index: int,
-                test_index: int,
-                alignment_sort_order: bam.AlignmentSortOrder = CellMoleculeGeneQueryNameSortOrder()
-        ):
-            """Generates synthetic count matrix and BAM file and writes them to disk.
+        self,
+        output_path: str,
+        gene_name_to_index: int,
+        test_index: int,
+        alignment_sort_order: bam.AlignmentSortOrder = CellMoleculeGeneQueryNameSortOrder(),
+    ):
+        """Generates synthetic count matrix and BAM file and writes them to disk.
 
             Parameters
             ----------
             output_path : str
                 output path
-
+            gene_name_to_index : Dict[str, int]
+                gene name to an index
+            test_index : int
+                0 for single cell matrix and 1 for single nuclei matrix
             alignment_sort_order : bam.AlignmentSortOrder
                 sort order of BAM alignment records; if 'None', random sort order is implied
 
@@ -1113,159 +1126,188 @@ class SyntheticTaggedAlignmentTypeBAMGenerator:
             -------
             None
             """
-            assert(num_only_exons >= 0), "Number of exons only alignments must be non-negative"
-            assert(num_only_introns >= 0), "Number of introns only must be non-negative"
-            assert(num_both_exons_introns >= 0), "Number of queries alignment in both introns and exons must be non-negative"
 
-            gene_names_alignments =[]
+        gene_names_alignments = []
 
-            for gene_name in sorted(self.chromosomes_gene_non_exons.keys()):
-                if self.chromosomes_gene_non_exons[gene_name]:
-                    gene_names_alignments.append(gene_name)
+        for gene_name in sorted(self.chromosomes_gene_non_exons.keys()):
+            if self.chromosomes_gene_non_exons[gene_name]:
+                gene_names_alignments.append(gene_name)
 
-            gene_names: List[int] =[]
-            cell_ids: List[int] = []
+        gene_names: List[int] = []
+        cell_ids: List[int] = []
 
-            records = []
-            "Only exons, expected in both single-cell and single-nuclei modes"
-            exonic_alignment_tags = self._generate_location_based_tag_list(10, gene_names_alignments[0:],'EXONIC')
-            exonic_alignment_tags = self._add_alignment_start_coordinates(exonic_alignment_tags,'EXONIC')
+        records = []
+        # Only exons, expected in both single-cell and single-nuclei modes
+        exonic_alignment_tags = self._generate_location_based_tag_list(
+            10, gene_names_alignments[0:], "EXONIC"
+        )
+        exonic_alignment_tags = self._add_alignment_start_coordinates(
+            exonic_alignment_tags, "EXONIC"
+        )
 
-            for i, alignment_tag in enumerate(exonic_alignment_tags):
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                        alignment_tag,
-                        'EXONIC',
-                        i,
-                        10,
-                        self.rng,
-                        reference_start=alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
-                gene_names.append(alignment_tag.gene_name)
+        for i, alignment_tag in enumerate(exonic_alignment_tags):
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                alignment_tag,
+                "EXONIC",
+                i,
+                10,
+                self.rng,
+                reference_start=alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
+            gene_names.append(alignment_tag.gene_name)
+            cell_ids.append(alignment_tag.cell_barcode)
+
+        "Only introns only in single-nuclei mode"
+        intronic_alignment_tags = self._generate_location_based_tag_list(
+            3, gene_names_alignments[10:], "INTRONIC"
+        )
+        intronic_alignment_tags = self._add_alignment_start_coordinates(
+            intronic_alignment_tags, "INTRONIC"
+        )
+        for i, alignment_tag in enumerate(intronic_alignment_tags):
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                alignment_tag,
+                "INTRONIC",
+                i + 10,
+                10,
+                self.rng,
+                reference_start=alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
+            if test_index == consts.SINGLE_NUCLEI_COUNT_MATRIX:
+                gene_names.append(gene_names_alignments[i + 10])
                 cell_ids.append(alignment_tag.cell_barcode)
 
-            "Only introns only in single-nuclei mode"
-            intronic_alignment_tags = self._generate_location_based_tag_list(3, gene_names_alignments[10:],'INTRONIC')
-            intronic_alignment_tags = self._add_alignment_start_coordinates(intronic_alignment_tags,'INTRONIC')
-            for i, alignment_tag in enumerate(intronic_alignment_tags):
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                        alignment_tag,
-                        'INTRONIC',
-                        i+10,
-                        10,
-                        self.rng,
-                        reference_start=alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
-                if test_index==1:
-                    gene_names.append(gene_names_alignments[i+10])
-                    cell_ids.append(alignment_tag.cell_barcode)
+        "both intron and exons from the same gene in bost single-cell and single-nuclei modes"
+        exonic_alignment_tags = self._generate_location_based_tag_list(
+            10, gene_names_alignments[20:], "EXONIC"
+        )
+        exonic_alignment_tags = self._add_alignment_start_coordinates(
+            exonic_alignment_tags, "EXONIC"
+        )
 
-            "both intron and exons from the same gene in bost single-cell and single-nuclei modes"
-            exonic_alignment_tags = self._generate_location_based_tag_list(10, gene_names_alignments[20:],'EXONIC')
-            exonic_alignment_tags = self._add_alignment_start_coordinates(exonic_alignment_tags,'EXONIC')
+        _intronic_alignment_tags = self._generate_location_based_tag_list(
+            10, gene_names_alignments[20:], "INTRONIC"
+        )
+        intronic_alignment_tags = []
+        for intronic_tag, exonic_tag in zip(
+            _intronic_alignment_tags, exonic_alignment_tags
+        ):
+            intronic_tag.cell_barcode = exonic_tag.cell_barcode
+            intronic_alignment_tags.append(intronic_tag)
+        intronic_alignment_tags = self._add_alignment_start_coordinates(
+            intronic_alignment_tags, "INTRONIC"
+        )
 
-            _intronic_alignment_tags = self._generate_location_based_tag_list(10, gene_names_alignments[20:],'INTRONIC')
-            intronic_alignment_tags = []
-            for intronic_tag, exonic_tag in zip(_intronic_alignment_tags, exonic_alignment_tags):
-                intronic_tag.cell_barcode= exonic_tag.cell_barcode
-                intronic_alignment_tags.append(intronic_tag)
-            intronic_alignment_tags = self._add_alignment_start_coordinates(intronic_alignment_tags,'INTRONIC')
+        for i, (exonic_alignment_tag, intronic_alignment_tag) in enumerate(
+            zip(exonic_alignment_tags, intronic_alignment_tags)
+        ):
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                exonic_alignment_tag,
+                "EXONINTRONSAME",
+                i + 20,
+                10,
+                self.rng,
+                reference_start=exonic_alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
 
-            for i, (exonic_alignment_tag, intronic_alignment_tag) in enumerate(zip(exonic_alignment_tags, intronic_alignment_tags)):
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                        exonic_alignment_tag,
-                        'EXONINTRONSAME',
-                        i+20,
-                        10,
-                        self.rng,
-                        reference_start=exonic_alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                intronic_alignment_tag,
+                "EXONINTRONSAME",
+                i + 20,
+                10,
+                self.rng,
+                reference_start=intronic_alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
+            cell_ids.append(exonic_alignment_tag.cell_barcode)
+            gene_names.append(exonic_alignment_tag.gene_name)
 
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                        intronic_alignment_tag,
-                        'EXONINTRONSAME',
-                        i + 20,
-                        10,
-                        self.rng,
-                        reference_start=intronic_alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
+        # both intron and exons from separate genes should not appear in single-cell mode
+        exonic_alignment_tags = self._generate_location_based_tag_list(
+            10, gene_names_alignments[30:], "EXONIC"
+        )
+        exonic_alignment_tags = self._add_alignment_start_coordinates(
+            exonic_alignment_tags, "EXONIC"
+        )
+
+        _intronic_alignment_tags = self._generate_location_based_tag_list(
+            10, gene_names_alignments[31:], "INTRONIC"
+        )
+        intronic_alignment_tags = []
+        for intronic_tag, exonic_tag in zip(
+            _intronic_alignment_tags, exonic_alignment_tags
+        ):
+            intronic_tag.cell_barcode = exonic_tag.cell_barcode
+            intronic_alignment_tags.append(intronic_tag)
+        intronic_alignment_tags = self._add_alignment_start_coordinates(
+            intronic_alignment_tags, "INTRONIC"
+        )
+
+        for i, (exonic_alignment_tag, intronic_alignment_tag) in enumerate(
+            zip(exonic_alignment_tags, intronic_alignment_tags)
+        ):
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                exonic_alignment_tag,
+                "EXONINTRONSEP",
+                i + 30,
+                10,
+                self.rng,
+                reference_start=exonic_alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
+
+            pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
+                intronic_alignment_tag,
+                "EXONINTRONSEP",
+                i + 30,
+                10,
+                self.rng,
+                reference_start=intronic_alignment_tag.coordinate,
+            )
+            records.append(pysam_alignment)
+
+            if test_index == consts.SINGLE_CELL_COUNT_MATRIX:
                 cell_ids.append(exonic_alignment_tag.cell_barcode)
                 gene_names.append(exonic_alignment_tag.gene_name)
 
+        # write BAM file
+        with pysam.AlignmentFile(
+            os.path.join(output_path, self.bam_output_filename),
+            mode="wb",
+            reference_names=[self.REFERENCE_SEQUENCE_NAME],
+            reference_lengths=[self.SYNTHETIC_SEQUENCE_LENGTH],
+        ) as bo:
+            for record in records:
+                bo.write(record)
 
-            "both intron and exons from separate genes should not appear in single-cell mode"
-            exonic_alignment_tags = self._generate_location_based_tag_list(10, gene_names_alignments[30:],'EXONIC')
-            exonic_alignment_tags = self._add_alignment_start_coordinates(exonic_alignment_tags, 'EXONIC')
+        n_genes = len(gene_name_to_index)
+        n_data = len(cell_ids)
+        # write count matrix, row index, and col index
+        count_matrix = np.zeros((n_data, n_genes), dtype=np.int32)
+        for i, (cell_id, gene_name) in enumerate(zip(cell_ids, gene_names)):
+            count_matrix[i][gene_name_to_index[gene_name]] = 1
 
-            _intronic_alignment_tags = self._generate_location_based_tag_list(10, gene_names_alignments[31:],'INTRONIC')
-            intronic_alignment_tags = []
-            for intronic_tag, exonic_tag in zip(_intronic_alignment_tags, exonic_alignment_tags):
-                intronic_tag.cell_barcode= exonic_tag.cell_barcode
-                intronic_alignment_tags.append(intronic_tag)
-            intronic_alignment_tags = self._add_alignment_start_coordinates(intronic_alignment_tags, 'INTRONIC')
+        test_count_matrix_path = os.path.join(
+            output_path,
+            SyntheticTaggedAlignmentTypeBAMGenerator.count_matrix_output_filename,
+        )
+        test_row_index_path = os.path.join(
+            output_path,
+            SyntheticTaggedAlignmentTypeBAMGenerator.row_index_output_filename,
+        )
+        test_col_index_path = os.path.join(
+            output_path,
+            SyntheticTaggedAlignmentTypeBAMGenerator.col_index_output_filename,
+        )
 
-            for i, (exonic_alignment_tag, intronic_alignment_tag) in enumerate(zip(exonic_alignment_tags,  intronic_alignment_tags)):
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                    exonic_alignment_tag, 'EXONINTRONSEP',
-                        i + 30,
-                        10,
-                        self.rng,
-                        reference_start=exonic_alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
+        np.save(test_count_matrix_path, count_matrix)
+        np.save(test_row_index_path, cell_ids)
+        gene_rank = [(gene, rank) for gene, rank in gene_name_to_index.items()]
+        gene_rank.sort(key=lambda x: x[1])
+        gene_names = [x[0] for x in gene_rank]
+        np.save(test_col_index_path, gene_names)
 
-                pysam_alignment = SyntheticTaggedBAMGenerator._generate_aligned_segment_from_tags(
-                    intronic_alignment_tag, 'EXONINTRONSEP',
-                    i + 30,
-                    10,
-                    self.rng,
-                    reference_start=intronic_alignment_tag.coordinate
-                )
-                records.append(pysam_alignment)
-
-                if test_index==0:
-                    cell_ids.append(exonic_alignment_tag.cell_barcode)
-                    gene_names.append(exonic_alignment_tag.gene_name)
-
-
-
-            # write BAM file
-            with pysam.AlignmentFile(
-                    os.path.join(output_path, self.bam_output_filename),
-                    mode="wb",
-                    reference_names=[self.REFERENCE_SEQUENCE_NAME],
-                    reference_lengths=[self.SYNTHETIC_SEQUENCE_LENGTH],
-            ) as bo:
-                for record in records:
-                    bo.write(record)
-
-
-            n_genes = len(gene_name_to_index)
-            n_data= len(cell_ids)
-            # write count matrix, row index, and col index
-            count_matrix = np.zeros((n_data, n_genes), dtype=np.int32)
-            for i, (cell_id, gene_name) in enumerate(zip(cell_ids, gene_names)):
-                count_matrix[i][gene_name_to_index[gene_name]] = 1
-
-            test_count_matrix_path = os.path.join(
-                output_path,
-                SyntheticTaggedAlignmentTypeBAMGenerator.count_matrix_output_filename,
-            )
-            test_row_index_path = os.path.join(
-                output_path, SyntheticTaggedAlignmentTypeBAMGenerator.row_index_output_filename
-            )
-            test_col_index_path = os.path.join(
-                output_path, SyntheticTaggedAlignmentTypeBAMGenerator.col_index_output_filename
-            )
-
-            np.save(test_count_matrix_path, count_matrix)
-            np.save(test_row_index_path, cell_ids)
-            gene_rank = [ (gene, rank) for gene, rank in gene_name_to_index.items()]
-            gene_rank.sort( key = lambda x: x[1])
-            gene_names = [ x[0] for x in gene_rank ]
-            np.save(test_col_index_path, gene_names)
-
-            return os.path.join(output_path, self.bam_output_filename)
+        return os.path.join(output_path, self.bam_output_filename)

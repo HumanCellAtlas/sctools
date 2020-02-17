@@ -404,7 +404,7 @@ def extract_gene_exons(
 
 
 def extract_gene_non_exons(
-    chromosome_gene_exons: Dict[str, List[tuple]], chromosome_gene_locations_extended: Dict[str, tuple]
+    chromosome_gene_exons: Dict[str, List[tuple]], chromosome_gene_locations_extended: Dict[str, List[tuple]]
 ) -> Dict[str, Dict[str, List[tuple]]]:
 
     chromosome_gene_non_exons = {}

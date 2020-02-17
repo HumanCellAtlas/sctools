@@ -172,7 +172,7 @@ class CountMatrix:
         bam_file : str
             input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
             order
-        gene_locations : dict
+        chromosomes_gene_locations_extended : dict
             Location of genes by chromosome
             (default = None)
         cell_barcode_tag : str, optional
