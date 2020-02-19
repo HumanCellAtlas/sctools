@@ -267,8 +267,6 @@ class CountMatrix:
                                 len(chromosomes_gene_locations_extended[alignment.reference_name]) - 1,
                                 alignment.reference_start,
                             )
-                            if gene_name=='AKR7A2':
-                                p =4
 
                             if gene_name:
                                 alignment.set_tag("GE", gene_name)
@@ -390,7 +388,13 @@ class CountMatrix:
             newline delimited column index file
 
         Returns
-        -------
+        ----------------- Forwarded message ---------
+From: Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+Date: Tue, Feb 18, 2020 at 6:24 PM
+Subject: Delivery Status Notification (Failure)
+To: <kishori82@gmail.com>
+
+
         CountMatrix
             instance of class
         """
