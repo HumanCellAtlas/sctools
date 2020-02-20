@@ -843,6 +843,52 @@ def test_count_matrix_from_bam(
     )
 
 
+def extract_gene_non_exons(
+    chromosome_gene_exons: Dict[str, List[tuple]],
+    chromosome_gene_locations_extended: Dict[str, List[tuple]],
+) -> Dict[str, Dict[str, List[tuple]]]:
+
+    chromosome_gene_non_exons = {}
+
+    for chromosome in chromosome_gene_exons:
+        chromosome_gene_non_exons[chromosome] = {}
+        gene_name_exon_list = {}
+        for gene_exons in chromosome_gene_exons[chromosome]:
+            gene_name_exon_list[gene_exons[1]] = gene_exons[0]
+
+        gene_name_location_dict = {}
+        for gene_locations in chromosome_gene_locations_extended[chromosome]:
+            gene_name_location_dict[gene_locations[1]] = gene_locations[0]
+
+        for gene_name in gene_name_location_dict:
+            non_exon_list = []
+            if gene_name in gene_name_exon_list:
+
+                start, end = gene_name_location_dict[gene_name]
+                coords = gene_name_exon_list[gene_name]
+                coords.sort(key=lambda a: a[0])
+
+                x = start
+                y = coords[0][0] - 1
+                i = 0
+
+                n = len(coords)
+                while i < n:
+                    if y <= coords[i][0]:
+                        if x < y:
+                            non_exon_list.append((x, y))
+                        x = coords[i][1]
+                    else:
+                        x = max(x, coords[i][1])
+
+                    if i < n - 1:
+                        y = min(end, coords[i + 1][0])
+                    i += 1
+            chromosome_gene_non_exons[chromosome][gene_name] = non_exon_list.copy()
+
+    return chromosome_gene_non_exons
+
+
 @pytest.mark.parametrize(
     "alignment_sort_order",
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
@@ -868,7 +914,7 @@ def _count_matrix_with_introns(
     )
     chromosomes_gene_exons = gtf.extract_gene_exons(_test_annotation_file)
 
-    _test_chromosomes_gene_non_exons = gtf.extract_gene_non_exons(
+    _test_chromosomes_gene_non_exons = extract_gene_non_exons(
         chromosomes_gene_exons, chromosomes_gene_locations_extended
     )
 

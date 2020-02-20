@@ -4,7 +4,7 @@ import pysam
 
 from .. import platform
 
-data_dir = os.path.split(__file__)[0] + '/data/'
+data_dir = os.path.split(__file__)[0] + "/data/"
 
 
 def test_attach_barcodes():
@@ -13,15 +13,15 @@ def test_attach_barcodes():
     temp_dir_name = tempfile.mkdtemp()
 
     # Construct cli arguments to pass to the command
-    temp_output_bam = temp_dir_name + 'output.bam'
+    temp_output_bam = temp_dir_name + "output.bam"
 
     args = [
         "--r1",
-        data_dir + 'test_r1.fastq',
+        data_dir + "test_r1.fastq",
         "--u2",
-        data_dir + 'test_r2.bam',
+        data_dir + "test_r2.bam",
         "--i1",
-        data_dir + 'test_i1.fastq',
+        data_dir + "test_i1.fastq",
         "--o",
         temp_output_bam,
         "--sample-barcode-start-pos",
@@ -42,12 +42,12 @@ def test_attach_barcodes():
 
     with pysam.AlignmentFile(temp_output_bam, "rb", check_sq=False) as samfile:
         for read in samfile:
-            tag_cr = read.get_tag('CR')
-            tag_cy = read.get_tag('CY')
-            tag_ur = read.get_tag('UR')
-            tag_uy = read.get_tag('UY')
-            tag_sr = read.get_tag('SR')
-            tag_sy = read.get_tag('SY')
+            tag_cr = read.get_tag("CR")
+            tag_cy = read.get_tag("CY")
+            tag_ur = read.get_tag("UR")
+            tag_uy = read.get_tag("UY")
+            tag_sr = read.get_tag("SR")
+            tag_sy = read.get_tag("SY")
             assert len(tag_cr) == 16
             assert len(tag_cy) == 16
             assert len(tag_ur) == 4

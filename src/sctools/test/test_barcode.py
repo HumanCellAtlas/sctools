@@ -141,7 +141,7 @@ def tagged_bamfile():
         "--u2",
         data_dir + "test.bam",
         "--output-bamfile",
-        outbam
+        outbam,
     ]
     platform.TenXV2.attach_barcodes(args)
     return outbam

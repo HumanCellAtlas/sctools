@@ -259,12 +259,20 @@ class CountMatrix:
                         if (
                             alignment.reference_name
                             and aln_type == "INTRONIC"
-                            and alignment.reference_name in chromosomes_gene_locations_extended
+                            and alignment.reference_name
+                            in chromosomes_gene_locations_extended
                         ):
                             gene_name = cls.binary_overlap(
-                                chromosomes_gene_locations_extended[alignment.reference_name],
+                                chromosomes_gene_locations_extended[
+                                    alignment.reference_name
+                                ],
                                 0,
-                                len(chromosomes_gene_locations_extended[alignment.reference_name]) - 1,
+                                len(
+                                    chromosomes_gene_locations_extended[
+                                        alignment.reference_name
+                                    ]
+                                )
+                                - 1,
                                 alignment.reference_start,
                             )
 
