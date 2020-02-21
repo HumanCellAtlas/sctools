@@ -396,13 +396,7 @@ class CountMatrix:
             newline delimited column index file
 
         Returns
-        ----------------- Forwarded message ---------
-From: Mail Delivery Subsystem <mailer-daemon@googlemail.com>
-Date: Tue, Feb 18, 2020 at 6:24 PM
-Subject: Delivery Status Notification (Failure)
-To: <kishori82@gmail.com>
-
-
+        -------
         CountMatrix
             instance of class
         """
