@@ -7,7 +7,7 @@ matplotlib==3.1.1
 numpy==1.17.5
 pandas==0.25.3
 pre-commit==1.14.4
-pysam==0.15.1
+pysam==0.15.3
 pytest-cov==2.5.1
 pytest==5.1.1
 requests==2.20.0
