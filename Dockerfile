@@ -9,4 +9,4 @@ RUN pip3 install -r requirements.txt
 
 WORKDIR usr/local/bin/sctools
 
-COPY . .
+COPY src/sctools .

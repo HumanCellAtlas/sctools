@@ -1,0 +1,2 @@
+#files ignored when building docker image
+*/*/test
