@@ -3,23 +3,23 @@ from .. import encodings
 from itertools import combinations
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def sequence():
-    return b'ACGTTTGAGATGAGATATAGANNNN'
+    return b"ACGTTTGAGATGAGATATAGANNNN"
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def encoder_2bit(sequence):
     length = len(sequence)
     return encodings.TwoBit(length)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def encoder_3bit():
     return encodings.ThreeBit()
 
 
-@pytest.fixture(scope='module', params=[encodings.TwoBit, encodings.ThreeBit])
+@pytest.fixture(scope="module", params=[encodings.TwoBit, encodings.ThreeBit])
 def encoder(request):
     return request.param
 
@@ -39,34 +39,34 @@ def test_three_bit_encode_decode_produces_same_string(sequence, encoder_3bit):
 
 
 def test_two_bit_encoder_gets_correct_gc_content(encoder_2bit):
-    sequence_no_n = b'AGCGCGAT'
-    gc_content = sequence_no_n.count(b'C') + sequence_no_n.count(b'G')
+    sequence_no_n = b"AGCGCGAT"
+    gc_content = sequence_no_n.count(b"C") + sequence_no_n.count(b"G")
     encoded = encoder_2bit.encode(sequence_no_n)
     assert encoder_2bit.gc_content(encoded) == gc_content
 
 
 def test_three_bit_encoder_gets_correct_gc_content(sequence, encoder_3bit):
     encoded = encoder_3bit.encode(sequence)
-    assert encoder_3bit.gc_content(encoded) == sequence.count(b'C') + sequence.count(
-        b'G'
+    assert encoder_3bit.gc_content(encoded) == sequence.count(b"C") + sequence.count(
+        b"G"
     )
 
 
 def test_two_bit_throws_errors_when_asked_to_encode_unknown_nucleotide(encoder_2bit):
     with pytest.raises(KeyError):
-        encoder_2bit.encode(b'ACGTP')  # P is not a valid code
+        encoder_2bit.encode(b"ACGTP")  # P is not a valid code
 
 
 def test_three_bit_encodes_unknown_nucleotides_as_N(encoder_3bit):
-    encoded = encoder_3bit.encode(b'ACGTP')  # P is not a valid code
+    encoded = encoder_3bit.encode(b"ACGTP")  # P is not a valid code
     decoded = encoder_3bit.decode(encoded)
-    assert decoded == b'ACGTN'
+    assert decoded == b"ACGTN"
 
 
 @pytest.fixture
 def simple_barcodes():
     """simple barcode set with min_hamming = 1, max_hamming = 2"""
-    return [b'ACGT', b'ACGG', b'ACGA', b'ACGC', b'TCGT', b'CCGT', b'GCGT']
+    return [b"ACGT", b"ACGG", b"ACGA", b"ACGC", b"TCGT", b"CCGT", b"GCGT"]
 
 
 @pytest.fixture

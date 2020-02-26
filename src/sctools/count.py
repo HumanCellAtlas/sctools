@@ -135,7 +135,7 @@ class CountMatrix:
         cls,
         bam_file: str,
         gene_name_to_index: Dict[str, int],
-        gene_locations: Dict[str, List[tuple]] = None,
+        chromosomes_gene_locations_extended: Dict[str, List[tuple]] = None,
         cell_barcode_tag: str = consts.CELL_BARCODE_TAG_KEY,
         molecule_barcode_tag: str = consts.MOLECULE_BARCODE_TAG_KEY,
         gene_name_tag: str = consts.GENE_NAME_TAG_KEY,
@@ -172,7 +172,7 @@ class CountMatrix:
         bam_file : str
             input bam file marked by cell barcode, molecule barcode, and gene ID tags sorted in that
             order
-        gene_locations : dict
+        chromosomes_gene_locations_extended : dict
             Location of genes by chromosome
             (default = None)
         cell_barcode_tag : str, optional
@@ -251,7 +251,7 @@ class CountMatrix:
         ) in grouped_records_generator:
 
             # modify alignments to include the gene name to the alignments to INTRONIC regions
-            if gene_locations:
+            if chromosomes_gene_locations_extended:
                 alignments = []
                 for alignment in input_alignments:
                     if alignment.has_tag("XF"):
@@ -259,14 +259,23 @@ class CountMatrix:
                         if (
                             alignment.reference_name
                             and aln_type == "INTRONIC"
-                            and alignment.reference_name in gene_locations
+                            and alignment.reference_name
+                            in chromosomes_gene_locations_extended
                         ):
                             gene_name = cls.binary_overlap(
-                                gene_locations[alignment.reference_name],
+                                chromosomes_gene_locations_extended[
+                                    alignment.reference_name
+                                ],
                                 0,
-                                len(gene_locations[alignment.reference_name]) - 1,
+                                len(
+                                    chromosomes_gene_locations_extended[
+                                        alignment.reference_name
+                                    ]
+                                )
+                                - 1,
                                 alignment.reference_start,
                             )
+
                             if gene_name:
                                 alignment.set_tag("GE", gene_name)
                     alignments.append(alignment)

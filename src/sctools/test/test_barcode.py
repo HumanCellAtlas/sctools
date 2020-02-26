@@ -144,8 +144,7 @@ def tagged_bamfile():
         outbam,
     ]
     platform.TenXV2.attach_barcodes(args)
-    yield outbam
-    os.remove(outbam)
+    return outbam
 
 
 def test_correct_bam_produces_cb_tags(tagged_bamfile, truncated_whitelist_from_10x):

@@ -447,7 +447,7 @@ class GenericPlatform:
         matrix = count.CountMatrix.from_sorted_tagged_bam(
             bam_file=args.bam_file,
             gene_name_to_index=gene_name_to_index,
-            gene_locations=gene_locations,
+            chromosomes_gene_locations_extended=gene_locations,
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
             gene_name_tag=args.gene_name_tag,
