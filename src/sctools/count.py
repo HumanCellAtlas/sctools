@@ -290,7 +290,8 @@ class CountMatrix:
                 primary_alignment = alignments[0]
                 if primary_alignment.has_tag(gene_name_tag):
                     gene_name = primary_alignment.get_tag(gene_name_tag)
-                    # overlaps multiple genes, drop query
+                    # overlaps multiple genes, drop query, and unfortunately there only one 
+                    # one alignment for this query
                     if len(gene_name.split(',')) != 1:
                         continue
                 else:
@@ -299,7 +300,9 @@ class CountMatrix:
                 implicated_gene_names: Set[str] = set()
                 for alignment in alignments:
                     if alignment.has_tag(gene_name_tag):
-                        implicated_gene_names.add(alignment.get_tag(gene_name_tag))
+                        # consider its gene name only if it has only  gene name
+                        if len(gene_name.split(','))==1:
+                            implicated_gene_names.add(alignment.get_tag(gene_name_tag))
                 if len(implicated_gene_names) == 1:  # only one gene
                     gene_name = implicated_gene_names.__iter__().__next__()
                 else:
