@@ -290,6 +290,9 @@ class CountMatrix:
                 primary_alignment = alignments[0]
                 if primary_alignment.has_tag(gene_name_tag):
                     gene_name = primary_alignment.get_tag(gene_name_tag)
+                    # overlaps multiple genes, drop query
+                    if len(gene_name.split(',')) != 1:
+                        continue
                 else:
                     continue  # drop query
             else:  # multi-map
