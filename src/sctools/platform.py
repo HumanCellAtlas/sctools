@@ -450,7 +450,7 @@ class GenericPlatform:
             chromosomes_gene_locations_extended=gene_locations,
             cell_barcode_tag=args.cell_barcode_tag,
             molecule_barcode_tag=args.molecule_barcode_tag,
-            gene_name_tag=args.gene_name_tag,
+            gene_name_tag=args.gene_id_tag,
             open_mode=open_mode,
         )
         matrix.save(args.output_prefix)
