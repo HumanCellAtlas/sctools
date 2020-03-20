@@ -283,12 +283,14 @@ class CountMatrix:
                 alignments = input_alignments
 
             # only keep queries w/ well-formed UMIs
+            gene_name = None
             if cell_barcode is None or molecule_barcode is None:
                 continue
 
             if len(alignments) == 1:
                 primary_alignment = alignments[0]
-                if primary_alignment.has_tag(gene_name_tag):
+                if primary_alignment.has_tag(gene_name_tag) and primary_alignment.has_tag('XF') \
+                    and primary_alignment.get_tag('XF')!='INTERGENIC':
                     gene_name = primary_alignment.get_tag(gene_name_tag)
                     # overlaps multiple genes, drop query, and unfortunately there only one
                     # one alignment for this query
@@ -299,14 +301,20 @@ class CountMatrix:
             else:  # multi-map
                 implicated_gene_names: Set[str] = set()
                 for alignment in alignments:
-                    if alignment.has_tag(gene_name_tag):
+                    if alignment.has_tag(gene_name_tag) and alignment.has_tag('XF') \
+                       and alignment.get_tag('XF')!='INTERGENIC':
                         # consider its gene name only if it has only  gene name
-                        if len(gene_name.split(',')) == 1:
+                        gene_name = alignment.get_tag(gene_name_tag)
+                        if  len(gene_name.split(',')) == 1:
                             implicated_gene_names.add(alignment.get_tag(gene_name_tag))
+
                 if len(implicated_gene_names) == 1:  # only one gene
                     gene_name = implicated_gene_names.__iter__().__next__()
                 else:
                     continue  # drop query
+
+            if gene_name==None:
+              continue
 
             if (
                 cell_barcode,
