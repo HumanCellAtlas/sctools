@@ -198,9 +198,9 @@ class GatherGeneMetrics(MetricGatherer):
             for gene_iterator, gene_tag in iter_genes(bam_iterator=bam_iterator):
                 metric_aggregator = GeneMetrics()
 
-                # in case of multi-genes ignore
+                # in case of multi-genes ignore as in the counting stage
                 if gene_tag and len(gene_tag.split(',')) > 1:
-                   continue
+                    continue
 
                 # break up gene ids by cell barcodes
                 for cell_iterator, cell_tag in iter_cell_barcodes(
