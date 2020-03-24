@@ -7,6 +7,12 @@ LABEL maintainer="Ambrose J. Carr <acarr@broadinstitute.org>" \
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
+RUN mkdir /sctools/
+
+COPY .  /sctools 
+
+RUN  pip3 install /sctools
+
 WORKDIR usr/local/bin/sctools
 
-COPY src/sctools .
+

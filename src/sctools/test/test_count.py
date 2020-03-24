@@ -894,17 +894,6 @@ def extract_gene_non_exons(
     [bam.QueryNameSortOrder(), CellMoleculeGeneQueryNameSortOrder()],
     ids=["query_name_sort_order", "cell_molecule_gene_query_name_sort_order"],
 )
-def test_count_matrix_with_introns(
-    alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index
-):
-    _count_matrix_with_introns(
-        alignment_sort_order, gene_name_to_index, consts.SINGLE_CELL_COUNT_MATRIX
-    )
-    _count_matrix_with_introns(
-        alignment_sort_order, gene_name_to_index, consts.SINGLE_NUCLEI_COUNT_MATRIX
-    )
-
-
 def _count_matrix_with_introns(
     alignment_sort_order: bam.AlignmentSortOrder, gene_name_to_index, test_index
 ):
