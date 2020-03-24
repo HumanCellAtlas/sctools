@@ -26,6 +26,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+test/data/bam_with_tags_test.bam
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
