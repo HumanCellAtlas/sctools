@@ -18,7 +18,8 @@ https://useast.ensembl.org/info/website/upload/gff.html
 
 import logging
 import string
-from typing import List, Dict, Generator, Iterable, Union
+import re
+from typing import List, Dict, Generator, Iterable, Union, Set
 
 from . import reader
 
@@ -259,6 +260,44 @@ def _resolve_multiple_gene_names(gene_name: str):
         f"malformed GTF file."
     )
 
+def get_mitochondrial_gene_names(
+    files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
+) -> Set[str]:
+    """Extract mitocholdrial gene names from GTF file(s) and returns a set of mitochondrial 
+     gene id occurrence in the given file(s).
+
+    Parameters
+    ----------
+    files : Union[str, List], optional
+        File(s) to read. If '-', read sys.stdin (default = '-')
+    mode : {'r', 'rb'}, optional
+        Open mode. If 'r', read strings. If 'rb', read bytes (default = 'r').
+    header_comment_char : str, optional
+        lines beginning with this character are skipped (default = '#')
+
+    Returns
+    -------
+    Set(str)
+        A set of the mitochondrial gene ids
+    """
+
+    mitochondrial_gene_ids: Set[str] = set()
+    for record in Reader(files, mode, header_comment_char).filter(
+        retain_types=["gene"]
+    ):
+        gene_name = record.get_attribute("gene_name")
+        gene_id = record.get_attribute("gene_id")
+
+        if gene_name is None:
+            raise ValueError(
+                f"Malformed GTF file detected. Record is of type gene but does not have a "
+                f'"gene_name" field: {record}'
+            )
+        if re.match('^mt-', gene_name, re.IGNORECASE):
+           if gene_id not in mitochondrial_gene_ids: 
+              mitochondrial_gene_ids.add(gene_id)
+
+    return mitochondrial_gene_ids
 
 def extract_gene_names(
     files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
