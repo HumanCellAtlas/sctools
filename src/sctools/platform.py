@@ -18,7 +18,7 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 """
 
 import argparse
-from typing import Iterable, List, Dict, Optional, Sequence
+from typing import Iterable, List, Dict, Set, Optional, Sequence
 from itertools import chain
 
 import pysam

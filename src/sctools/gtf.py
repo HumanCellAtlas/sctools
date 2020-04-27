@@ -264,7 +264,7 @@ def _resolve_multiple_gene_names(gene_name: str):
 def get_mitochondrial_gene_names(
     files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
 ) -> Set[str]:
-    """Extract mitocholdrial gene names from GTF file(s) and returns a set of mitochondrial 
+    """Extract mitocholdrial gene names from GTF file(s) and returns a set of mitochondrial
      gene id occurrence in the given file(s).
 
     Parameters
