@@ -260,6 +260,7 @@ def _resolve_multiple_gene_names(gene_name: str):
         f"malformed GTF file."
     )
 
+
 def get_mitochondrial_gene_names(
     files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"
 ) -> Set[str]:
@@ -294,10 +295,11 @@ def get_mitochondrial_gene_names(
                 f'"gene_name" field: {record}'
             )
         if re.match('^mt-', gene_name, re.IGNORECASE):
-           if gene_id not in mitochondrial_gene_ids: 
-              mitochondrial_gene_ids.add(gene_id)
+            if gene_id not in mitochondrial_gene_ids:
+                mitochondrial_gene_ids.add(gene_id)
 
     return mitochondrial_gene_ids
+
 
 def extract_gene_names(
     files: Union[str, List[str]] = "-", mode: str = "r", header_comment_char: str = "#"

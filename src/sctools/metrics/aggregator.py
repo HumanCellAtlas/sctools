@@ -454,7 +454,7 @@ class CellMetrics(MetricAggregator):
         self.genes_detected_multiple_observations: int = None
         self.n_mitochondrial_genes: int = None
 
-    def finalize(self, mitochondrial_genes = set() ):
+    def finalize(self, mitochondrial_genes=set()):
         super().finalize()
 
         self.cell_barcode_fraction_bases_above_30_mean: float = self._cell_barcode_fraction_bases_above_30.mean
@@ -468,9 +468,8 @@ class CellMetrics(MetricAggregator):
         )
 
         self.n_mitochondrial_genes: int = sum(
-            1 for g in self._genes_histogram.keys() if g in mitochondrial_genes 
+            1 for g in self._genes_histogram.keys() if g in mitochondrial_genes
         )
-         
 
     def parse_extra_fields(
         self, tags: Sequence[str], record: pysam.AlignedSegment

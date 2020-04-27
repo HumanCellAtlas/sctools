@@ -56,7 +56,13 @@ class MetricGatherer:
 
     """
 
-    def __init__(self, bam_file: str, output_stem: str, mitochondrial_gene_ids: Set[str] = set(),  compress: bool = True):
+    def __init__(
+        self,
+        bam_file: str,
+        output_stem: str,
+        mitochondrial_gene_ids: Set[str] = set(),
+        compress: bool = True,
+    ):
         self._bam_file = bam_file
         self._output_stem = output_stem
         self._compress = compress
@@ -143,11 +149,13 @@ class GatherCellMetrics(MetricGatherer):
                         # process the data
                         metric_aggregator.parse_molecule(
                             tags=(cell_tag, molecule_tag, gene_tag),
-                            records=gene_iterator
+                            records=gene_iterator,
                         )
 
                 # write a record for each cell
-                metric_aggregator.finalize(mitochondrial_genes = self._mitochondrial_gene_ids)
+                metric_aggregator.finalize(
+                    mitochondrial_genes=self._mitochondrial_gene_ids
+                )
                 cell_metrics_output.write(cell_tag, vars(metric_aggregator))
 
 

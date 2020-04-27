@@ -290,7 +290,7 @@ class GenericPlatform:
             "-a",
             "--gtf-annotation-file",
             required=False,
-            default = None,
+            default=None,
             help="gtf annotation file that bam_file was aligned against",
         )
 
