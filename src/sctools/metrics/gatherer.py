@@ -56,7 +56,7 @@ class MetricGatherer:
 
     """
 
-    def __init__(self, bam_file: str, output_stem: str, mitochondrial_gene_ids: Set[str],  compress: bool = True):
+    def __init__(self, bam_file: str, output_stem: str, mitochondrial_gene_ids: Set[str] = set(),  compress: bool = True):
         self._bam_file = bam_file
         self._output_stem = output_stem
         self._compress = compress
