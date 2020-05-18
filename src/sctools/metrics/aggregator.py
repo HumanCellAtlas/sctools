@@ -412,6 +412,8 @@ class CellMetrics(MetricAggregator):
         The number of genes detected by this cell
     genes_detected_multiple_observations : int
         The number of genes that are observed by more than one read in this cell
+    n_mitochondrial_genes: int
+        The number of mitochondrial genes detected by this cell
 
     """
 
@@ -450,8 +452,9 @@ class CellMetrics(MetricAggregator):
         self.cell_barcode_fraction_bases_above_30_mean: float = None
         self.n_genes: int = None
         self.genes_detected_multiple_observations: int = None
+        self.n_mitochondrial_genes: int = None
 
-    def finalize(self):
+    def finalize(self, mitochondrial_genes=set()):
         super().finalize()
 
         self.cell_barcode_fraction_bases_above_30_mean: float = self._cell_barcode_fraction_bases_above_30.mean
@@ -462,6 +465,10 @@ class CellMetrics(MetricAggregator):
 
         self.genes_detected_multiple_observations: int = sum(
             1 for v in self._genes_histogram.values() if v > 1
+        )
+
+        self.n_mitochondrial_genes: int = sum(
+            1 for g in self._genes_histogram.keys() if g in mitochondrial_genes
         )
 
     def parse_extra_fields(
@@ -502,7 +509,6 @@ class CellMetrics(MetricAggregator):
             self.reads_unmapped += 1
 
         # todo track reads_mapped_too_many_loci after multi-alignment is done
-
         self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
 

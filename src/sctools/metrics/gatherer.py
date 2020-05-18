@@ -28,6 +28,7 @@ sctools.metrics.writer
 from contextlib import closing
 
 import pysam
+from typing import Set
 
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellMetrics, GeneMetrics
@@ -55,10 +56,17 @@ class MetricGatherer:
 
     """
 
-    def __init__(self, bam_file: str, output_stem: str, compress: bool = True):
+    def __init__(
+        self,
+        bam_file: str,
+        output_stem: str,
+        mitochondrial_gene_ids: Set[str] = set(),
+        compress: bool = True,
+    ):
         self._bam_file = bam_file
         self._output_stem = output_stem
         self._compress = compress
+        self._mitochondrial_gene_ids = mitochondrial_gene_ids
 
     @property
     def bam_file(self) -> str:
@@ -114,7 +122,6 @@ class GatherCellMetrics(MetricGatherer):
             Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
 
         """
-
         # open the files
         with pysam.AlignmentFile(self.bam_file, mode=mode) as bam_iterator, closing(
             MetricCSVWriter(self._output_stem, self._compress)
@@ -146,7 +153,9 @@ class GatherCellMetrics(MetricGatherer):
                         )
 
                 # write a record for each cell
-                metric_aggregator.finalize()
+                metric_aggregator.finalize(
+                    mitochondrial_genes=self._mitochondrial_gene_ids
+                )
                 cell_metrics_output.write(cell_tag, vars(metric_aggregator))
 
 

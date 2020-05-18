@@ -18,7 +18,7 @@ TenXV2                  Class containing 10x v2 specific command line utilities
 """
 
 import argparse
-from typing import Iterable, List, Dict, Optional, Sequence
+from typing import Iterable, List, Dict, Set, Optional, Sequence
 from itertools import chain
 
 import pysam
@@ -286,13 +286,28 @@ class GenericPlatform:
         parser.add_argument(
             "-o", "--output-filestem", required=True, help="Output file stem."
         )
+        parser.add_argument(
+            "-a",
+            "--gtf-annotation-file",
+            required=False,
+            default=None,
+            help="gtf annotation file that bam_file was aligned against",
+        )
 
         if args is not None:
             args = parser.parse_args(args)
         else:
             args = parser.parse_args()
+
+        # load mitochondrial gene ids from the annotation file
+        mitochondrial_gene_ids: Set(str) = set()
+        if args.gtf_annotation_file:
+            mitochondrial_gene_ids = gtf.get_mitochondrial_gene_names(
+                args.gtf_annotation_file
+            )
+
         cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
-            args.input_bam, args.output_filestem
+            args.input_bam, args.output_filestem, mitochondrial_gene_ids
         )
         cell_metric_gatherer.extract_metrics()
         return 0
