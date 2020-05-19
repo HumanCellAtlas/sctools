@@ -483,7 +483,9 @@ class CellMetrics(MetricAggregator):
 
         if self.n_mitochondrial_molecules:
             tot_molecules = sum(self._genes_histogram.values())
-            self.pct_mitochondrial_molecules = self.n_mitochondrial_molecules/tot_molecules*100.0
+            self.pct_mitochondrial_molecules = (
+                self.n_mitochondrial_molecules / tot_molecules * 100.0
+            )
         else:
             self.pct_mitochondrial_molecules = 0.00
 
