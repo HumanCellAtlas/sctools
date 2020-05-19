@@ -414,6 +414,10 @@ class CellMetrics(MetricAggregator):
         The number of genes that are observed by more than one read in this cell
     n_mitochondrial_genes: int
         The number of mitochondrial genes detected by this cell
+    n_mitochondrial_molecules: int
+        The number of molecutes from mitochondrial genes detected by this cell
+    pct_mitochondrial_molecules: int
+        The percentage of molecutes from mitochondrial genes detected by this cell
 
     """
 
@@ -453,6 +457,8 @@ class CellMetrics(MetricAggregator):
         self.n_genes: int = None
         self.genes_detected_multiple_observations: int = None
         self.n_mitochondrial_genes: int = None
+        self.n_mitochondrial_molecules: int = None
+        self.pct_mitochondrial_molecules: float = None
 
     def finalize(self, mitochondrial_genes=set()):
         super().finalize()
@@ -470,6 +476,16 @@ class CellMetrics(MetricAggregator):
         self.n_mitochondrial_genes: int = sum(
             1 for g in self._genes_histogram.keys() if g in mitochondrial_genes
         )
+
+        self.n_mitochondrial_molecules: int = sum(
+            c for g, c in self._genes_histogram.items() if g in mitochondrial_genes
+        )
+
+        if self.n_mitochondrial_molecules:
+            tot_molecules = sum(self._genes_histogram.values())
+            self.pct_mitochondrial_molecules = self.n_mitochondrial_molecules/tot_molecules*100.0
+        else:
+            self.pct_mitochondrial_molecules = 0.00
 
     def parse_extra_fields(
         self, tags: Sequence[str], record: pysam.AlignedSegment
