@@ -415,7 +415,7 @@ class CellMetrics(MetricAggregator):
     n_mitochondrial_genes: int
         The number of mitochondrial genes detected by this cell
     n_mitochondrial_molecules: int
-        The number of molecutes from mitochondrial genes detected by this cell
+        The number of molecules from mitochondrial genes detected for this cell
     pct_mitochondrial_molecules: int
         The percentage of molecutes from mitochondrial genes detected by this cell
 
