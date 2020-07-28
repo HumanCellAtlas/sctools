@@ -325,11 +325,8 @@ def write_barcodes_to_bins(
         for i in range(len(bins)):
             out_bam_name = os.path.join(f"{dirname}", f"{dirname}_{i}.bam")
             filepaths.append(out_bam_name)
-            # For now, bam writing uses one thread for compression. Better logic could support more processes without
-            # starving the machine for resources
-            open_bam = pysam.AlignmentFile(
-                out_bam_name, "wb", template=input_alignments
-            )
+
+            open_bam = pysam.AlignmentFile(out_bam_name, "w", template=input_alignments)
             files.append(open_bam)
 
         # Loop over input; check each tag in priority order and partition barcodes into files based
