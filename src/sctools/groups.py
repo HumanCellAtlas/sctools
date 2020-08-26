@@ -112,7 +112,8 @@ def write_aggregated_qc_metrics(file_names, output_name):
     for file_name in file_names:
         dat = pd.read_csv(file_name, index_col=0)
         print(dat.index)
-        df = pd.concat([df, dat], axis=1, join_axes=[dat.index])
+        print(df.head())
+        df = pd.concat([df, dat], axis=1, join='outer')
     df.to_csv(output_name + '.csv', index=True)
 
 

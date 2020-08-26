@@ -1,8 +1,8 @@
-FROM python:3.6.2
+FROM python:3.7.7
 
 LABEL maintainer="Ambrose J. Carr <acarr@broadinstitute.org>" \
-  software="python 3.6.2" \
-  description="python 3.6.2 with pysam, sctools, requests, and a basic science stack"
+  software="python 3.7.7" \
+  description="python 3.7.7 with pysam, sctools, requests, and a basic science stack"
 
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
