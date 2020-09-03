@@ -1,21 +1,9 @@
-/* The MIT License
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
-*/
+/** 
+ *  @file   utilities.cpp 
+ *  @brief  Utility functions for file processing 
+ *  @author Kishori Konwar 
+ *  @date   2020-08-27 
+ ***********************************************/
 
 #include "utilities.h"
 #include <string>
@@ -23,6 +11,7 @@
 
 using namespace std;
 
+/** @copydoc filesize */
 int32_t filesize(const char *filename) {
     FILE *f = fopen(filename, "rb");  /* open the file in read only */
 
@@ -33,6 +22,7 @@ int32_t filesize(const char *filename) {
     return size;
 }
 
+/** @copydoc getFileSize */
 int32_t getFileSize(const std::string &fileName) {
     ifstream file(fileName, ifstream::in | ifstream::binary);
 
@@ -47,8 +37,9 @@ int32_t getFileSize(const std::string &fileName) {
     return fileSize;
 }
 
+/** @copydoc read_white_list */
 WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
-    // be careful of caps
+    // TODO: be careful of caps
     char ATCG[] = {'A', 'C', 'G', 'T', 'N'};
 
     fstream newfile;
@@ -62,13 +53,20 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
 
        // read data from file object and put it into string.
        while (getline(newfile, tp)) {
-        //  cout << tp << "\n"; //print the data of the string
+        //  cout << tp << "\n"; 
+          //insert the barcode into the list
           white_list_data->barcodes.push_back(tp);
 
           for (int i=0; i < tp.size(); i++) {
             for (int j=0; j < 5; j++) {
               char c = tp[i];
               tp[i] = ATCG[j];
+              /* if the  mutation in any of the positions 
+                 is already present update the new correct index, 
+                 else insert the barcode or update the index 
+                 This is done to have the same values for corrected barcodes
+                 as in the python implementation
+              */
               if (white_list_data->mutations.find(tp) == \
                   white_list_data->mutations.end()) {
                   white_list_data->mutations.insert({tp, k});
@@ -80,9 +78,15 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
           }
 
           // printf("%s\n", tp.c_str());
+          /* -1 suggests it is already a whitelisted barcode 
+             This is used, instead of the actual index, because when
+             the barcode is seen with -1 then no correction is necessary.
+             This is likely to avoid lots of map look up as most barcodes
+             not erroneous.
+          */
           white_list_data->mutations.at(tp) = -1;
 
-          if (k%100000 == 0 && k != 0) printf("%d\n", k);
+          //if (k%100000 == 0 && k != 0) printf("%d\n", k);
           k++;
        }
        // close the file object.
@@ -94,6 +98,7 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
     return white_list_data;
 }
 
+/** @copydoc read_options */
 void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
   int c;
   int i;
@@ -117,6 +122,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
           {0, 0, 0, 0}
         };
 
+      // help messages when the user types -h
       const char *help_messages[] = {
            "verbose messages  ",
            "barcode length [required]",
@@ -140,6 +146,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
       if (c == -1)
         break;
 
+      // process the option or arguments
       switch (c) {
         case 0:
           /* If this option set a flag, do nothing else now. */
@@ -192,31 +199,40 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
           abort();
         }
     }
+
+  // Check the options
+
+  // number of R1 and R2 files should be equal
   if ((options.R1s.size() != options.R2s.size()) || (options.R1s.size() ==0)) {
      printf("R1 and R2 files mismatch i input\n");
      exit(0);
   }
 
+  // Bam file size must be positive
   if (options.bam_size <= 0) {
      printf("Size of a bam file (in GB) cannot be negative\n");
      exit(0);
   }
 
+  // must have a sample id
   if (options.sample_id.size() == 0) {
      printf("Must provide a sample id or sampe name\n");
      exit(0);
   }
 
+  // barcode length must be positive
   if (options.barcode_length <= 0) {
      printf("Barcode length must be a positive integer\n");
      exit(0);
   }
 
+  // UMI length must be positive
   if (options.umi_length <= 0) {
      printf("UMI length must be a positive integer\n");
      exit(0);
   }
 
+  // just prints out the files 
   if (verbose_flag) {
        std::cout << "I1/R1/R2 files" << std::endl;
        for (int i= 0; i < options.I1s.size(); i++) {
@@ -231,6 +247,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
   }
 }
 
+/** @copydoc  get_num_blocks */
 int32_t get_num_blocks(const INPUT_OPTIONS &options) {
     double tot_size = 0;
     for (int i= 0; i < options.R1s.size(); i++) {
@@ -244,7 +261,7 @@ int32_t get_num_blocks(const INPUT_OPTIONS &options) {
            /static_cast<double>(options.bam_size));
 }
 
-// Print system error and exit
+/** @copydoc error */
 void error(char *msg) {
     perror(msg);
     exit(1);

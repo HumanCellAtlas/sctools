@@ -1,10 +1,14 @@
+/** 
+ *  @file   main.cpp 
+ *  @brief  The main function for the fastqprocessing step 
+ *  @author Kishori Konwar 
+ *  @date   2020-08-27 
+ ***********************************************/
+
 #include "fastqprocess.h"
 #include "utilities.h"
 
-using namespace std;
-
 /* Flag set by ‘--verbose’. */
-
 int main (int argc, char **argv)
 {
 
