@@ -1,0 +1,2 @@
+duplicated detection off
+../libStatGen/fastq/FastQFile.cpp  547-558 commented out
