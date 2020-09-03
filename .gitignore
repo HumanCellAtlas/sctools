@@ -103,4 +103,4 @@ ENV/
 
 
 # fastqprocessing
-src/fastqprocess
+fastqpreprocessing/src/fastqprocess

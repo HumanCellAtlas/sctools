@@ -15,15 +15,18 @@
 #include <fstream>
 #include <getopt.h>
 
-
 typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
 
 typedef std::vector<std::string>  STRING_VECTOR;
 
 typedef std::unordered_map <std::string, int32_t> STRING_BOOL_MAP;
 
+// structure for correcting the barcodes
 typedef struct _white_list_data {
+    /// an unordered map from whitelist barcodes and 1-mutations
+    /// to the index of the correct barcode
     STRING_BOOL_MAP mutations;
+    /// vector of whitelist barcodes
     STRING_VECTOR barcodes;
 } WHITE_LIST_DATA;
  

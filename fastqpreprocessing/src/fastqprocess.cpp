@@ -12,6 +12,9 @@
 /// maximum file length
 #define MAX_FILE_LENGTH 500
 
+/// number of samrecords per buffer in each reader
+#define SAMRECORD_BUFFER_SIZE 100000
+
 /// mutex 
 std::mutex mtx;
 
@@ -21,14 +24,13 @@ sem_t *semaphores = 0;
 /// array of semaphores for rwriters
 sem_t *semaphores_workers = 0;
 
-using namespace std;
-
-
+/** @copydoc create_record_holders */
 SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads, \
                                            int32_t block_size, \
                                            const std::string sample_id, \
                                            int16_t num_files) {
 
+    // samrecord data to hold buffer for the reader
     SAM_RECORD_BINS *samrecord_data = new SAM_RECORD_BINS;
     if ((samrecord_data->samrecords = new SamRecord *[nthreads]) == 0) {
         std::cerr << "Failed to allocate memory for the " \
@@ -36,7 +38,7 @@ SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads, \
         return 0;
     }
     
-    // one samrecord per writer  thread to reuse while writing
+    // one samrecord per reader thread to re-use repeatedly while writing
     for (int i = 0; i < nthreads; i++) {
        if ((samrecord_data->samrecords[i] = new SamRecord[block_size]) == 0) {
           std::cerr << "Failed to allocate memory for the " \
@@ -45,19 +47,21 @@ SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads, \
          }
     }
 
-    // for each writer thread keep the number of records to write out
+    // for each reader thread keep the number of records to write out
     if ((samrecord_data->num_records = new int[nthreads]) == 0) {
        std::cerr << "Failed to allocate memory for the num " \
                     "records array" << std::endl;
        return 0;
     }
 
+    // for each thread  we allocate an array of indices (to final output files(
     if ((samrecord_data->file_index = new vector<int> *[nthreads]) == 0) {
        std::cerr << "Failed to allocate memory for the pointer for " \
                     "array of vectors" << std::endl;
        return 0;
     }
 
+    // for each read thread allocate the index vector
     for (int i = 0; i < nthreads; i++) {
       if ((samrecord_data->file_index[i] = new vector<int>[num_files]) == 0) {
          std::cerr << "Failed to allocate memory for the vectors for " \
@@ -65,6 +69,8 @@ SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads, \
          return 0;
       }
     }
+
+    // set the remaining data
     samrecord_data->block_size = block_size;
     samrecord_data->sample_id = sample_id;
     samrecord_data->num_files = num_files;
@@ -72,11 +78,14 @@ SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads, \
     return samrecord_data;
 }
 
-int process_inputs(const INPUT_OPTIONS &options, \
+/** @copydoc process_inputs */
+void process_inputs(const INPUT_OPTIONS &options, \
                    const WHITE_LIST_DATA *white_list_data) {
-     int num_files = 200;
-     int block_size = 100000;
-     num_files = get_num_blocks(options);
+     
+     int block_size = SAMRECORD_BUFFER_SIZE;
+
+     // number of files based on the input size  
+     int num_files = get_num_blocks(options);
      // create the data for the threads
      SAM_RECORD_BINS *samrecord_data = \
                create_samrecord_holders(options.R1s.size(), block_size, \
@@ -85,16 +94,19 @@ int process_inputs(const INPUT_OPTIONS &options, \
      for (int i = 0; i < num_files; i++) {
         sem_init((semaphores_workers + i), 0, 0);
      }
+
      // create the bam file writers semaphores
      semaphores = new sem_t[num_files];
      for (int i = 0; i < num_files; i++) {
         sem_init((semaphores + i), 0, 0);
      }
+
      // execute the bam file writers threads
      std::thread *writers = new std::thread[num_files];
      for (int i = 0; i < num_files; i++) {
         writers[i] = std::thread(bam_writers, i, samrecord_data);
      }
+
      // execute the fastq readers threads
      std::thread  *readers = new std::thread[options.R1s.size()];
      for (int i = 0; i < options.R1s.size(); i++) {
@@ -103,17 +115,20 @@ int process_inputs(const INPUT_OPTIONS &options, \
                        options.barcode_length, options.umi_length,
                        white_list_data, samrecord_data);
      }
+
      // every reader thread joins.
      for (int i = 0; i < options.R1s.size(); i++) {
         readers[i].join();
      }
      // set the stop flag for the writers
      samrecord_data->stop = true;
+
      // ask the writers to make one more loop in the whilte loop
      for (int j = 0; j < samrecord_data->num_files; j++) {
         if (sem_post(&semaphores[j]) == -1)
            error("sem_post: semaphores");
      }
+
      // wait for the writers to stop after they have seen the stop flag
      for (int i = 0; i < samrecord_data->num_files; i++) {
         writers[i].join();
@@ -121,11 +136,12 @@ int process_inputs(const INPUT_OPTIONS &options, \
 
      // destroy the semaphores
      for (int i = 0; i < samrecord_data->num_files; i++) {
-           sem_destroy(&semaphores[i]);
+         sem_destroy(&semaphores[i]);
      }
+
      // destroy the semaphores for semaphores_workers
      for (int i = 0; i < samrecord_data->num_files; i++) {
-           sem_destroy(&semaphores_workers[i]);
+         sem_destroy(&semaphores_workers[i]);
      }
      
      // delete reader and writer threads
@@ -133,8 +149,8 @@ int process_inputs(const INPUT_OPTIONS &options, \
      delete [] writers;
 }
 
+/** @copydoc bam_writers */
 void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
-    std::thread::id  thread_id = std::this_thread::get_id();
     SamFile samOut;
     std::string outputfile;
     
@@ -149,7 +165,7 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
     // Write the sam header.
     SamFileHeader samHeader;
 
-    // add the HD tags
+    // add the HD tags for the header
     samHeader.setHDTag("VN", "1.6");
     samHeader.setHDTag("SO", "unsorted");
 
@@ -158,6 +174,8 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
     headerRG->setTag("ID", "A");
     headerRG->setTag("SM", samrecord_data->sample_id.c_str());
     samHeader.addRG(headerRG);
+   
+    // add the header to the output bam
     samOut.WriteHeader(samHeader);
 
     // keep writing foever, until there is a flag to stop
@@ -170,6 +188,8 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
       // that signalled that buffer is ready to be written
       SamRecord *samRecord  = \
          samrecord_data->samrecords[samrecord_data->active_thread_no];
+      // go through the index of the samrecords that are stored for the current 
+      // writer, i.e., "windex" or the corresponding BAM file
       for (auto index : samrecord_data->file_index[samrecord_data->active_thread_no][windex]) {
            samOut.WriteRecord(samHeader, samRecord[index]);
       }
@@ -188,34 +208,39 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
 }
 
 
-void process_file(int tindex, String filename1, String filename2, \
-                   String filename3,  unsigned int barcode_length, \
+void process_file(int tindex, String filenameI1, String filenameR1, \
+                   String filenameR2,  unsigned int barcode_length, \
                    unsigned int umi_length, \
                    const WHITE_LIST_DATA* white_list_data, \
                    SAM_RECORD_BINS *samrecord_data) {
-    FastQFile fastQFile1(4, 4);
-    FastQFile fastQFile2(4, 4);
-    FastQFile fastQFile3(4, 4);
 
-    if (fastQFile1.openFile(filename1, BaseAsciiMap::UNKNOWN) != \
+    /// setting the shortest sequence allowed to be read
+    FastQFile fastQFileI1(4, 4);
+    FastQFile fastQFileR1(4, 4);
+    FastQFile fastQFileR2(4, 4);
+
+    // open the I1 file
+    if (fastQFileI1.openFile(filenameI1, BaseAsciiMap::UNKNOWN) != \
         FastQStatus::FASTQ_SUCCESS) {
-       std::cerr << "Failed to open file: " <<  filename1.c_str();
-       return;
+          std::cerr << "Failed to open file: " <<  filenameI1.c_str();
+          return;
     }
 
-    if (fastQFile2.openFile(filename2, BaseAsciiMap::UNKNOWN) != \
+    // open the R1 file
+    if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) != \
         FastQStatus::FASTQ_SUCCESS) {
-       std::cerr << "Failed to open file: " <<  filename2.c_str();
-       return;
+          std::cerr << "Failed to open file: " <<  filenameR1.c_str();
+          return;
     }
 
-    if (fastQFile3.openFile(filename3, BaseAsciiMap::UNKNOWN) != \
-        FastQStatus::FASTQ_SUCCESS) {
-       std::cerr << "Failed to open file: " <<  filename3.c_str();
-       return;
+    // open the R2 file
+    if (fastQFileR2.openFile(filenameR2, BaseAsciiMap::UNKNOWN) != \
+       FastQStatus::FASTQ_SUCCESS) {
+          std::cerr << "Failed to open file: " <<  filenameR2.c_str();
+          return;
     }
 
-    std::thread::id  thread_id = std::this_thread::get_id();
+    // point to the array of records already allocated for this reader
     SamRecord *samRecord  = samrecord_data->samrecords[tindex];
     int block_size = samrecord_data->block_size;
 
@@ -226,18 +251,22 @@ void process_file(int tindex, String filename1, String filename2, \
     int n_barcode_correct = 0;
     int r = 0;
     printf("Opening the thread in %d\n", tindex);
-    while (fastQFile1.keepReadingFile()) {
-       if (fastQFile1.readFastQSequence() == FastQStatus::FASTQ_SUCCESS &&
-          fastQFile2.readFastQSequence() == FastQStatus::FASTQ_SUCCESS &&
-          fastQFile3.readFastQSequence() == FastQStatus::FASTQ_SUCCESS) {
+
+    while (fastQFileI1.keepReadingFile()) {
+       if (fastQFileI1.readFastQSequence() == FastQStatus::FASTQ_SUCCESS &&
+          fastQFileR1.readFastQSequence() == FastQStatus::FASTQ_SUCCESS &&
+          fastQFileR2.readFastQSequence() == FastQStatus::FASTQ_SUCCESS) {
           i = i + 1;
+
           // check the sequence names matching
-          std::string a = std::string(fastQFile2.myRawSequence.c_str());
-          std::string b = std::string(fastQFile2.myQualityString.c_str());
-          // extract the barcode and UMI
+          std::string a = std::string(fastQFileR1.myRawSequence.c_str());
+          std::string b = std::string(fastQFileR1.myQualityString.c_str());
+
+          // extract the raw barcode and UMI
           std::string barcode = a.substr(0, barcode_length);
           std::string UMI  = a.substr(barcode_length, umi_length);
-          // extract barcode and UMI quality string
+
+          // extract raw barcode and UMI quality string
           std::string barcodeQString = b.substr(0, barcode_length);
           std::string UMIQString  = b.substr(barcode_length, umi_length);
 
@@ -245,9 +274,9 @@ void process_file(int tindex, String filename1, String filename2, \
           samRecord[r].resetRecord();
 
           // add idenfifier, sequence and quality score of the alignments
-          samRecord[r].setReadName(fastQFile3.mySequenceIdentifier.c_str());
-          samRecord[r].setSequence(fastQFile3.myRawSequence.c_str());
-          samRecord[r].setQuality(fastQFile3.myQualityString.c_str());
+          samRecord[r].setReadName(fastQFileR2.mySequenceIdentifier.c_str());
+          samRecord[r].setSequence(fastQFileR2.myRawSequence.c_str());
+          samRecord[r].setQuality(fastQFileR2.myQualityString.c_str());
 
           // add barcode and quality 
           samRecord[r].addTag("CR", 'Z', barcode.c_str());
@@ -258,21 +287,30 @@ void process_file(int tindex, String filename1, String filename2, \
           samRecord[r].addTag("UY", 'Z', UMIQString.c_str());
 
           // add raw sequence and quality sequence for the index 
-          std::string indexseq = std::string(fastQFile1.myRawSequence.c_str());
-          std::string indexSeqQual = std::string(fastQFile1.myQualityString.c_str());
+          std::string indexseq = std::string(fastQFileI1.myRawSequence.c_str());
+          std::string indexSeqQual = std::string(fastQFileI1.myQualityString.c_str());
           samRecord[r].addTag("SR", 'Z', indexseq.c_str());
           samRecord[r].addTag("SY", 'Z', indexSeqQual.c_str());
           samRecord[r].addTag("RG", 'Z', "A");
           samRecord[r].setFlag(4);
           
           std::string correct_barcode;
+          // bucket barcode is used to pick the target bam file 
+          // This is done because in the case of incorrigible barcodes
+          // we need a mechanism to uniformly distribute the alignments
+          // so that no bam is oversized to putting all such barcode less
+          // sequences into one particular
           std::string bucket_barcode;
           if (white_list_data->mutations.find(barcode) != \
                white_list_data->mutations.end()) {
+
+             // if -1 then the raw barcode is the correct barcode
              if (white_list_data->mutations.at(barcode) == -1) {
                   correct_barcode = barcode;
                   n_barcode_correct += 1;
              } else {
+               // it is a 1-mutation of some whitelist barcode so get the 
+               // barcode by indexing into the vector of whitelist barcodes 
                correct_barcode = \
                white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
                n_barcode_corrected += 1;
@@ -280,43 +318,69 @@ void process_file(int tindex, String filename1, String filename2, \
              // is used for computing the file index
              bucket_barcode = correct_barcode;
              samRecord[r].addTag("CB", 'Z', correct_barcode.c_str());
-          } else {
+          } else { // not possible to correct the raw barcode
              n_barcode_errors += 1;
              bucket_barcode = barcode;
           }
           samrecord_data->num_records[tindex]++;
+          // destination bam file index computed based on the bucket_barcode
           int32_t bucket = std::hash<std::string>{}(bucket_barcode.c_str()) % \
                        samrecord_data->num_files;
+          // store the index of the record in the right vector that is done 
+          // to serve as a bucket B to hold the indices of samrecords that are 
+          // going to bamfile B 
           samrecord_data->file_index[tindex][bucket].push_back(r);
           // write a block of samrecords
           r = r + 1;
-          if (r == block_size || !fastQFile1.keepReadingFile()) {
+ 
+          // Onec block_size amount of samrecord is read, or there 
+          // is no more sequence to be read from the file then it is time to 
+          // signal the writer threads to clear the buffer to the bam files 
+          // only one reader should be successfull in doing so. 
+
+          // However, if a block of data is not read or end of the FASTQ file is
+          // seen then continue reading the FASTQ files and keep creating the 
+          // sam records in its buffer. This is the same behavior across all 
+          // reader threads
+          if (r == block_size || !fastQFileI1.keepReadingFile()) {
+                // mutex makes sure only one reader thread can lock
                 mtx.lock();
+              
+                // it sets itself as the active thread who wants the 
+                // readers to clear the data
                 samrecord_data->active_thread_no = tindex;
-                //  printf("Ready to write %d\n", tindex);
+
+                // send a signal to every writer thread, i.e., write out data 
+                // data to any file where the samheader should be written to
                 for (int32_t j = 0; j < samrecord_data->num_files; j++) {
                    if (sem_post(&semaphores[j]) == -1)
                       error("sem_post: semaphores");
                 }
+
                 // there is where I wait white the writers are writing
                 for (int32_t j = 0; j < samrecord_data->num_files; j++) {
                    if (sem_wait(&semaphores_workers[j]) == -1)
                       error("sem_wait: semaphores_workers");
                 }
+
                 // they are done writing
                 for (int j = 0; j < samrecord_data->num_files; j++) {
                       samrecord_data->file_index[tindex][j].clear();
                 }
+                // start reading a new block of FASTQ sequences 
                 r = 0;
+                // not records to write in the current  
                 samrecord_data->num_records[tindex] = 0;
+                 
+                // release the mutex, so that other readers might want to write 
                 mtx.unlock();
           }
           if (i % 10000000 == 0) {
               printf("%d\n", i);
-              std::string a = std::string(fastQFile2.myRawSequence.c_str());
-              printf("%s\n", fastQFile1.mySequenceIdLine.c_str());
-              printf("%s\n", fastQFile2.mySequenceIdLine.c_str());
-              printf("%s\n", fastQFile3.mySequenceIdLine.c_str());
+              std::string a = std::string(fastQFileR1.myRawSequence.c_str());
+              printf("%s\n", fastQFileI1.mySequenceIdLine.c_str());
+              printf("%s\n", fastQFileR1.mySequenceIdLine.c_str());
+              printf("%s\n", fastQFileR2.mySequenceIdLine.c_str());
           }
          /*
           if(i== 5000000) {
@@ -332,9 +396,9 @@ void process_file(int tindex, String filename1, String filename2, \
     // Finished processing all of the sequences in the file.
 
     // Close the input files.
-    fastQFile1.closeFile();
-    fastQFile2.closeFile();
-    fastQFile3.closeFile();
+    fastQFileI1.closeFile();
+    fastQFileR1.closeFile();
+    fastQFileR2.closeFile();
     printf("Total barcodes:%d\n correct:%d\ncorrected:%d\nuncorrectible"
            ":%d\nuncorrected:%lf\n", \
            i, n_barcode_correct, n_barcode_corrected, n_barcode_errors, \
