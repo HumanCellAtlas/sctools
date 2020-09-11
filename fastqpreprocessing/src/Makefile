@@ -7,7 +7,7 @@ ODIR=obj
 LDIR =../libStatGen/
 
 TARGET = fastqprocess
-LIBS = -lStatGen -lz -lpthread
+LIBS = -lStatGen -lz -lpthread -lstdc++fs
 
 _DEPS = fastqprocess.h utilities.h
 #DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

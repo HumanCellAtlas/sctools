@@ -8,8 +8,10 @@
 #include "utilities.h"
 #include <string>
 #include <cstdint>
+#include <experimental/filesystem>
 
 using namespace std;
+namespace fs = std::experimental::filesystem;
 
 /** @copydoc filesize */
 int32_t filesize(const char *filename) {
@@ -93,8 +95,6 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
        newfile.close();
     }
 
-    std::cout << "Size of whitelist " << white_list_data->mutations.size() \
-              << std::endl;
     return white_list_data;
 }
 
@@ -203,55 +203,94 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
   // Check the options
 
   // number of R1 and R2 files should be equal
-  if ((options.R1s.size() != options.R2s.size()) || (options.R1s.size() ==0)) {
-     printf("R1 and R2 files mismatch i input\n");
-     exit(0);
+  if ((options.R1s.size() != options.R2s.size()) || (options.R1s.size() == 0)) {
+     std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input\n";
+     std::cerr << "ERROR: Unequal number of R1 and R2 fastq files in input\n";
+     exit(1);
   }
 
+  if ((options.I1s.size() != options.R1s.size()) and (options.I1s.size() != 0)) {
+     std::cout << "ERROR: Either the number of I1 input files are equal\n"
+                  "       to the number of R1 input files, or no I1 input files\n"
+                  "       should not be provided at all.\n";
+     std::cerr << "ERROR: Either the number of I1 input files are equal\n"
+                  "       to the number of R1 input files, or no I1 input files\n"
+                  "       should not be provided at all.\n";
+     exit(1);
+  }
   // Bam file size must be positive
   if (options.bam_size <= 0) {
-     printf("Size of a bam file (in GB) cannot be negative\n");
-     exit(0);
+     std::cout << "ERROR: Size of a bam file (in GB) cannot be negative\n";
+     std::cerr << "ERROR: Size of a bam file (in GB) cannot be negative\n";
+     exit(1);
   }
 
   // must have a sample id
   if (options.sample_id.size() == 0) {
-     printf("Must provide a sample id or sampe name\n");
-     exit(0);
+     std::cout << "ERROR: Must provide a sample id or name\n";
+     std::cerr << "ERROR: Must provide a sample id or name\n";
+     exit(1);
   }
 
   // barcode length must be positive
   if (options.barcode_length <= 0) {
-     printf("Barcode length must be a positive integer\n");
-     exit(0);
+     std::cout << "ERROR: Barcode length must be a positive integer\n";
+     std::cerr << "ERROR: Barcode length must be a positive integer\n";
+     exit(1);
   }
 
   // UMI length must be positive
   if (options.umi_length <= 0) {
-     printf("UMI length must be a positive integer\n");
-     exit(0);
+     std::cout << "ERROR: UMI length must be a positive integer\n";
+     std::cerr << "ERROR: UMI length must be a positive integer\n";
+     exit(1);
   }
 
   // just prints out the files 
   if (verbose_flag) {
-       std::cout << "I1/R1/R2 files" << std::endl;
-       for (int i= 0; i < options.I1s.size(); i++) {
-           std::cout << "\t" << options.I1s[i] << " " \
-                     <<  filesize(options.I1s[i].c_str()) \
-                     << " "  << options.R1s[i] << " " \
-                     << filesize(options.R1s[i].c_str()) \
-                     << " "  << options.R2s[i] << " " \
-                     << filesize(options.R2s[i].c_str()) \
-                     <<  std::endl;
-       }
+      if (options.I1s.size()) {
+          _print_file_info(options.I1s, std::string("I1"));
+      }
+
+      if (options.R1s.size()) {
+          _print_file_info(options.R1s, std::string("R1"));
+      }
+
+      if (options.R2s.size()) {
+          _print_file_info(options.R2s, std::string("R2"));
+      }
   }
 }
+
+
+/** @copydoc  _print_file_info */
+void _print_file_info(const std::vector<std::string> &fastqs, \
+     const std::string &type) {
+
+    if (fastqs.size()) {
+        std::cout << "INFO " << type << " files:" << std::endl;
+            for (int i= 0; i < fastqs.size(); i++) {
+               if (fs::exists(fastqs[i].c_str())) {
+                   std::cout << "\t " << fastqs[i]  <<  " exists, flie size " \
+                        <<  filesize(fastqs[i].c_str())  <<  std::endl;
+               } else {
+                   std::cout << "ERROR " << fastqs[i] << " is missing!\n";
+                   std::cerr << "ERROR " << fastqs[i] << " is missing!\n";
+                   exit(1);
+               }
+           }
+       }
+}
+
+
 
 /** @copydoc  get_num_blocks */
 int32_t get_num_blocks(const INPUT_OPTIONS &options) {
     double tot_size = 0;
     for (int i= 0; i < options.R1s.size(); i++) {
-        tot_size +=  filesize(options.I1s[i].c_str());
+        if (options.I1s.size()) {
+            tot_size +=  filesize(options.I1s[i].c_str());
+        }
         tot_size +=  filesize(options.R1s[i].c_str());
         tot_size +=  filesize(options.R2s[i].c_str());
     }

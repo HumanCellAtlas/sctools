@@ -118,4 +118,11 @@ int32_t getFileSize(const std::string &fileName);
 */
 void error (char *msg);
 
+/** 
+ * @brief examines the existence and size of the input files
+ * 
+*/
+void _print_file_info(const std::vector<std::string> &fastqs, \
+    const std::string &type);
+
 #endif

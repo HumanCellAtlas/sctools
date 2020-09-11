@@ -102,7 +102,7 @@ void process_inputs(const INPUT_OPTIONS & options, \
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
  
-void process_file(int32_t tindex, String filename, String filename1, \
+void process_file(int32_t tindex, std::string filename, String filename1, \
                   String filename2,  unsigned int barcode_length, \
                   unsigned int umi_length, \
                   const WHITE_LIST_DATA *white_list_data, \
