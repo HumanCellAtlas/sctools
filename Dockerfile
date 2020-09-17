@@ -16,16 +16,18 @@ COPY .  /sctools
 
 RUN  pip3 install /sctools
 
-ARG libStatGen_version="v1.0.14"
+ARG libStatGen_version="1.0.14"
 
 RUN wget https://github.com/HumanCellAtlas/sctools/archive/kmk-fastqprocessing.zip 
 
 RUN unzip kmk-fastqprocessing.zip && \
     cd sctools-kmk-fastqprocessing/fastqpreprocessing &&\
-    wget https://github.com/statgen/libStatGen/archive/${libStatGen_version}.tar.gz &&\
-    tar -zxvf ${libStatGen_version}.tar.gz &&\
+    wget https://github.com/statgen/libStatGen/archive/v${libStatGen_version}.tar.gz &&\
+    tar -zxvf v${libStatGen_version}.tar.gz &&\
+    mv libStatGen-${libStatGen_version} libStatGen &&\
     patch libStatGen/fastq/FastQFile.cpp patches/FastQFile.cpp.patch &&\
     patch libStatGen/Makefile patches/Makefile.patch &&\
+    patch libStatGen/general/Makefile patches/general.Makefile.patch &&\
     make -C libStatGen &&\
     mkdir src/obj &&\
     make -C src/ 
