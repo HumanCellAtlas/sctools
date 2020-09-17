@@ -1,4 +1,4 @@
---- fastqpreprocessing/libStatGen/Makefile	2020-09-17 17:24:21.435697420 +0000
+--- libStatGen-1.0.14/Makefile	2015-07-08 20:03:23.000000000 +0000
 +++ ../libStatGen/Makefile	2020-09-03 14:15:41.904210140 +0000
 @@ -2,7 +2,8 @@
  

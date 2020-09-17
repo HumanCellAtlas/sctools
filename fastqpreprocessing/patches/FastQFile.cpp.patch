@@ -1,36 +1,18 @@
---- fastqpreprocessing/libStatGen/fastq/FastQFile.cpp	2020-09-17 17:24:21.447698410 +0000
-+++ ../libStatGen/fastq/FastQFile.cpp	2020-09-17 17:41:43.425550744 +0000
-@@ -109,11 +109,13 @@
-       // Successfully closed a previously opened file if there was one.
-       
-       // Open the file
--      myFile = ifopen(fileName, "rt");
-+      myFile = ifopen(fileName, "rt", InputFile::GZIP);
-+
-       myFileName = fileName;
-       
-       if(myFile == NULL)
-       {
-+         printf("Failed to open the file %d \n", myFile);
-          // Failed to open the file.
-          status = FastQStatus::FASTQ_OPEN_ERROR;
-       }
-@@ -530,8 +532,8 @@
-            // Check to see if the sequenceIdentifier is a repeat by adding
-            // it to the set and seeing if it already existed.
-            std::pair<std::map<std::string, unsigned int>::iterator,bool> insertResult;
--           insertResult = 
--               myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
-+            /*
-+           insertResult = myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
-                                                      myLineNum));
-            
-            if(insertResult.second == false)
-@@ -546,6 +548,7 @@
-                reportErrorOnLine();
-                return(false);
-            }
-+           */
+--- libStatGen-1.0.14/fastq/FastQFile.cpp	2015-07-08 20:03:23.000000000 +0000
++++ ../libStatGen/FastQFile.cpp	2020-09-17 19:35:48.797593411 +0000
+@@ -489,6 +489,7 @@
+        // Check to see if the sequenceIdentifier is a repeat by adding
+        // it to the set and seeing if it already existed.
+        std::pair<std::map<std::string, unsigned int>::iterator,bool> insertResult;
++       /*
+        insertResult = 
+            myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
+                                                  myLineNum));
+@@ -505,6 +506,7 @@
+            reportErrorOnLine();
+            return(false);
         }
++       */
     }
  
+    // Valid, return true.
