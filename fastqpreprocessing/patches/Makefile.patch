@@ -1,0 +1,22 @@
+--- fastqpreprocessing/libStatGen/Makefile	2020-09-17 17:24:21.435697420 +0000
++++ ../libStatGen/Makefile	2020-09-03 14:15:41.904210140 +0000
+@@ -2,7 +2,8 @@
+ 
+ .PHONY: package
+ 
+-SUBDIRS=general bam fastq glf samtools vcf
++#SUBDIRS=general bam fastq glf samtools vcf
++SUBDIRS=general fastq samtools bam
+ 
+ include Makefiles/Makefile.base
+ 
+@@ -16,7 +17,8 @@
+ general: samtools
+ 
+ # other subdirectories depend on general
+-bam fastq glf vcf: general
++#bam fastq glf vcf: general
++bam fastq : general
+ 
+ RELEASE_FILE?=libStatGen.$(VERSION).tgz
+ 

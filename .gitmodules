@@ -1,3 +1,0 @@
-[submodule "libStatGen"]
-	path = fastqpreprocessing/libStatGen
-	url = git://github.com/statgen/libStatGen.git
