@@ -1,5 +1,4 @@
 import pysam
-import sys
 import argparse
 
 
