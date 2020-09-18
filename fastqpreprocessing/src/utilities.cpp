@@ -115,7 +115,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
           {"umi-length",    required_argument, 0, 'u'},
           {"bam-size",    required_argument, 0, 'B'},
           {"sample-id",    required_argument, 0, 's'},
-          {"I1",  required_argument,  0, 'I'},
+          {"I1",  optional_argument,  0, 'I'},
           {"R1",  required_argument,  0, 'R'},
           {"R2",    required_argument, 0, 'r'},
           {"white-list",    required_argument, 0, 'w'},
@@ -129,7 +129,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
            "UMI length [required]",
            "output BAM file in GB [optional: default 1 GB]",
            "sample id [required]",
-           "I1",
+           "I1 [optional]",
            "R1 [required]",
            "R2 [required]",
            "whitelist (from cellranger) of barcodes [required]",
@@ -209,7 +209,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
      exit(1);
   }
 
-  if ((options.I1s.size() != options.R1s.size()) and (options.I1s.size() != 0)) {
+  if ((options.I1s.size() != options.R1s.size()) && (options.I1s.size() != 0)) {
      std::cout << "ERROR: Either the number of I1 input files are equal\n"
                   "       to the number of R1 input files, or no I1 input files\n"
                   "       should not be provided at all.\n";
@@ -295,7 +295,6 @@ int32_t get_num_blocks(const INPUT_OPTIONS &options) {
         tot_size +=  filesize(options.R2s[i].c_str());
     }
 
-    // printf("ceil %f\n",  tot_size/(1024*1024*1024)/(double)options.bam_size);
     return ceil((tot_size/(1024*1024*1024)) \
            /static_cast<double>(options.bam_size));
 }

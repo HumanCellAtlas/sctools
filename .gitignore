@@ -101,6 +101,6 @@ ENV/
 .mypy_cache/
 *.DS_Store
 
-# fastqprocessing
+# do not check in the executable and bam file
 fastqpreprocessing/src/fastqprocess
 src/sctools/test/data/bam_with_tags_test.bam
