@@ -49,18 +49,18 @@ class MetricCSVWriter:
 
         # check and fix extension:
         if compress:
-            if not output_stem.endswith('.csv.gz'):
-                output_stem += '.csv.gz'
+            if not output_stem.endswith(".csv.gz"):
+                output_stem += ".csv.gz"
         else:
-            if not output_stem.endswith('.csv'):
-                output_stem += '.csv'
+            if not output_stem.endswith(".csv"):
+                output_stem += ".csv"
         self._filename: str = output_stem
 
         # open the file
         if compress:
-            self._open_fid: TextIO = gzip.open(self._filename, 'wt')
+            self._open_fid: TextIO = gzip.open(self._filename, "wt")
         else:
-            self._open_fid: TextIO = open(self._filename, 'w')
+            self._open_fid: TextIO = open(self._filename, "w")
         self._header: List[str] = None
 
     @property
@@ -78,8 +78,8 @@ class MetricCSVWriter:
             producing a dictionary of keys to metric values.
 
         """
-        self._header = list(key for key in record.keys() if not key.startswith('_'))
-        self._open_fid.write(',' + ','.join(self._header) + '\n')
+        self._header = list(key for key in record.keys() if not key.startswith("_"))
+        self._open_fid.write("," + ",".join(self._header) + "\n")
 
     def write(self, index: str, record: Mapping[str, Number]) -> None:
         """Write the array of metric values for a cell or gene to file.
@@ -97,10 +97,10 @@ class MetricCSVWriter:
 
         # genes and cells can be None, call repr to convert to string when this induces a TypeError
         try:
-            self._open_fid.write(index + ',' + ','.join(ordered_fields) + '\n')
+            self._open_fid.write(index + "," + ",".join(ordered_fields) + "\n")
         except TypeError:
             index = repr(index)
-            self._open_fid.write(index + ',' + ','.join(ordered_fields) + '\n')
+            self._open_fid.write(index + "," + ",".join(ordered_fields) + "\n")
 
     def close(self) -> None:
         """Close the metrics file."""

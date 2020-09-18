@@ -26,13 +26,13 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
     metrics = {}
     d = pd.DataFrame()
     for file_name in file_names:
-        cell_id = os.path.basename(file_name).split('_qc')[0]
+        cell_id = os.path.basename(file_name).split("_qc")[0]
         metrics[cell_id] = {}
         parsed = picard.parse(file_name)
-        class_name = parsed['metrics']['class'].split('.')[2]
+        class_name = parsed["metrics"]["class"].split(".")[2]
         # Alignment metrics return multiple lines,
         # but only output PAIRED-READS/third line
-        contents = parsed['metrics']['contents']
+        contents = parsed["metrics"]["contents"]
         if class_name == "AlignmentSummaryMetrics":
             # parse out PE, R1 and R2. If the reads are unpaired, the contents
             # will be a single dict rather than a list of dicts.
@@ -40,12 +40,12 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
                 contents = [contents]
             rows = {}
             for m in contents:
-                cat = m['CATEGORY']
+                cat = m["CATEGORY"]
                 rows.update(
                     {
-                        k + '.' + cat: v
+                        k + "." + cat: v
                         for k, v in m.items()
-                        if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
+                        if k not in ["SAMPLE", "LIBRARY", "READ_GROUP", "CATEGORY"]
                     }
                 )
         # sometimes(very rare), insertion metrics also return multiple lines
@@ -64,14 +64,14 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
             {
                 k: rows[k]
                 for k in rows
-                if k not in ['SAMPLE', 'LIBRARY', 'READ_GROUP', 'CATEGORY']
+                if k not in ["SAMPLE", "LIBRARY", "READ_GROUP", "CATEGORY"]
             }
         )
-        df = pd.DataFrame.from_dict(metrics, orient='columns')
-        df.insert(0, 'Class', class_name)
+        df = pd.DataFrame.from_dict(metrics, orient="columns")
+        df.insert(0, "Class", class_name)
         d = d.append(df)
     d_T = d.T
-    d_T.to_csv(output_name + '.csv')
+    d_T.to_csv(output_name + ".csv")
 
 
 def write_aggregated_picard_metrics_by_table(file_names, output_name):
@@ -88,12 +88,12 @@ def write_aggregated_picard_metrics_by_table(file_names, output_name):
         return if the program completes successfully.
     """
     for file_name in file_names:
-        cell_id = os.path.basename(file_name).split('_qc')[0]
-        class_name = os.path.basename(file_name).split('.')[1]
+        cell_id = os.path.basename(file_name).split("_qc")[0]
+        class_name = os.path.basename(file_name).split(".")[1]
         parsed = picard.parse(file_name)
-        dat = pd.DataFrame.from_dict(parsed['metrics']['contents'])
-        dat.insert(0, 'Sample', cell_id)
-        dat.to_csv(output_name + "_" + class_name + '.csv', index=False)
+        dat = pd.DataFrame.from_dict(parsed["metrics"]["contents"])
+        dat.insert(0, "Sample", cell_id)
+        dat.to_csv(output_name + "_" + class_name + ".csv", index=False)
 
 
 def write_aggregated_qc_metrics(file_names, output_name):
@@ -113,8 +113,8 @@ def write_aggregated_qc_metrics(file_names, output_name):
         dat = pd.read_csv(file_name, index_col=0)
         print(dat.index)
         print(df.head())
-        df = pd.concat([df, dat], axis=1, join='outer')
-    df.to_csv(output_name + '.csv', index=True)
+        df = pd.concat([df, dat], axis=1, join="outer")
+    df.to_csv(output_name + ".csv", index=True)
 
 
 def parse_hisat2_log(file_names, output_name):
@@ -134,22 +134,22 @@ def parse_hisat2_log(file_names, output_name):
     metrics = {}
     tag = "NONE"
     for file_name in file_names:
-        if '_qc' in file_name:
-            cell_id = os.path.basename(file_name).split('_qc')[0]
+        if "_qc" in file_name:
+            cell_id = os.path.basename(file_name).split("_qc")[0]
             tag = "HISAT2G"
-        elif '_rsem' in file_name:
-            cell_id = os.path.basename(file_name).split('_rsem')[0]
+        elif "_rsem" in file_name:
+            cell_id = os.path.basename(file_name).split("_rsem")[0]
             tag = "HISAT2T"
         with open(file_name) as f:
             dat = f.readlines()
-            d = [x.strip().split(':') for x in dat]
+            d = [x.strip().split(":") for x in dat]
             # remove the first row of each section.
             d.pop(0)
-            metrics[cell_id] = {x[0]: x[1].strip().split(' ')[0] for x in d}
-    df = pd.DataFrame.from_dict(metrics, orient='columns')
+            metrics[cell_id] = {x[0]: x[1].strip().split(" ")[0] for x in d}
+    df = pd.DataFrame.from_dict(metrics, orient="columns")
     df.insert(0, "Class", tag)
     df_T = df.T
-    df_T.to_csv(output_name + '.csv')
+    df_T.to_csv(output_name + ".csv")
 
 
 def parse_rsem_cnt(file_names, output_name):
@@ -167,7 +167,7 @@ def parse_rsem_cnt(file_names, output_name):
     """
     metrics = {}
     for file_name in file_names:
-        cell_id = os.path.basename(file_name).split('_rsem')[0]
+        cell_id = os.path.basename(file_name).split("_rsem")[0]
         i = 0
         with open(file_name) as f:
             while i < 3:
@@ -189,7 +189,7 @@ def parse_rsem_cnt(file_names, output_name):
             "strand": read_type,
             "uncertain reads": n_uncertain,
         }
-    df = pd.DataFrame.from_dict(metrics, orient='columns')
+    df = pd.DataFrame.from_dict(metrics, orient="columns")
     df.insert(0, "Class", "RSEM")
     df_T = df.T
-    df_T.to_csv(output_name + '.csv')
+    df_T.to_csv(output_name + ".csv")
