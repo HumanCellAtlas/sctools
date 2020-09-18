@@ -69,7 +69,7 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
                  This is done to have the same values for corrected barcodes
                  as in the python implementation
               */
-              if (white_list_data->mutations.find(tp) == \
+              if (white_list_data->mutations.find(tp) == 
                   white_list_data->mutations.end()) {
                   white_list_data->mutations.insert({tp, k});
               } else {
@@ -139,7 +139,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
-      c = getopt_long(argc, argv, "b:u:B:s:I:R:r:w:", \
+      c = getopt_long(argc, argv, "b:u:B:s:I:R:r:w:", 
                       long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -186,9 +186,9 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
           i = 0;
           printf("Usage: %s [options] \n", argv[0]);
           while (long_options[i].name != 0) {
-             printf("\t--%-20s  %-25s  %-35s\n", long_options[i].name, \
-                     long_options[i].has_arg == no_argument? \
-                     "no argument" : "required_argument", \
+             printf("\t--%-20s  %-25s  %-35s\n", long_options[i].name, 
+                     long_options[i].has_arg == no_argument? 
+                     "no argument" : "required_argument", 
                      help_messages[i]);
              i = i + 1;
           }
@@ -264,14 +264,14 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
 
 
 /** @copydoc  _print_file_info */
-void _print_file_info(const std::vector<std::string> &fastqs, \
+void _print_file_info(const std::vector<std::string> &fastqs, 
      const std::string &type) {
 
     if (fastqs.size()) {
         std::cout << "INFO " << type << " files:" << std::endl;
             for (int i= 0; i < fastqs.size(); i++) {
                if (fs::exists(fastqs[i].c_str())) {
-                   std::cout << "\t " << fastqs[i]  <<  " exists, flie size " \
+                   std::cout << "\t " << fastqs[i]  <<  " exists, flie size " 
                         <<  filesize(fastqs[i].c_str())  <<  std::endl;
                } else {
                    std::cout << "ERROR " << fastqs[i] << " is missing!\n";
@@ -295,7 +295,7 @@ int32_t get_num_blocks(const INPUT_OPTIONS &options) {
         tot_size +=  filesize(options.R2s[i].c_str());
     }
 
-    return ceil((tot_size/(1024*1024*1024)) \
+    return ceil((tot_size/(1024*1024*1024)) 
            /static_cast<double>(options.bam_size));
 }
 
