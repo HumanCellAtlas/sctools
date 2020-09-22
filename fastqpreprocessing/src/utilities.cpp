@@ -24,24 +24,8 @@ int32_t filesize(const char *filename) {
     return size;
 }
 
-/** @copydoc getFileSize */
-int32_t getFileSize(const std::string &fileName) {
-    ifstream file(fileName, ifstream::in | ifstream::binary);
-
-    if (!file.is_open()) {
-        return -1;
-    }
-
-    file.seekg(0, ios::end);
-    int32_t fileSize = file.tellg();
-    file.close();
-
-    return fileSize;
-}
-
 /** @copydoc read_white_list */
 WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
-    // TODO: be careful of caps
     char ATCG[] = {'A', 'C', 'G', 'T', 'N'};
 
     fstream newfile;
@@ -55,7 +39,6 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
 
        // read data from file object and put it into string.
        while (getline(newfile, tp)) {
-        //  cout << tp << "\n"; 
           //insert the barcode into the list
           white_list_data->barcodes.push_back(tp);
 
@@ -79,7 +62,6 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
             }
           }
 
-          // printf("%s\n", tp.c_str());
           /* -1 suggests it is already a whitelisted barcode 
              This is used, instead of the actual index, because when
              the barcode is seen with -1 then no correction is necessary.
@@ -87,8 +69,6 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
              not erroneous.
           */
           white_list_data->mutations.at(tp) = -1;
-
-          //if (k%100000 == 0 && k != 0) printf("%d\n", k);
           k++;
        }
        // close the file object.

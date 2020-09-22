@@ -1,7 +1,6 @@
 import pysam
 import argparse
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--bam", nargs="+", dest="bams", help="BAM files")
 
@@ -31,7 +30,7 @@ def check_disjoint_cbs():
                     print("not a partition")
                     return
 
-    print("tot alignments : ", tot_alignments)
+    print("total alignments : ", tot_alignments)
     print("is a partition")
     return
 

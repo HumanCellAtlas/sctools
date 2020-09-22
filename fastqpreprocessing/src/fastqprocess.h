@@ -55,14 +55,12 @@ typedef struct SamRecordBins {
     std::string sample_id;
     int32_t block_size;
 
-    /// number of output  bam files, and one writer thread per bam file
+    /// number of output bam files, and one writer thread per bam file
     int16_t num_files;
     /// flag to stop the writer
     bool stop;
-    /// number of thread equal to the number of set of R1/R2
-    int16_t num_threads;
     /// the thread (reader) that is currently wanting to write
-    int32_t active_thread_no;
+    int32_t active_thread_num;
 } SAM_RECORD_BINS;
 
 
@@ -70,7 +68,7 @@ typedef struct SamRecordBins {
  * @brief Processes the input fastq files
  *
  * @detail 
- *  This function creates a set of readers (as there are files), 
+ *  This function creates a set of readers (as many as there are files), 
  * a set of writers to write the individual bam files, a set of 
  * semaphores for readers to signal to writers when buffer of records
  * are ready, and another set of semaphores for writers to signal 

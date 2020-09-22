@@ -21,8 +21,6 @@ int main (int argc, char **argv)
   std::cout << "done" << std::endl;
 
   process_inputs(options, white_list_data);
-
   return 0;
-
 }
 

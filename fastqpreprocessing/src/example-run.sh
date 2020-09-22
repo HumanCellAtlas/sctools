@@ -1,5 +1,4 @@
 #!/bin/bash
-
 ./fastqprocess --verbose \
  --bam-size 0.001 \
  --barcode-length 16 \
