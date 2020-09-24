@@ -85,8 +85,7 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
 
   int verbose_flag;
 
-  while (true) {
-      static struct option long_options[] = {
+  static struct option long_options[] = {
           /* These options set a flag. */
           {"verbose", no_argument,  &verbose_flag, 1},
           /* These options don’t set a flag.
@@ -95,15 +94,15 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
           {"umi-length",    required_argument, 0, 'u'},
           {"bam-size",    required_argument, 0, 'B'},
           {"sample-id",    required_argument, 0, 's'},
-          {"I1",  optional_argument,  0, 'I'},
+          {"I1",  required_argument,  0, 'I'},
           {"R1",  required_argument,  0, 'R'},
           {"R2",    required_argument, 0, 'r'},
           {"white-list",    required_argument, 0, 'w'},
           {0, 0, 0, 0}
-        };
+  };
 
-      // help messages when the user types -h
-      const char *help_messages[] = {
+  // help messages when the user types -h
+  const char *help_messages[] = {
            "verbose messages  ",
            "barcode length [required]",
            "UMI length [required]",
@@ -113,9 +112,10 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
            "R1 [required]",
            "R2 [required]",
            "whitelist (from cellranger) of barcodes [required]",
-      };
+  };
 
 
+  while (true) {
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
