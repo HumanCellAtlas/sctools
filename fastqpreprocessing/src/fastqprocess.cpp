@@ -217,6 +217,17 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
     samOut.Close();
 }
 
+/**
+ * @brief fillSamRecord fill a SamRecord with the sequence and TAGs data
+ *
+ * @param samRecord  the SamRecord to fill with the data
+ * @param fastQFileI1  the I1 fastq file
+ * @param fastQFileR1  the R1 fastq file
+ * @param fastQFileR2  the R2 fastq file
+ * @param samRecord  the SamRecord to fill with the data
+ * @param barcode_length length of UMI 
+ * @param has_I1_file_list a boolean indicating if I1 files are avaiable 
+*/
 void fillSamRecord(SamRecord *samRecord, FastQFile &fastQFileI1, 
                    FastQFile &fastQFileR1, FastQFile &fastQFileR2, 
                    unsigned int barcode_length, unsigned int umi_length, 
@@ -261,7 +272,20 @@ void fillSamRecord(SamRecord *samRecord, FastQFile &fastQFileI1,
         samRecord->addTag("SY", 'Z', indexSeqQual.c_str());
     }
 }
-
+/**
+   @brief getBukcetIndex computes the index for the bucket (of bam file)
+ *    for a barcode and also add the correct barcode to the SamRecord
+ *
+ * @param barcode the barcode for which a bucket is computed 
+ * @param samRecord  the partially filled samrecord to add the corrected barcode
+ * @param white_list_data the white list data for barcode correction
+ * @param samrecord_data shared data for the various readers
+ * @param n_barcode_corrected a variable keeping track of the number of barcodes corrected
+ * @param n_barcode_correct a the number of barcodes so far are already correct
+ * @param n_barcode_errrosv keeping track of the number of barcodes that are incorrectible
+ *
+ * @return the bucket number where the current SamRecord should go to
+*/
 int32_t getBucketIndex(const std::string &barcode, SamRecord *samRecord,
     const WHITE_LIST_DATA* white_list_data, SAM_RECORD_BINS *samrecord_data,
      int *n_barcode_corrected, int *n_barcode_correct, int *n_barcode_errors) { 
@@ -304,6 +328,14 @@ int32_t getBucketIndex(const std::string &barcode, SamRecord *samRecord,
     return bucket;
 }
 
+/**
+ * @brief submit_block_tobe_written this function is for a reader to send 
+ *    signal to the writer to empty the current list of SamRecords that are
+ *    ready to be written out
+ *
+ * @param samrecord_data  the samrecord data
+ * @param tindex the index of the thread
+*/
 void submit_block_tobe_written(SAM_RECORD_BINS *samrecord_data, int tindex) {
     mtx.lock();
   
