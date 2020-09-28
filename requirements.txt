@@ -11,4 +11,4 @@ numpy==1.17.5
 requests==2.20.0
 setuptools==40.4.3
 setuptools_scm==3.1.0
-tables==3.4.2
+tables==3.4.4

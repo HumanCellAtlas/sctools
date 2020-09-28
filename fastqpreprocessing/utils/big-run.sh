@@ -1,0 +1,1 @@
+./fastqproc ../../L8TX/L8TX_180221_01_F12_R1.fastq.gz ../../L8TX/L8TX_180221_01_F12_I1.fastq.gz ../../L8TX/L8TX_180221_01_F12_R2.fastq.gz ../../L8TX/L8TX_171026_01_F03_R1.fastq.gz ../../L8TX/L8TX_171026_01_F03_I1.fastq.gz ../../L8TX/L8TX_171026_01_F03_R2.fastq.gz 

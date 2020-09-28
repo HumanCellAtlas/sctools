@@ -61,7 +61,7 @@ class Record:
 
     """
 
-    __slots__ = ['_name', '_sequence', '_name2', '_quality']
+    __slots__ = ["_name", "_sequence", "_name2", "_quality"]
 
     def __init__(self, record: Iterable[AnyStr]):
         # use the setter functions
@@ -75,9 +75,9 @@ class Record:
     def name(self, value):
         """fastq record name"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('FASTQ name must be bytes')
-        elif not value.startswith(b'@'):
-            raise ValueError('FASTQ name must start with @')
+            raise TypeError("FASTQ name must be bytes")
+        elif not value.startswith(b"@"):
+            raise ValueError("FASTQ name must start with @")
         else:
             self._name = value
 
@@ -89,7 +89,7 @@ class Record:
     def sequence(self, value):
         """FASTQ nucleotide sequence"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('FASTQ sequence must be str or bytes')
+            raise TypeError("FASTQ sequence must be str or bytes")
         else:
             self._sequence = value
 
@@ -101,7 +101,7 @@ class Record:
     def name2(self, value):
         """second FASTQ record name field (rarely used)"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('FASTQ name2 must be str or bytes')
+            raise TypeError("FASTQ name2 must be str or bytes")
         else:
             self._name2 = value
 
@@ -113,15 +113,15 @@ class Record:
     def quality(self, value):
         """FASTQ record base call quality scores"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('FASTQ quality must be str or bytes')
+            raise TypeError("FASTQ quality must be str or bytes")
         else:
             self._quality = value
 
     def __bytes__(self):
-        return b''.join((self.name, self.sequence, self.name2, self.quality))
+        return b"".join((self.name, self.sequence, self.name2, self.quality))
 
     def __str__(self):
-        return b''.join((self.name, self.sequence, self.name2, self.quality)).decode()
+        return b"".join((self.name, self.sequence, self.name2, self.quality)).decode()
 
     def __repr__(self):
         return "Name: %s\nSequence: %s\nName2: %s\nQuality: %s\n" % (
@@ -167,10 +167,10 @@ class StrRecord(Record):
     """
 
     def __bytes__(self):
-        return ''.join((self.name, self.sequence, self.name2, self.quality)).encode()
+        return "".join((self.name, self.sequence, self.name2, self.quality)).encode()
 
     def __str__(self):
-        return ''.join((self.name, self.sequence, self.name2, self.quality))
+        return "".join((self.name, self.sequence, self.name2, self.quality))
 
     # todo is this method necessary?
     @property
@@ -181,9 +181,9 @@ class StrRecord(Record):
     def name(self, value):
         """FASTQ record name"""
         if not isinstance(value, (bytes, str)):
-            raise TypeError('FASTQ name must be str or bytes')
-        if not value.startswith('@'):
-            raise ValueError('FASTQ name must start with @')
+            raise TypeError("FASTQ name must be str or bytes")
+        if not value.startswith("@"):
+            raise ValueError("FASTQ name must start with @")
         else:
             self._name = value
 
@@ -239,14 +239,14 @@ class Reader(reader.Reader):
             tuple of length 4 containing the name, sequence, name2, and quality for a FASTQ record
 
         """
-        record_type = StrRecord if self._mode == 'r' else Record
+        record_type = StrRecord if self._mode == "r" else Record
         for record in self._record_grouper(super().__iter__()):
             yield record_type(record)
 
 
 # namedtuple that defines the start and end position of a barcode sequence and provides the name
 # for both a quality and sequence tag
-EmbeddedBarcode = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
+EmbeddedBarcode = namedtuple("Tag", ["start", "end", "sequence_tag", "quality_tag"])
 
 
 def extract_barcode(
@@ -273,8 +273,8 @@ def extract_barcode(
     seq = record.sequence[embedded_barcode.start : embedded_barcode.end]
     qual = record.quality[embedded_barcode.start : embedded_barcode.end]
     return (
-        (embedded_barcode.sequence_tag, seq, 'Z'),
-        (embedded_barcode.quality_tag, qual, 'Z'),
+        (embedded_barcode.sequence_tag, seq, "Z"),
+        (embedded_barcode.quality_tag, qual, "Z"),
     )
 
 
@@ -354,7 +354,7 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
             self.embedded_barcodes = other_embedded_barcodes
         else:
             raise TypeError(
-                'if passed, other_embedded_barcodes must be a list or tuple'
+                "if passed, other_embedded_barcodes must be a list or tuple"
             )
 
         self._error_mapping = ErrorsToCorrectBarcodesMap.single_hamming_errors_from_whitelist(
@@ -399,6 +399,6 @@ class BarcodeGeneratorWithCorrectedCellBarcodes(Reader):
         seq_tag, qual_tag = extract_barcode(record, cb)
         try:
             corrected_cb = self._error_mapping.get_corrected_barcode(seq_tag[1])
-            return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, 'Z')
+            return seq_tag, qual_tag, (consts.CELL_BARCODE_TAG_KEY, corrected_cb, "Z")
         except KeyError:
             return seq_tag, qual_tag

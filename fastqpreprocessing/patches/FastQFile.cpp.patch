@@ -1,0 +1,18 @@
+--- libStatGen-1.0.14/fastq/FastQFile.cpp	2015-07-08 20:03:23.000000000 +0000
++++ ../libStatGen/FastQFile.cpp	2020-09-17 19:35:48.797593411 +0000
+@@ -489,6 +489,7 @@
+        // Check to see if the sequenceIdentifier is a repeat by adding
+        // it to the set and seeing if it already existed.
+        std::pair<std::map<std::string, unsigned int>::iterator,bool> insertResult;
++       /*
+        insertResult = 
+            myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
+                                                  myLineNum));
+@@ -505,6 +506,7 @@
+            reportErrorOnLine();
+            return(false);
+        }
++       */
+    }
+ 
+    // Valid, return true.

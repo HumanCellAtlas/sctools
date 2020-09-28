@@ -152,28 +152,28 @@ class TwoBit(Encoding):
         """
 
         map_ = {
-            ord('A'): 0,
-            ord('C'): 1,
-            ord('T'): 2,
-            ord('G'): 3,
-            ord('a'): 0,
-            ord('c'): 1,
-            ord('t'): 2,
-            ord('g'): 3,
+            ord("A"): 0,
+            ord("C"): 1,
+            ord("T"): 2,
+            ord("G"): 3,
+            ord("a"): 0,
+            ord("c"): 1,
+            ord("t"): 2,
+            ord("g"): 3,
         }
 
-        iupac_ambiguous: Set[int] = {ord(c) for c in 'MRWSYKVHDBNmrwsykvhdbn'}
+        iupac_ambiguous: Set[int] = {ord(c) for c in "MRWSYKVHDBNmrwsykvhdbn"}
 
         def __getitem__(self, byte: int) -> int:
             try:
                 return self.map_[byte]
             except KeyError:
                 if byte not in self.iupac_ambiguous:
-                    raise KeyError(f'{chr(byte)} is not a valid IUPAC nucleotide code')
+                    raise KeyError(f"{chr(byte)} is not a valid IUPAC nucleotide code")
                 return random.randint(0, 3)
 
     encoding_map: TwoBitEncodingMap = TwoBitEncodingMap()
-    decoding_map: Mapping[int, bytes] = {0: b'A', 1: b'C', 2: b'T', 3: b'G'}
+    decoding_map: Mapping[int, bytes] = {0: b"A", 1: b"C", 2: b"T", 3: b"G"}
     bits_per_base: int = 2
 
     @classmethod
@@ -185,7 +185,7 @@ class TwoBit(Encoding):
         return encoded
 
     def decode(self, integer_encoded: int) -> bytes:
-        decoded = b''
+        decoded = b""
         for _ in range(self.sequence_length):
             decoded = self.decoding_map[integer_encoded & 3] + decoded
             integer_encoded >>= 2
@@ -239,16 +239,16 @@ class ThreeBit(Encoding):
 
         # C: 1, A: 2, G: 3, T: 4, N: 6;  # note, not using 0
         map_ = {
-            ord('C'): 1,
-            ord('A'): 2,
-            ord('G'): 3,
-            ord('T'): 4,
-            ord('N'): 6,
-            ord('c'): 1,
-            ord('a'): 2,
-            ord('g'): 3,
-            ord('t'): 4,
-            ord('n'): 6,
+            ord("C"): 1,
+            ord("A"): 2,
+            ord("G"): 3,
+            ord("T"): 4,
+            ord("N"): 6,
+            ord("c"): 1,
+            ord("a"): 2,
+            ord("g"): 3,
+            ord("t"): 4,
+            ord("n"): 6,
         }
 
         def __getitem__(self, byte: int) -> int:
@@ -258,7 +258,7 @@ class ThreeBit(Encoding):
                 return 6  # any non-standard nucleotide gets "N"
 
     encoding_map: ThreeBitEncodingMap = ThreeBitEncodingMap()
-    decoding_map: Mapping[int, bytes] = {1: b'C', 2: b'A', 3: b'G', 4: b'T', 6: b'N'}
+    decoding_map: Mapping[int, bytes] = {1: b"C", 2: b"A", 3: b"G", 4: b"T", 6: b"N"}
     bits_per_base: int = 3
 
     @classmethod
@@ -271,7 +271,7 @@ class ThreeBit(Encoding):
 
     @classmethod
     def decode(cls, integer_encoded: int) -> bytes:
-        decoded = b''
+        decoded = b""
         while integer_encoded:
             decoded = cls.decoding_map[integer_encoded & 7] + decoded
             integer_encoded >>= 3

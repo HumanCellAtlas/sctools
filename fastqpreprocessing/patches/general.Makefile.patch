@@ -1,0 +1,11 @@
+--- libStatGen-1.0.14/general/Makefile	2020-09-17 20:29:00.320563968 +0000
++++ ../libStatGen/Makefile.general	2020-09-17 20:57:47.982915972 +0000
+@@ -8,7 +8,7 @@
+   # an error, but allow unused results and variables for the
+   # time being.
+   #
+-  USER_WARNINGS ?= -Werror $(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-strict-overflow" ; fi)
++  USER_WARNINGS ?= $(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-strict-overflow" ; fi)
+ #-Wno-strict-overflow
+ # -Wno-unused-variable $(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-unused-result" ; fi)
+ endif
