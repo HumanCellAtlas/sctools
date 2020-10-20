@@ -181,13 +181,24 @@ void read_options(int argc, char **argv, INPUT_OPTIONS &options) {
     }
 
   // Check the options
-
   // number of R1 and R2 files should be equal
-  if ((options.R1s.size() != options.R2s.size()) || (options.R1s.size() == 0)) {
-     std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input\n";
-     std::cerr << "ERROR: Unequal number of R1 and R2 fastq files in input\n";
+  if ((options.R1s.size() != options.R2s.size())) {
+     std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input: " 
+	       << "R1 : " << options.R1s.size() 
+	       << "R2 : " << options.R2s.size() 
+	       << std::endl;
+     std::cerr << "ERROR: Unequal number of R1 and R2 fastq files in input: "
+	       << "R1 : " << options.R1s.size() 
+	       << "R2 : " << options.R2s.size() 
+	       << std::endl;
      exit(1);
   }
+
+  if (options.R1s.size() == 0) { 
+     std::cout << "ERROR: No R1 file provided\n";
+     std::cerr << "ERROR: No R1 file provided\n";
+  }
+
 
   if ((options.I1s.size() != options.R1s.size()) && (options.I1s.size() != 0)) {
      std::cout << "ERROR: Either the number of I1 input files are equal\n"
@@ -251,7 +262,7 @@ void _print_file_info(const std::vector<std::string> &fastqs,
         std::cout << "INFO " << type << " files:" << std::endl;
             for (int i= 0; i < fastqs.size(); i++) {
                if (fs::exists(fastqs[i].c_str())) {
-                   std::cout << "\t " << fastqs[i]  <<  " exists, flie size " 
+                   std::cout << "\t " << fastqs[i]  <<  " exists, file size " 
                         <<  filesize(fastqs[i].c_str())  <<  std::endl;
                } else {
                    std::cout << "ERROR " << fastqs[i] << " is missing!\n";
