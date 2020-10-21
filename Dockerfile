@@ -6,7 +6,7 @@ LABEL maintainer="Ambrose J. Carr <acarr@broadinstitute.org>" \
 
 COPY requirements.txt .
 
-RUN apt-get update && apt-get install -y patch && apt-get install -y libhdf5-dev
+RUN apt-get update && apt-get install -y patch && apt-get install -y libhdf5-dev && apt-get install -y vim
 
 RUN pip3 install -r requirements.txt
 
@@ -18,10 +18,8 @@ RUN  pip3 install /sctools
 
 ARG libStatGen_version="1.0.14"
 
-RUN wget https://github.com/HumanCellAtlas/sctools/archive/kmk-fastqprocessing.zip 
 
-RUN unzip kmk-fastqprocessing.zip && \
-    cd sctools-kmk-fastqprocessing/fastqpreprocessing &&\
+RUN cd /sctools/fastqpreprocessing &&\
     wget https://github.com/statgen/libStatGen/archive/v${libStatGen_version}.tar.gz &&\
     tar -zxvf v${libStatGen_version}.tar.gz &&\
     mv libStatGen-${libStatGen_version} libStatGen &&\
@@ -32,7 +30,7 @@ RUN unzip kmk-fastqprocessing.zip && \
     mkdir src/obj &&\
     make -C src/ 
 
-RUN cp sctools-kmk-fastqprocessing/fastqpreprocessing/src/fastqprocess /usr/local/bin/
+RUN cp /sctools/fastqpreprocessing/src/fastqprocess /usr/local/bin/
 
 WORKDIR usr/local/bin/sctools
 
