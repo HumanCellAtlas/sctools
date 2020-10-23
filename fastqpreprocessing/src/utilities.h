@@ -1,8 +1,8 @@
-/** 
- *  @file   utilities.h 
- *  @brief  Utility functions for file processing 
- *  @author Kishori Konwar 
- *  @date   2020-08-26 
+/**
+ *  @file   utilities.h
+ *  @brief  Utility functions for file processing
+ *  @author Kishori Konwar
+ *  @date   2020-08-26
  ***********************************************/
 #ifndef __OPTIMUS_UTILITES__
 #define __OPTIMUS_UTILITES__
@@ -29,7 +29,7 @@ typedef struct _white_list_data {
     /// vector of whitelist barcodes
     STRING_VECTOR barcodes;
 } WHITE_LIST_DATA;
- 
+
 /// Structure to hold input options
 typedef struct _input_options {
   /// Initialize some of the values
@@ -41,10 +41,10 @@ typedef struct _input_options {
   }
   /// I1, R1 and R2 files name
   std::vector<std::string> I1s, R1s, R2s;
-  /// Barcode white list file 
+  /// Barcode white list file
   std::string white_list_file;
   //// chemistry dependent (V2/V3) barcode and UMI length
-  int barcode_length, umi_length; 
+  int barcode_length, umi_length;
   /// Bam file size to split by (in GB)
   double bam_size;
   /// sample name
@@ -64,13 +64,13 @@ typedef struct _input_options {
 int32_t get_num_blocks(const INPUT_OPTIONS &options);
 
 /**
- * @brief Build barcode correction map white list barcodes & mutations 
+ * @brief Build barcode correction map white list barcodes & mutations
  *
  * @details
  * A barcode is computed by checking if it is either in the white
- * list or 1-mutation away from any white listed barcode. To check 
- * whether a barcode is correct or to correct it, if 1-mutation away from 
- * a barcode in the white list, we build a 
+ * list or 1-mutation away from any white listed barcode. To check
+ * whether a barcode is correct or to correct it, if 1-mutation away from
+ * a barcode in the white list, we build a
  * a map is created with the barcodes and the 1-mutation. The keys are
  * barcodes or mutation and the values are index of the crrect barcode
  *
@@ -87,7 +87,7 @@ WHITE_LIST_DATA *read_white_list(const std::string &white_list_file);
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options(int, char **, INPUT_OPTIONS &); 
+void read_options(int, char **, INPUT_OPTIONS &);
 
 /**
  *  @brief Computes the size of a file in bytes
@@ -106,16 +106,16 @@ int32_t filesize(const char *filename);
 */
 int32_t getFileSize(const std::string &fileName);
 
-/** 
+/**
  * @brief Print system error and exit
- * 
+ *
  * @param msg  error string to print
 */
-void error (char *msg);
+void error(char *msg);
 
-/** 
+/**
  * @brief examines the existence and size of the input files
- * 
+ *
 */
 void _print_file_info(const std::vector<std::string> &fastqs, \
     const std::string &type);
