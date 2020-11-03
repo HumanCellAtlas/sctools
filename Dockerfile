@@ -24,6 +24,7 @@ RUN cd /sctools/fastqpreprocessing &&\
     tar -zxvf v${libStatGen_version}.tar.gz &&\
     mv libStatGen-${libStatGen_version} libStatGen &&\
     patch libStatGen/fastq/FastQFile.cpp patches/FastQFile.cpp.patch &&\
+    patch libStatGen/general/BgzfFileType.cpp patches/BgzfFileType.cpp.patch &&\  
     patch libStatGen/Makefile patches/Makefile.patch &&\
     patch libStatGen/general/Makefile patches/general.Makefile.patch &&\
     make -C libStatGen &&\

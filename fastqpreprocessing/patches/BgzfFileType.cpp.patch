@@ -1,0 +1,11 @@
+--- libStatGen/general/BgzfFileType.cpp	2015-07-08 20:03:23.000000000 +0000
++++ /tmp/BgzfFileType.cpp	2020-11-03 12:25:36.168474179 +0000
+@@ -23,7 +23,7 @@
+ #include "BgzfFileType.h"
+ 
+ // Default to require the EOF block at the end of the file.
+-bool BgzfFileType::ourRequireEofBlock = true;
++bool BgzfFileType::ourRequireEofBlock = false;
+ 
+ BgzfFileType::BgzfFileType(const char * filename, const char * mode)
+ {

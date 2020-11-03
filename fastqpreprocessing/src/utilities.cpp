@@ -14,10 +14,10 @@ using namespace std;
 namespace fs = std::experimental::filesystem;
 
 /** @copydoc filesize */
-int32_t filesize(const char *filename) {
+int64_t filesize(const char *filename) {
     FILE *f = fopen(filename, "rb");  /* open the file in read only */
 
-    int32_t size = 0;
+    int64_t size = 0;
     if (fseek(f, 0, SEEK_END) ==0 ) /* seek was successful */
        size = ftell(f);
     fclose(f);
@@ -286,7 +286,7 @@ void _print_file_info(const std::vector<std::string> &fastqs,
 
 
 /** @copydoc  get_num_blocks */
-int32_t get_num_blocks(const INPUT_OPTIONS &options) {
+int64_t get_num_blocks(const INPUT_OPTIONS &options) {
     double tot_size = 0;
     for (int i= 0; i < options.R1s.size(); i++) {
         if (options.I1s.size()) {
