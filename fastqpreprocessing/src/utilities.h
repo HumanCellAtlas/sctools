@@ -19,7 +19,7 @@ typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
 
 typedef std::vector<std::string>  STRING_VECTOR;
 
-typedef std::unordered_map <std::string, int32_t> STRING_INT32_MAP;
+typedef std::unordered_map <std::string, int64_t> STRING_INT32_MAP;
 
 // structure for correcting the barcodes
 typedef struct _white_list_data {
@@ -61,7 +61,7 @@ typedef struct _input_options {
 
  * @param options Input options structure that contains file name
 */
-int32_t get_num_blocks(const INPUT_OPTIONS &options);
+int64_t get_num_blocks(const INPUT_OPTIONS &options);
 
 /**
  * @brief Build barcode correction map white list barcodes & mutations
@@ -95,7 +95,7 @@ void read_options(int, char **, INPUT_OPTIONS &);
  *  @param filename file name whose size is computed
  *  @return size of the file in bytes
 */
-int32_t filesize(const char *filename);
+int64_t filesize(const char *filename);
 
 
 /**
@@ -104,7 +104,7 @@ int32_t filesize(const char *filename);
  *  @param filename file name whose size is computed
  *  @return size of the file in bytes
 */
-int32_t getFileSize(const std::string &fileName);
+int64_t getFileSize(const std::string &fileName);
 
 /**
  * @brief Print system error and exit
