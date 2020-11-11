@@ -108,7 +108,7 @@ Definitions
 Several definitions are helpful to understand how sequence data is analyzed.
 
 1. **Cell**: an individual cell, the target of single-cell RNA-seq experiments and the entity that we
-with to characterize
+wish to characterize
 
 2. **Capture Primer**: A DNA oligonucleotide containing amplification machinery, a fixed cell barcode,
 a random molecule barcode, and an oligo-dT tail to capture poly-adenylated RNA
