@@ -252,7 +252,7 @@ class CountMatrix:
         ) in grouped_records_generator:
 
             # modify alignments to include the gene name to the alignments to INTRONIC regions
-            alignments = input_alignments
+            alignments = [ x for x in input_alignment if x.has_tag('GS') and x.get_tag('GS') == '+']
 
             # only keep queries w/ well-formed UMIs
             gene_name = None
