@@ -79,7 +79,7 @@ SAM_RECORD_BINS * create_samrecord_holders(int16_t nthreads,
 }
 
 /** @copydoc process_inputs */
-void process_inputs(const INPUT_OPTIONS &options,
+void process_inputs(const INPUT_OPTIONS_FASTQPROCESS &options,
                    const WHITE_LIST_DATA *white_list_data) {
 
      int block_size = SAMRECORD_BUFFER_SIZE;
@@ -494,3 +494,20 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
            i, n_barcode_correct, n_barcode_corrected, n_barcode_errors,
            n_barcode_errors/static_cast<double>(i) *100);
 }
+
+/* Flag set by ‘--verbose’. */
+int main (int argc, char **argv)
+{
+
+  INPUT_OPTIONS_FASTQPROCESS options;
+
+  read_options_fastqprocess(argc, argv, options);
+
+  std::cout << "reading whitelist file " << options.white_list_file << "...";
+  WHITE_LIST_DATA *white_list_data = read_white_list(options.white_list_file);
+  std::cout << "done" << std::endl;
+
+  process_inputs(options, white_list_data);
+  return 0;
+}
+
