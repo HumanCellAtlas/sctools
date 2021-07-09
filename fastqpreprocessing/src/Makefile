@@ -8,7 +8,7 @@ LDIR =../libStatGen/
 
 LIBS = -lStatGen -lz -lpthread -lstdc++fs
 
-_DEPS = fastqprocess.h utilities.h inputoptions.h
+_DEPS = fastqprocess.h utilities.h inputoptions.h tagsort.h
 #DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 TARGET1 = fastqprocess
@@ -20,7 +20,6 @@ _TARGET2_OBJ = tagsort.o
 TARGET2_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET2_OBJ))
 
 all: $(TARGET1) $(TARGET2)
-
 
 _COMMON_OBJ =  utilities.o inputoptions.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_COMMON_OBJ))
