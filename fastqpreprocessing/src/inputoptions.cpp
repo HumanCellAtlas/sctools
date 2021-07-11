@@ -27,6 +27,7 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
           {"output",                     required_argument, 0, 'o'},
           {"inmemory-chunk-size",        required_argument, 0, 'p'},
           {"tags",                       required_argument, 0, 'T'},
+ //         {"bamlib",                     required_argument, 0, 'B'},
           {0, 0, 0, 0}
   };
 
@@ -38,13 +39,14 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
            "output file [required]",
            "size of chunks for in-memory sorting [optional: default 1 GB]",
            "tags to sort by [required]",
+           "bam lib to use HTSLIB or LIBGENSTAT [required]",
   };
 
 
   /* getopt_long stores the option index here. */
   int option_index = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:t:o:p:T:v",
+                          "b:t:o:p:T:B:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -77,6 +79,9 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
             break;
         case 'T':
             options.tags.push_back(string(optarg));
+            break;
+        case 'B':
+            options.bamlib = string(optarg);
             break;
         case '?':
         case 'h':
@@ -139,6 +144,16 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
       exit(1);
   }
 
+/*
+  // check the bam lib
+  if (options.bamlib!=std::string("HTSLIB") &&  options.bamlib!=std::string("LIBGENSTAT")) {
+      std::cout << "ERROR " << "The bam reading library must be one of \"HTSLIB\" or \"LIBGENSTAT\"!\n";
+      std::cerr << "ERROR " << "The bam reading library must be one of \"HTSLIB\" or \"LIBGENSTAT\"!\n";
+      std::cout << "BAMLIB " << options.bamlib << std::endl;
+      exit_with_error = true;
+      exit(1);
+  }
+*/
   if (exit_with_error) {
      exit(1);
   }

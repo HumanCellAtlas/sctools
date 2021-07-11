@@ -14,8 +14,9 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include "datatypes.h"
+#include <experimental/filesystem>
 
+#include "datatypes.h"
 /**
  * @brief Compute the number of bam files
  *

@@ -5,161 +5,16 @@
  *  @date   2020-08-27
  ***********************************************/
 
-#include "fastqprocess.h"
-#include "utilities.h"
-#include "inputoptions.h"
+#ifdef LIBSTATGEN
+#include "libstatgen_tagsort.h"
+#endif
+
+#ifdef HTSLIB
+#include "htslib_tagsort.h"
+#endif
+
 #include "tagsort.h"
-#include <tuple>
-#include <cstdint>
-#include <string>
-#include <fstream>
-#include <iostream>
 
-#define STRING_LEN  40
-using namespace std;
-
-/**
- * @brief This function takes a vector of tuples of the tags, sorts them
- * in the dictionary order of the tags and then writes these in the same 
- * order to a txt file
- *
- * @details
- * The function take the vector of tags tuples, writes the sorted tuples into 
- * a file. The filename is generated randomly (enought to avoid collision with other files)
- * in the temp folder specified.
- *
- * @param tuple_records: vector<TAGTUPLE> &, reference to a vector of TAGTUPLES
- * @return a string for the random file name
-*/
-/*
-std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, std::string const & tmp_folder) {
-    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
-
-    ofstream output_fp;
-    output_fp.open (tempfile); 
-    std::vector<std::pair<std::string, int>> index_pairs;
-    int k  = 0;
-    for( auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
-       // 'UB:CB:GX"   or "GX:CB:UB"
-       index_pairs.push_back(std::make_pair(get<0>(*it) + std::string("\t") + get<1>(*it) + std::string("\t") + get<2>(*it) , k));
-    }
-
-    // sort using the lambda function
-    std::sort(index_pairs.begin(), index_pairs.end(), sortbyfirst);
-
-    for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++) {
-       output_fp << get<0>(tuple_records[it->second]) << "\t"
-                 << get<1>(tuple_records[it->second]) << "\t"
-                 << get<2>(tuple_records[it->second]) << std::endl; 
-    }
-    output_fp.close();
-
-    return tempfile;
-}
-*/
-
-
-std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, std::string const & tmp_folder) {
-    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
-/*
-    ofstream output_fp;
-    output_fp.open (tempfile); 
-    std::vector<std::pair<std::string, int>> index_pairs;
-    int k  = 0;
-    for( auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
-       // 'UB:CB:GX"   or "GX:CB:UB"
-       index_pairs.push_back(std::make_pair(get<0>(*it) + std::string("\t") + get<1>(*it) + std::string("\t") + get<2>(*it) , k));
-    }
-
-    // sort using the lambda function
-    std::sort(index_pairs.begin(), index_pairs.end(), sortbyfirst);
-
-    stringstream str(stringstream::out|stringstream::binary);
-
-    for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++) {
-       str << get<0>(tuple_records[it->second]) << "\t"
-                 << get<1>(tuple_records[it->second]) << "\t"
-                 << get<2>(tuple_records[it->second]) << std::endl; 
-    }
-    //output_fp.write(str.str().c_str(), str.str().length());
-
-
-    output_fp.close();
-*/
-
-    return tempfile;
-}
-
-/**
- * @brief From the input bam create a list of txt files with the records (lines) 
- * sorted according to the * tags 
- *
- * @details
- * The input bam file is read chunk by chunk, sorted by the tags and the written 
- * out as a text file in the sorted manner. 
- *
- * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
- * @return a vector containing the file paths of the partial files
-*/
-std::vector<string> create_sorted_file_splits(INPUT_OPTIONS_TAGSORT &options) {
-    string input_bam = options.bam_input;
-    string tmp_folder = options.temp_folder;
-    
-    // size of individual chunks to sort in memory as an approx 20 mil alignments makes 1 GB bam
-    int num_align_per_file =  static_cast<int>(options.inmemory_chunk_size * 2000000);
-    std::vector<string> partial_files;
-
-    SamFile samIn;
-    samIn.OpenForRead(input_bam.c_str());
-
-    // Read the sam header.
-    SamFileHeader samHeader;
-    samIn.ReadHeader(samHeader);
-
-    SamRecord samRecord;
-   // Keep reading records until ReadRecord returns false.
-    TAGTUPLE tagstuple = std::make_tuple("", "", "");
-
-    long int i =0;
-    const String *tagstr = NULL;
-    vector<TAGTUPLE>  tuple_records;
-
-    vector<SamRecord> samrecords;
-    while(samIn.ReadRecord(samHeader, samRecord)) {
-       tagstr = samRecord.getStringTag(options.tags[0].c_str());
-       std::string a = tagstr!=NULL ? std::string(tagstr->c_str()) : std::string("");
-
-
-       tagstr = samRecord.getStringTag(options.tags[1].c_str());
-       std::string b = tagstr!=NULL ? std::string(tagstr->c_str()) : std::string("");
-
-       tagstr = samRecord.getStringTag(options.tags[2].c_str());
-       std::string c = tagstr!=NULL ? std::string(tagstr->c_str()) : std::string("");
-
-
-       if (i!=0 && i%num_align_per_file==0) {
-           std::cout << "Batch number : " << partial_files.size() << std::endl;
-           std::string split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
-           tuple_records.clear();
-           partial_files.push_back(split_file_path);
-           //if (partial_files.size() ==7) break;
-       }
-
-       tuple_records.push_back(std::make_tuple(a, b, c));
-       i = i + 1;
-    }
-
-    if (tuple_records.size()>0) {
-        std::string split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
-        tuple_records.clear();
-        partial_files.push_back(split_file_path);
-     }
-
-    std::cout << std::endl << "Number of records read = " << 
-        samIn.GetCurrentRecordCount() << std::endl;
-
-    return partial_files;
-}
 
 void fill_buffer(Context &contx) {
     contx.data[contx.i].clear();
@@ -241,18 +96,30 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     // pop and push from the heap
     int k = 0;
     int num_alignments = 0;
+    int i, j;
+    stringstream str(stringstream::out|stringstream::binary);
     while (contx.num_active_files > 0) {
         // pop the smallest
        QUEUETUPLE qtuple = contx.heap.top();
        auto val = get<0>(qtuple);
-       auto i = get<1>(qtuple);
-       auto j = get<2>(qtuple);
+       i = get<1>(qtuple);
+       j = get<2>(qtuple);
        contx.heap.pop();
 
        string field  = contx.data[i][j];
        num_alignments += 1;
-       //fout << field << std::endl;
-         
+
+       if (num_alignments%1000000==0) {
+           std::cout << "writing "<< num_alignments << "  of size " << str.str().length() << std::endl;
+           fout.write(str.str().c_str(), str.str().length());
+           str.clear();
+           str.str("");
+
+       } else {
+           str << field << std::endl;
+       }
+
+       stringstream str(stringstream::out|stringstream::binary);
        /*   add a new element to the heapq
            if there is no data then fill it unless the file is empty
             BUF_SIZE = 5
@@ -267,7 +134,6 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
             contx.i = i;
             fill_buffer(contx);
         } 
- 
          // make sure it is not empty
         if (contx.data_size[i] > 0) {
             std::string comp_tag = contx.data[i][contx.ptrs[i]];
@@ -278,6 +144,8 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
         }
     }
  
+    // write out the remaining data
+    fout.write(str.str().c_str(), str.str().length());
 
     // close the input files as they are empty
     for (auto i=0; i < contx.file_handles.size(); i++) {
@@ -314,7 +182,18 @@ int main (int argc, char **argv)
   }
 
   /* first create a list of sorted, and simplified sorted files */
-  std::vector<string> partial_files = create_sorted_file_splits(options);
+  std::vector<string> partial_files;
+
+#ifdef LIBSTATGEN
+//  if (options.bamlib==std::string("LIBSTATGEN"))
+      partial_files = libstatgen::create_sorted_file_splits_libstatgen(options);
+#endif
+
+
+#ifdef HTSLIB
+ // if (options.bamlib==std::string("HTSLIB"))
+      partial_files = htslib::create_sorted_file_splits_htslib(options);
+#endif
 
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */

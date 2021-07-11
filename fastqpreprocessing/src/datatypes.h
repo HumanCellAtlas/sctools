@@ -14,6 +14,9 @@
 
 using namespace std;
 
+typedef std::tuple<std::string, std::string, std::string> TAGTUPLE;
+typedef std::tuple<std::string, int, int>  QUEUETUPLE;
+
 typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
 
 typedef std::vector<std::string>  STRING_VECTOR;
@@ -79,6 +82,9 @@ typedef struct _input_options_tagsort {
   double inmemory_chunk_size;
   // tags to sort by
   std::vector<std::string> tags;
+
+  // bam lib "htslib" or "libgenstat"
+  std::string bamlib;
 } INPUT_OPTIONS_TAGSORT;
 
 
