@@ -23,6 +23,29 @@ typedef std::vector<std::string>  STRING_VECTOR;
 
 typedef std::unordered_map <std::string, int64_t> STRING_INT32_MAP;
 
+
+typedef struct _tags {
+   char **tags;
+} TAGS;
+
+typedef struct _tags_holder {
+    int num_tags;
+    TAGS *tags;
+    char *memorypool;
+
+    char *allocated_memory(int size) {
+       return 0;
+    }
+
+    char *double_memory() {
+       return 0;
+    } 
+} TAGS_HOLDER;
+
+
+
+
+
 // structure for correcting the barcodes
 typedef struct _white_list_data {
     /// an unordered map from whitelist barcodes and 1-mutations

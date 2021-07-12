@@ -15,18 +15,18 @@
 
 #include "tagsort.h"
 
-
+int filling_counter = 0;
 void fill_buffer(Context &contx) {
     contx.data[contx.i].clear();
     int k = 0;
 
-    for (std::string line; std::getline(*(contx.file_handles[contx.i]), line); k++) {
+    for (std::string line; k< contx.BUF_SIZE, std::getline(*(contx.file_handles[contx.i]), line); k++) {
        contx.data[contx.i].push_back(line);
-        if (k == contx.BUF_SIZE-1)
-           break;
+       filling_counter += 1;
+   //    if (k == contx.BUF_SIZE-1) break;
     }
-
     contx.data_size[contx.i] = contx.data[contx.i].size();
+
     if (contx.data_size[contx.i] != 0) {
        contx.ptrs[contx.i] = 0;
        contx.isempty[contx.i] = false;
@@ -98,28 +98,25 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     int num_alignments = 0;
     int i, j;
     stringstream str(stringstream::out|stringstream::binary);
-    while (contx.num_active_files > 0) {
+    //while (contx.num_active_files > 0) {
+    while (!contx.heap.empty()) {
         // pop the smallest
        QUEUETUPLE qtuple = contx.heap.top();
        auto val = get<0>(qtuple);
        i = get<1>(qtuple);
        j = get<2>(qtuple);
        contx.heap.pop();
-
-       string field  = contx.data[i][j];
        num_alignments += 1;
 
+       string field  = contx.data[i][j];
        if (num_alignments%1000000==0) {
-           std::cout << "writing "<< num_alignments << "  of size " << str.str().length() << std::endl;
+//           std::cout << "writing "<< num_alignments << "  of size " << str.str().length() << std::endl;
            fout.write(str.str().c_str(), str.str().length());
            str.clear();
            str.str("");
-
        } else {
            str << field << std::endl;
        }
-
-       stringstream str(stringstream::out|stringstream::binary);
        /*   add a new element to the heapq
            if there is no data then fill it unless the file is empty
             BUF_SIZE = 5
@@ -130,7 +127,8 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
             | | | | |   
                  *
        */
-        if (contx.isempty[i] == false && contx.ptrs[i] == contx.data_size[i]) {
+        // if ismpty is true means the file has been fully read 
+        if (contx.isempty[i] == false && contx.ptrs[i] == contx.data_size[i]-1) {
             contx.i = i;
             fill_buffer(contx);
         } 
@@ -160,6 +158,7 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
         if(remove(partial_files[i].c_str()) != 0)
            std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
     }
+    std::cout << "Written "<< num_alignments << " alignments in total" << std::endl;
 
 }
 
@@ -199,6 +198,7 @@ int main (int argc, char **argv)
     a head to compare the values based on the tags used  */
 
   merge_partial_files(partial_files, options.output_file, options.tags);
+  std::cout << "Aligments " <<  filling_counter << " loaded to buffer " << std::endl;
 
 
   return 0;
