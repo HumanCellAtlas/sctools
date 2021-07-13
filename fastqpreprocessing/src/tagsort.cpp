@@ -109,7 +109,7 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
        num_alignments += 1;
 
        string field  = contx.data[i][j];
-       if (num_alignments%1000000==0) {
+       if (num_alignments%100000==0) {
 //           std::cout << "writing "<< num_alignments << "  of size " << str.str().length() << std::endl;
            fout.write(str.str().c_str(), str.str().length());
            str.clear();

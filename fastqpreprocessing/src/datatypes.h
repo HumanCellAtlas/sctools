@@ -14,7 +14,10 @@
 
 using namespace std;
 
-typedef std::tuple<std::string, std::string, std::string> TAGTUPLE;
+typedef std::tuple<std::string, std::string, std::string, 
+                   std::string, std::string,  
+                   float, float, int> TAGTUPLE;
+
 typedef std::tuple<std::string, int, int>  QUEUETUPLE;
 
 typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
