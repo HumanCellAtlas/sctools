@@ -1,11 +1,11 @@
+#ifndef __INPUT_OPTIONS__
+#define __INPUT_OPTIONS__
 /**
  *  @file   inputoptions.h
  *  @brief  Utility functions for input options processing
  *  @author Kishori Konwar
  *  @date   2020-08-26
  ***********************************************/
-#ifndef __INPUT_OPTIONS__
-#define __INPUT_OPTIONS__
 
 #include "datatypes.h"
 #include "utilities.h"

@@ -2,6 +2,7 @@
 #define __TAG_SORT__
 
 #include "utilities.h"
+#include "datatypes.h"
 #include "inputoptions.h"
 
 #include <functional>
@@ -18,12 +19,6 @@
 #include <stdlib.h>
 
 
-struct CustomCompare {
-   bool operator()(const QUEUETUPLE& a, const QUEUETUPLE& b) {
-     return get<0>(a) < get<0>(b);
-   }
-};
-
 struct Context {
    vector<vector<std::string>> data;
    vector<ifstream *> file_handles;
@@ -34,7 +29,8 @@ struct Context {
    int num_active_files = 0;
    int BUF_SIZE = 100000;
    int NUM_PARTS = 0;
-   std::priority_queue<QUEUETUPLE, std::vector<QUEUETUPLE>,  CustomCompare> heap;
+   //std::priority_queue<QUEUETUPLE, std::vector<QUEUETUPLE>,  decltype(compare) > heap(compare);
+   std::priority_queue<QUEUETUPLE> heap;
 };
 
 #endif

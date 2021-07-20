@@ -1,11 +1,12 @@
+#ifndef __DATA_TYPES__
+#define __DATA_TYPES__
+
 /**
  *  @file   inputoptions.h
  *  @brief  Utility functions for input options processing
  *  @author Kishori Konwar
  *  @date   2020-08-26
  ***********************************************/
-#ifndef __DATA_TYPES__
-#define __DATA_TYPES__
 
 #include <getopt.h>
 #include <vector>
@@ -14,11 +15,30 @@
 
 using namespace std;
 
-typedef std::tuple<std::string, std::string, std::string, 
-                   std::string, std::string,  
-                   float, float, int> TAGTUPLE;
+typedef std::tuple<std::string /* CB+<tab>+UB+<tab>+<GE>*/,  
+                   std::string /* reference */, 
+                   std::string /* biotype */,  
+                   int /* pos */, 
+                   int /*rev strand   1 for yes, 0 otherwise*/, 
+                   float /*avg barcode qual score */, 
+                   float /* frac of barcode qual score >30 */, 
+                   float /*avg qual seq */ , 
+                   float /*fract of >30 score qual seq*/, 
+                   int /*NH*/, 
+                   int /*perfect molecule barcode, 1 is yes, 0 otherwise*/,
+                   int /*spliced reads 1 yes, 0 otherwise*/,
+                   int /*is duplicate */,
+                   int /*perfect cell barcode 1 is yes, 0 otherwise*/,
+                   float /* fraction of umi qual score > 30 */
+                 > TAGTUPLE;
 
 typedef std::tuple<std::string, int, int>  QUEUETUPLE;
+
+/*
+bool operator<(const QUEUETUPLE &a, const  QUEUETUPLE &b) {
+    return get<0>(a) < get<0>(b);
+};
+*/
 
 typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
 

@@ -1,11 +1,13 @@
+#ifndef __OPTIMUS_UTILITES__
+#define __OPTIMUS_UTILITES__
+
 /**
  *  @file   utilities.h
  *  @brief  Utility functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-26
  ***********************************************/
-#ifndef __OPTIMUS_UTILITES__
-#define __OPTIMUS_UTILITES__
+
 #include <math.h>
 #include <cstdint>
 #include <vector>

@@ -1,13 +1,11 @@
+#ifndef __FASTQ_PROCESS_H__
+#define __FASTQ_PROCESS_H__
 /**
  *  @file   fastqprocess.h
  *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
-
-#ifndef __FASTQ_PROCESS_H__
-#define __FASTQ_PROCESS_H__
-
 #include <FastQFile.h>
 #include "FastQStatus.h"
 #include "BaseAsciiMap.h"
