@@ -43,6 +43,8 @@ setup(
             + "calculate_gene_metrics",
             "CalculateCellMetrics = sctools.platform:GenericPlatform."
             + "calculate_cell_metrics",
+            "CalculateCellMetricsFast = sctools.platform:GenericPlatform."
+            + "calculate_cell_metrics_fast",
             "MergeGeneMetrics = sctools.platform:GenericPlatform."
             + "merge_gene_metrics",
             "MergeCellMetrics = sctools.platform:GenericPlatform."
