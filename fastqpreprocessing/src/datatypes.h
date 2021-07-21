@@ -126,8 +126,15 @@ typedef struct _input_options_tagsort {
   std::string output_file;
   /// size of data to load for inmemory sorting (in GB)
   double inmemory_chunk_size;
-  // tags to sort by
-  std::vector<std::string> tags;
+
+  // barcode tag
+  std::string barcode_tag;
+  // umi tag
+  std::string umi_tag;
+  // gene tag
+  std::string gene_tag;
+  // order of the tags to sort by
+  std::unordered_map<std::string, unsigned int> tag_order;
 
   // bam lib "htslib" or "libgenstat"
   std::string bamlib;

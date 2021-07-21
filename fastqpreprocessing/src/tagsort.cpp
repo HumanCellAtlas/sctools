@@ -43,8 +43,7 @@ void fill_buffer(Context &contx) {
 
 
 void merge_partial_files(const std::vector<std::string> &partial_files, 
-                         const std::string &output_file, 
-                         const std::vector<std::string> &tags) {
+                         const std::string &output_file ) {
 
     Context contx; 
     contx.NUM_PARTS = partial_files.size();
@@ -197,8 +196,8 @@ int main (int argc, char **argv)
   std::cout << "temp folder " << options.inmemory_chunk_size << std::endl;
   std::cout << "tags:" << std::endl;
 
-  for(auto it = options.tags.begin(); it != options.tags.end(); it++) { 
-      std::cout << "\t" << *it << std::endl;
+  for(auto it = options.tag_order.begin(); it != options.tag_order.end(); it++) { 
+      std::cout << "\t" << it->first << "\t" << it->second << std::endl;
   }
 
   /* first create a list of sorted, and simplified sorted files */
@@ -218,7 +217,7 @@ int main (int argc, char **argv)
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */
 
-  merge_partial_files(partial_files, options.output_file, options.tags);
+  merge_partial_files(partial_files, options.output_file);
   std::cout << "Aligments " <<  filling_counter << " loaded to buffer " << std::endl;
 
 

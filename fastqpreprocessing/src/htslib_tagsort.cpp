@@ -15,6 +15,38 @@ extern "C" {
 }
 
 
+/*
+  @brief get the int tag or -1
+  
+*/
+inline int get_itag_or_default(bam1_t *aln, const char *tagname, int default_value) {
+    uint8_t *p;
+    int tag_value = -1;
+    if ((p=bam_aux_get(aln, tagname))==NULL) {
+         tag_value = default_value;
+    } else {
+        tag_value = bam_aux2i(p);
+    }
+    return  tag_value;
+}
+
+/*
+  @brief get the string tag or the default
+  
+*/
+inline char *get_Ztag_or_default(bam1_t *aln, const char *tagname, char *default_value) {
+    uint8_t *p;
+    char *tag_value = NULL;
+    if ((p=bam_aux_get(aln, tagname))==NULL) {
+         tag_value = default_value;
+    } else {
+        tag_value = bam_aux2Z(p);
+    }
+    return  tag_value;
+}
+
+
+
 using namespace std;
 
 /**
@@ -46,6 +78,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
     vector<TAGTUPLE>  tuple_records;
     char empty[] = {'\0'};
+    char none[] = {'N', 'o', 'n', 'e', '\0'};
     char nochr[] = {'*', '\0'};
 
     std::cout << "Running htslib" << std::endl;
@@ -62,39 +95,29 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     uint8_t *p;
     uint32_t len = 0; //length of qual seq.
     int threshold = 30.0; //qual score threshold
-    while(sam_read1(fp_in, bamHdr,aln) > 0) {
-       if ((p=bam_aux_get(aln, "CB"))==NULL) {
-          barcode = empty;
-       } else {
-          barcode = bam_aux2Z(p);
-       }
 
-       if ((p=bam_aux_get(aln, "CR"))==NULL) {
-          barcode_raw = empty;
-       } else {
-          barcode_raw = bam_aux2Z(p);
-       }
+    std::string tags[3]; 
+    while(sam_read1(fp_in, bamHdr,aln) > 0) {
+       barcode = (char *)get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
+       barcode_raw = (char *)get_Ztag_or_default(aln, "CR", empty);
+
         // corrected and raw barcodes should match to be perfect
        int perfect_cell_barcode = 1;
        
        int barcode_len = strlen(barcode);
-
        // empty barcodes are not perfect
-       if (barcode_len==0) 
+       if (strcmp(barcode, "None")==0)  {
            perfect_cell_barcode = 0;     
-
-       for (k=0; k < barcode_len; k++) 
-          if (barcode[k] != barcode_raw[k]) {
-             perfect_cell_barcode = 0;     
-             break;
-          }
+       } else {
+          for (k=0; k < barcode_len; k++) 
+            if (barcode[k] != barcode_raw[k]) {
+               perfect_cell_barcode = 0;     
+               break;
+            }
+       }
 
        // barcode quality score
-       if ((p=bam_aux_get(aln, "CY"))==NULL) {
-          barcode_qual = empty;
-       } else {
-          barcode_qual = bam_aux2Z(p);
-       }
+       barcode_qual = (char *)get_Ztag_or_default(aln, "CY", empty);
 
        float sum_barcode_qual = 0;
        float num_bp_above_threshold = 0;
@@ -108,19 +131,11 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        int avg_cell_barcode_qual = sum_barcode_qual/(float)len;
        float cell_barcode_qual_above_threshold =  (float)num_bp_above_threshold/(float)len;
 
-       // corrected and raw molecule barcodes should match to be perfect
-       if ((p=bam_aux_get(aln, "UB"))==NULL) {
-          umi = empty;
-       } else {
-          umi = bam_aux2Z(p);
-       }
+       // corrected molecule barcodes
+       umi = (char *)get_Ztag_or_default(aln, options.umi_tag.c_str(), empty);
 
-       if ((p=bam_aux_get(aln, "UR"))==NULL) {
-          umi_raw = empty;
-       } else {
-          umi_raw = bam_aux2Z(p);
-       }
-
+       // raw molecule barcodes
+       umi_raw = (char *)get_Ztag_or_default(aln, "UR", empty);
 
        // corrected and raw barcodes should match to be perfect
        int perfect_molecule_barcode = 1;
@@ -135,11 +150,8 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
            }
        }
 
-       if ((p=bam_aux_get(aln, "UY"))==NULL) {
-          umi_qual = empty;
-       } else {
-          umi_qual = bam_aux2Z(p);
-       }
+       // qual score for molecular barcodes
+       umi_qual = (char *)get_Ztag_or_default(aln, "UY", empty);
 
        float sum_umi_qual = 0;
        float num_umi_above_threshold = 0;
@@ -150,25 +162,12 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        }
        float frac_umi_qual_above_threshold =  (float)num_umi_above_threshold/(float)len;
 
+       gene_id = (char *)get_Ztag_or_default(aln, options.gene_tag.c_str(), empty);
+
+       location_tag = (char *)get_Ztag_or_default(aln, "XF", empty);
 
 
-       if ((p=bam_aux_get(aln, "GE"))==NULL) {
-          gene_id = empty;
-       } else {
-          gene_id = bam_aux2Z(p);
-       }
-
-       if ((p=bam_aux_get(aln, "XF"))==NULL) {
-          location_tag = empty;
-       } else {
-          location_tag = bam_aux2Z(p);
-       }
-
-       if ((p=bam_aux_get(aln, "NH"))==NULL) {
-          nh_num = 0;
-       } else {
-          nh_num = bam_aux2i(p);
-       }
+       nh_num = get_itag_or_default(aln, "NH", -1);
 
        chr = bamHdr->target_name[aln->core.tid];
        if (aln->core.tid==-1){
@@ -201,6 +200,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
        uint32_t *cigar = bam_get_cigar(aln);
 
+       // see if it is spliced, i.e., N appears in the CIGAR string
        uint32_t spliced_read = 0;
        for (k = 0; k < aln->core.n_cigar; ++k) {
            uint32_t op = cigar[k] & BAM_CIGAR_MASK;
@@ -220,10 +220,14 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
            tuple_records.clear();
 //         if (partial_files.size() ==7) break;
        }
+
+       tags[options.tag_order[options.barcode_tag]] = barcode;
+       tags[options.tag_order[options.umi_tag]] = umi;
+       tags[options.tag_order[options.gene_tag]] = gene_id;
    
        tuple_records.push_back(
             std::make_tuple( 
-                             std::string(barcode) + std::string("\t") + std::string(umi) + std::string("\t") + std::string(gene_id), 
+                             std::string(tags[0]) + std::string("\t") + std::string(tags[1]) + std::string("\t") + std::string(tags[2]), 
                              std::string(chr),  /* record[0] */
                              std::string(location_tag), /* record[1] */
                              pos,   /* record [2] */

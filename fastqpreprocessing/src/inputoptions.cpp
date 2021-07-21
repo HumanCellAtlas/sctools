@@ -26,8 +26,10 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
           {"temp-folder",                required_argument, 0, 't'},
           {"output",                     required_argument, 0, 'o'},
           {"inmemory-chunk-size",        required_argument, 0, 'p'},
-          {"tags",                       required_argument, 0, 'T'},
- //         {"bamlib",                     required_argument, 0, 'B'},
+          {"barcode-tag",                required_argument, 0, 'C'},
+          {"umi-tag",                    required_argument, 0, 'U'},
+          {"gene-tag",                   required_argument, 0, 'G'},
+ //         {"bamlib",                    required_argument, 0, 'B'},
           {0, 0, 0, 0}
   };
 
@@ -38,15 +40,19 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
            "temp folder for disk sorting [options: default /tmp]",
            "output file [required]",
            "size of chunks for in-memory sorting [optional: default 1 GB]",
+           "barcode-tag the call barcode tag [required]", 
+           "umi-tag the umi tag [required]: the tsv file output is sorted according the tags in the options barcode-tag, umi-tag or gene-tag",
+           "gene-tag the gene tag [required]", 
            "tags to sort by [required]",
-           "bam lib to use HTSLIB or LIBGENSTAT [required]",
+           "bam lib to use HTSLIB or LIBGENSTAT [required]"
   };
 
 
   /* getopt_long stores the option index here. */
   int option_index = 0;
+  int curr_size = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:t:o:p:T:B:v",
+                          "b:t:o:p:C:U:G:B:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -77,8 +83,20 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
         case 'p':
             options.inmemory_chunk_size = atof(optarg);
             break;
-        case 'T':
-            options.tags.push_back(string(optarg));
+        case 'C':
+            options.barcode_tag = string(optarg);
+            curr_size = options.tag_order.size();
+            options.tag_order[string(optarg)] = curr_size;
+            break;
+        case 'U':
+            options.umi_tag = string(optarg);
+            curr_size = options.tag_order.size();
+            options.tag_order[string(optarg)] = curr_size;
+            break;
+        case 'G':
+            options.gene_tag = string(optarg);
+            curr_size = options.tag_order.size();
+            options.tag_order[string(optarg)] = curr_size;
             break;
         case 'B':
             options.bamlib = string(optarg);
@@ -135,6 +153,15 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
       exit_with_error = true;
       exit(1);
   }
+
+  // check for three distinct tags, barcode, umi and gene_id tags
+  if (options.tag_order.size()!=3) {
+      std::cout << "ERROR " << "Must have three distinct tags \n";
+      std::cerr << "ERROR " << "Must have three distinct tags \n";
+      exit_with_error = true;
+      exit(1);
+  }
+
 
   // The size of a set of aligments for in-memory sorting must be positive
   if (options.inmemory_chunk_size <= 0) {
