@@ -171,14 +171,14 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     // close output files as there is no more to write
     fout.close();
 
-
-    
     // we no longer need the partial files
     for (auto i=0; i < partial_files.size(); i++) {
-   //     if(remove(partial_files[i].c_str()) != 0)
-    //      std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
+        if(remove(partial_files[i].c_str()) != 0)
+          std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
     }
     std::cout << "Written "<< num_alignments << " alignments in total" << std::endl;
+
+    contx.clear();
 
 }
 
@@ -218,6 +218,8 @@ int main (int argc, char **argv)
     a head to compare the values based on the tags used  */
 
   merge_partial_files(partial_files, options.output_file);
+  partial_files.clear();
+
   std::cout << "Aligments " <<  filling_counter << " loaded to buffer " << std::endl;
 
 

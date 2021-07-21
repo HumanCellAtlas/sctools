@@ -1,5 +1,5 @@
 /**
- *  @file   fastqprocess.cpp
+ *  @file   htslib_tagsort.cpp
  *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-27
@@ -14,7 +14,6 @@ extern "C" {
     bam_hdr_t * sam_hdr_read(samFile *); //read header
     htsFile *hts_open(const char *fn, const char *mode);
 }
-
 
 /*
   @brief get the int tag or -1
@@ -45,8 +44,6 @@ inline char *get_Ztag_or_default(bam1_t *aln, const char *tagname, char *default
     }
     return  tag_value;
 }
-
-
 
 using namespace std;
 
@@ -100,6 +97,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     std::string tags[3]; 
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
 
+       if (i > 10000) break;
        // extract the barcodes corrected and  corrected
        barcode = (char *)get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
        barcode_raw = (char *)get_Ztag_or_default(aln, "CR", empty);
@@ -254,6 +252,11 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        i = i + 1;
     }
 
+    // release the memory and clear data-structures
+    bam_destroy1(aln);
+    sam_hdr_destroy(bamHdr);
+    hts_close(fp_in);
+
     if (tuple_records.size()>0) {
         std::string split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
         num_alignments += tuple_records.size();
@@ -264,6 +267,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     std::cout << std::endl << "Read " << i << " records" << std::endl;
     std::cout << std::endl << "Read " << num_alignments << " records as batches" << std::endl;
     return partial_files;
-}
+    tuple_records.clear(); 
+}  //while loop
 
-}
+} //namespace 

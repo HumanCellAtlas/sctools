@@ -31,6 +31,15 @@ struct Context {
    int NUM_PARTS = 0;
    //std::priority_queue<QUEUETUPLE, std::vector<QUEUETUPLE>,  decltype(compare) > heap(compare);
    std::priority_queue<QUEUETUPLE> heap;
+
+   void clear() {
+       for(auto it = file_handles.begin(); it != file_handles.end(); ++it) {
+          delete *it; 
+       }
+       data_size.clear();
+       ptrs.clear();
+       isempty.clear();
+   }
 };
 
 #endif
