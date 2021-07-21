@@ -1,5 +1,6 @@
 # flake8: noqa
 from . import bam
+from . import tsv
 from . import encodings
 from . import barcode
 from . import fastq

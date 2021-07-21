@@ -41,6 +41,8 @@ setup(
             "SplitBam = sctools.platform:GenericPlatform.split_bam",
             "CalculateGeneMetrics = sctools.platform:GenericPlatform."
             + "calculate_gene_metrics",
+            "CalculateGeneMetricsFast = sctools.platform:GenericPlatform."
+            + "calculate_gene_metrics_fast",
             "CalculateCellMetrics = sctools.platform:GenericPlatform."
             + "calculate_cell_metrics",
             "CalculateCellMetricsFast = sctools.platform:GenericPlatform."

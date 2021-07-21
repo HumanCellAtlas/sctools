@@ -8,6 +8,7 @@
 #include "htslib_tagsort.h"
 
 #define NUM_ALIGNMENTS_PER_CHUNK 1000000
+#define THRESHOLD 30.0
 
 extern "C" {
     bam_hdr_t * sam_hdr_read(samFile *); //read header
@@ -94,21 +95,24 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     long int num_alignments =0;
     uint8_t *p;
     uint32_t len = 0; //length of qual seq.
-    int threshold = 30.0; //qual score threshold
+    int threshold = THRESHOLD; //qual score threshold
 
     std::string tags[3]; 
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
+
+       // extract the barcodes corrected and  corrected
        barcode = (char *)get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
        barcode_raw = (char *)get_Ztag_or_default(aln, "CR", empty);
 
-        // corrected and raw barcodes should match to be perfect
+       // to be called perfect the corrected and raw barcodes should match
        int perfect_cell_barcode = 1;
-       
        int barcode_len = strlen(barcode);
-       // empty barcodes are not perfect
+
        if (strcmp(barcode, "None")==0)  {
+          // empty barcodes are not perfect
            perfect_cell_barcode = 0;     
        } else {
+          // perfect barcodes have the same corrected and raw barcodes
           for (k=0; k < barcode_len; k++) 
             if (barcode[k] != barcode_raw[k]) {
                perfect_cell_barcode = 0;     
@@ -119,29 +123,30 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        // barcode quality score
        barcode_qual = (char *)get_Ztag_or_default(aln, "CY", empty);
 
+       //average barcode across the query and the fraction of barcodes above threshold
        float sum_barcode_qual = 0;
        float num_bp_above_threshold = 0;
        len = strlen(barcode_qual);
-
        for (k = 0; k < len; k++) {
+          // barcodes qual strings are in ASCII symbols subtracting 33 gives the phred qual score
           sum_barcode_qual += ((uint8_t)barcode_qual[k] -33);
           if (((uint8_t)barcode_qual[k] - 33)  > threshold) num_bp_above_threshold += 1;
        }
-
        int avg_cell_barcode_qual = sum_barcode_qual/(float)len;
        float cell_barcode_qual_above_threshold =  (float)num_bp_above_threshold/(float)len;
 
-       // corrected molecule barcodes
-       umi = (char *)get_Ztag_or_default(aln, options.umi_tag.c_str(), empty);
 
+       // corrected molecule barcodes (UMIs)
+       umi = (char *)get_Ztag_or_default(aln, options.umi_tag.c_str(), empty);
        // raw molecule barcodes
        umi_raw = (char *)get_Ztag_or_default(aln, "UR", empty);
 
-       // corrected and raw barcodes should match to be perfect
+       // to be called perfect,  the corrected and raw molecular barcodes should match 
        int perfect_molecule_barcode = 1;
        if (strlen(umi)!=strlen(umi_raw)) {  // not equal length case
           perfect_molecule_barcode = 0;     
-       } else {   // if equal then compare char by char
+       } else {   
+          // if equal then compare char by char
           int umi_len = strlen(umi);
           for (k=0; k < umi_len; k++) 
             if (umi[k] != umi_raw[k]) {
@@ -157,15 +162,15 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        float num_umi_above_threshold = 0;
        len = strlen(umi_qual);
        for (k = 0; k < len; k++) {
+          // molecular barcodes qual strings are in ASCII symbols subtracting 33 gives the phred qual score
           sum_umi_qual += ((uint8_t)umi_qual[k] -33);
           if (((uint8_t)umi_qual[k] - 33)  > threshold) num_umi_above_threshold += 1;
        }
        float frac_umi_qual_above_threshold =  (float)num_umi_above_threshold/(float)len;
 
-       gene_id = (char *)get_Ztag_or_default(aln, options.gene_tag.c_str(), empty);
 
+       gene_id = (char *)get_Ztag_or_default(aln, options.gene_tag.c_str(), none);
        location_tag = (char *)get_Ztag_or_default(aln, "XF", empty);
-
 
        nh_num = get_itag_or_default(aln, "NH", -1);
 
@@ -192,14 +197,15 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        float qual_above_threshold = 0;
 
        for (k = 0; k < len; k++) {
+          // the qual string are already in phred scores
           sum_qual += (qual_seq[k]);
           if ((qual_seq[k]) > threshold) qual_above_threshold += 1;
        }
        avg_sequence_qual = sum_qual/(float)len;
        qual_above_threshold = qual_above_threshold/(float)len;
 
-       uint32_t *cigar = bam_get_cigar(aln);
 
+       uint32_t *cigar = bam_get_cigar(aln);
        // see if it is spliced, i.e., N appears in the CIGAR string
        uint32_t spliced_read = 0;
        for (k = 0; k < aln->core.n_cigar; ++k) {
@@ -218,9 +224,10 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
            num_alignments += tuple_records.size();
            partial_files.push_back(split_file_path);
            tuple_records.clear();
-//         if (partial_files.size() ==7) break;
        }
 
+       // the order of the three tags are define by the order of the supplied input arguments 
+       // tag.order [tag_name] -> order map  
        tags[options.tag_order[options.barcode_tag]] = barcode;
        tags[options.tag_order[options.umi_tag]] = umi;
        tags[options.tag_order[options.gene_tag]] = gene_id;

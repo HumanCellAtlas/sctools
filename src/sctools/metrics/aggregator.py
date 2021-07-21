@@ -332,7 +332,7 @@ class MetricAggregator:
             self._plus_strand_reads += not record.is_reverse
 
     def parse_molecule_fast(
-        self, tags: Sequence[str], records: List
+        self, tags: Sequence[str], records: List[str]
     ) -> None:
         """Parse information from all records of a molecule.
 
@@ -403,7 +403,6 @@ class MetricAggregator:
                 self.reads_mapped_multiple += (
                     1  # todo without multi-mapping, this number is zero!
             )
-
             self.duplicate_reads += int(record[11])
 
             # cigar N field (3) indicates a read is spliced if the value is non-zero
@@ -609,7 +608,7 @@ class CellMetrics(MetricAggregator):
         self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
     def parse_extra_fields_fast(
-        self, tags: Sequence[str], record: pysam.AlignedSegment
+        self, tags: Sequence[str], record: List[str]
     ) -> None:
         """Parses a record to extract gene-specific information
 
@@ -633,7 +632,6 @@ class CellMetrics(MetricAggregator):
         else:  # empty
             self.reads_unmapped += 1
      
-
         #try:
         #    alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
         #    if alignment_location == consts.INTERGENIC_ALIGNMENT_LOCATION_TAG_VALUE:
@@ -707,3 +705,24 @@ class GeneMetrics(MetricAggregator):
 
         """
         self._cells_histogram[tags[1]] += 1
+
+
+    def parse_extra_fields_fast(
+        self, tags: Sequence[str], record: List[str]
+    ) -> None:
+        """Parses a record to extract cell-specific information
+
+        Cell-specific metric data is stored in-place in the MetricAggregator
+
+        Parameters
+        ----------
+        tags : Sequence[str]
+            The CB, UB and GE tags that define this molecule
+        record : pysam.AlignedSegment
+            SAM record to be parsed
+
+        """
+        self._cells_histogram[tags[1]] += 1
+
+
+
