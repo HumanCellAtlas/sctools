@@ -16,7 +16,8 @@ std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, st
     std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
 
     ofstream output_fp;
-    output_fp.open (tempfile); 
+    output_fp.open(tempfile);
+
     std::vector<std::pair<std::string, int>> index_pairs;
     int k  = 0;
      

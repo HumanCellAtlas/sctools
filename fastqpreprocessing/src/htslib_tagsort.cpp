@@ -68,8 +68,13 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     int num_align_per_file =  static_cast<int>(options.inmemory_chunk_size * NUM_ALIGNMENTS_PER_CHUNK);
     std::vector<string> partial_files;
 
-    samFile *fp_in = hts_open(options.bam_input.c_str(),"r"); //open bam file
-    if (fp_in==0) std::cout << "Failed to open bam";
+    //open bam file
+
+    samFile *fp_in=0;
+    if ((fp_in = hts_open(options.bam_input.c_str(),"r"))==0) {
+        std::cerr << "ERROR Cannot open the file " << options.bam_input << std::endl;
+        exit(1);
+    }
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in); //read header
     bam1_t *aln = bam_init1(); //initialize an alignment
 
@@ -81,30 +86,26 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
     std::cout << "Running htslib" << std::endl;
     char *barcode, *gene_id, *umi, *umi_raw, *umi_qual,  *barcode_qual, *barcode_raw;
-    char *qual_seq;
     char *location_tag;
     int nh_num;
     char *chr;
 
    // Keep reading records until ReadRecord returns false.
     long int i =0;
-    int k = 0;
+    unsigned int k = 0;
     long int num_alignments =0;
-    uint8_t *p;
     uint32_t len = 0; //length of qual seq.
     int threshold = THRESHOLD; //qual score threshold
 
     std::string tags[3]; 
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
-
-       if (i > 10000) break;
        // extract the barcodes corrected and  corrected
        barcode = (char *)get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
        barcode_raw = (char *)get_Ztag_or_default(aln, "CR", empty);
 
        // to be called perfect the corrected and raw barcodes should match
        int perfect_cell_barcode = 1;
-       int barcode_len = strlen(barcode);
+       unsigned int barcode_len = strlen(barcode);
 
        if (strcmp(barcode, "None")==0)  {
           // empty barcodes are not perfect
@@ -145,7 +146,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
           perfect_molecule_barcode = 0;     
        } else {   
           // if equal then compare char by char
-          int umi_len = strlen(umi);
+          unsigned int umi_len = strlen(umi);
           for (k=0; k < umi_len; k++) 
             if (umi[k] != umi_raw[k]) {
               perfect_molecule_barcode = 0;     

@@ -39,7 +39,7 @@ WHITE_LIST_DATA *read_white_list(const string &white_list_file) {
           //insert the barcode into the list
           white_list_data->barcodes.push_back(tp);
 
-          for (int i=0; i < tp.size(); i++) {
+          for (unsigned int i=0; i < tp.size(); i++) {
             for (int j=0; j < 5; j++) {
               char c = tp[i];
               tp[i] = ATCG[j];
@@ -79,7 +79,7 @@ void _print_file_info(const std::vector<std::string> &fastqs,
      const std::string &type) {
     if (fastqs.size()) {
         std::cout << "INFO " << type << " files:" << std::endl;
-            for (int i= 0; i < fastqs.size(); i++) {
+            for (unsigned int i= 0; i < fastqs.size(); i++) {
                if (fs::exists(fastqs[i].c_str())) {
                    std::cout << "\t " << fastqs[i]  <<  " exists, file size "
                         <<  filesize(fastqs[i].c_str())  <<  std::endl;
@@ -96,7 +96,7 @@ void _print_file_info(const std::vector<std::string> &fastqs,
 /** @copydoc  get_num_blocks */
 int64_t get_num_blocks(const INPUT_OPTIONS_FASTQPROCESS &options) {
     double tot_size = 0;
-    for (int i= 0; i < options.R1s.size(); i++) {
+    for (unsigned int i= 0; i < options.R1s.size(); i++) {
         if (options.I1s.size()) {
             tot_size +=  filesize(options.I1s[i].c_str());
         }

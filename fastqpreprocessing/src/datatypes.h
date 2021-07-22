@@ -136,8 +136,6 @@ typedef struct _input_options_tagsort {
   // order of the tags to sort by
   std::unordered_map<std::string, unsigned int> tag_order;
 
-  // bam lib "htslib" or "libgenstat"
-  std::string bamlib;
 } INPUT_OPTIONS_TAGSORT;
 
 

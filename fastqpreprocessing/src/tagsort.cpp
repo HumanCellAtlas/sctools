@@ -1,32 +1,28 @@
 /**
- *  @file   fastqprocess.cpp
+ *  @file   tagsort.cpp
  *  @brief  functions for file processing
- *  @author Kishori Konwar
+ *  @author Kishori M. Konwar
  *  @date   2020-08-27
  ***********************************************/
 
-#ifdef LIBSTATGEN
-#include "libstatgen_tagsort.h"
-#endif
-
-#ifdef HTSLIB
 #include "htslib_tagsort.h"
-#endif
 
 #include "tagsort.h"
 #include <regex>
 
-std::string special("TTTGTCATCTTGAGGT\tACTGTTTAAG\tENSMUSG00000071528.4,ENSMUSG00000071528.4\tchr19\tCODING\t47086155\t1\t72.125\t1\t38.5\t1\t1\t0\t0\t1");
 int filling_counter = 0;
+
+/*
+ * @brief fills the buffer for the files
+ *
+ * @param contx is the context of the file
+*/
 void fill_buffer(Context &contx) {
     contx.data[contx.i].clear();
     int k = 0;
 
-    for (std::string line; k< contx.BUF_SIZE, std::getline(*(contx.file_handles[contx.i]), line); k++) {
+    for (std::string line; std::getline(*(contx.file_handles[contx.i]), line); k++) {
        contx.data[contx.i].push_back(line);
-       if (special==line) {
-          std::cout << "filing special " << line << std::endl;
-       }
        filling_counter += 1;
    //    if (k == contx.BUF_SIZE-1) break;
     }
@@ -41,6 +37,12 @@ void fill_buffer(Context &contx) {
     }
 }
 
+/*
+ * @brief Merges the files that are already sorted
+ *
+ * @param partial_files
+ * @param output_file
+*/
 
 void merge_partial_files(const std::vector<std::string> &partial_files, 
                          const std::string &output_file ) {
@@ -104,9 +106,8 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     fout.open(output_file); 
 
     // pop and push from the heap
-    int k = 0;
     int num_alignments = 0;
-    int i, j, i_1, j_1;
+    int i, j;
 
     stringstream str(stringstream::out|stringstream::binary);
     //while (contx.num_active_files > 0) {
@@ -129,7 +130,6 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
            str.str("");
        } 
        string field  = contx.data[i][j];
-       //std::cout << "\twriting special " << field << std::endl;
        str << field << std::endl;
        num_alignments += 1;
 
@@ -164,7 +164,7 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     fout.write(str.str().c_str(), str.str().length());
 
     // close the input files as they are empty
-    for (auto i=0; i < contx.file_handles.size(); i++) {
+    for (unsigned int i=0; i < contx.file_handles.size(); i++) {
        contx.file_handles[i]->close();
     }
 
@@ -172,7 +172,7 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     fout.close();
 
     // we no longer need the partial files
-    for (auto i=0; i < partial_files.size(); i++) {
+    for (unsigned int i=0; i < partial_files.size(); i++) {
         if(remove(partial_files[i].c_str()) != 0)
           std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
     }
@@ -203,16 +203,7 @@ int main (int argc, char **argv)
   /* first create a list of sorted, and simplified sorted files */
   std::vector<string> partial_files;
 
-#ifdef LIBSTATGEN
-//  if (options.bamlib==std::string("LIBSTATGEN"))
-      partial_files = libstatgen::create_sorted_file_splits_libstatgen(options);
-#endif
-
-
-#ifdef HTSLIB
- // if (options.bamlib==std::string("HTSLIB"))
-      partial_files = htslib::create_sorted_file_splits_htslib(options);
-#endif
+  partial_files = htslib::create_sorted_file_splits_htslib(options);
 
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */

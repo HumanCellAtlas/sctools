@@ -15,8 +15,6 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
   int c;
   int i;
 
-  int verbose_flag = 0;
-
   static struct option long_options[] = {
           /* These options set a flag. */
           {"verbose",                   no_argument,       0, 'v'},
@@ -52,7 +50,7 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
   int option_index = 0;
   int curr_size = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:t:o:p:C:U:G:B:v",
+                          "b:t:o:p:C:U:G:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -60,7 +58,6 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
       // process the option or arguments
       switch (c) {
         case 'v':
-            verbose_flag = 1;
             break;
         case 0:
           /* If this option set a flag, do nothing else now. */
@@ -98,9 +95,6 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
             curr_size = options.tag_order.size();
             options.tag_order[string(optarg)] = curr_size;
             break;
-        case 'B':
-            options.bamlib = string(optarg);
-            break;
         case '?':
         case 'h':
           i = 0;
@@ -113,7 +107,7 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
             i = i + 1;
           }
           /* getopt_long already printed an error message. */
-          return;
+          exit(0);
           break;
         default:
           abort();

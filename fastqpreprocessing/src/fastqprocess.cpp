@@ -109,7 +109,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQPROCESS &options,
 
      // execute the fastq readers threads
      std::thread  *readers = new std::thread[options.R1s.size()];
-     for (int i = 0; i < options.R1s.size(); i++) {
+     for (unsigned int i = 0; i < options.R1s.size(); i++) {
         std::string  I1;
         // if there is no I1 file then send an empty file name
         if (options.I1s.size() > 0) {
@@ -124,7 +124,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQPROCESS &options,
      }
 
      // every reader thread joins.
-     for (int i = 0; i < options.R1s.size(); i++) {
+     for (unsigned int i = 0; i < options.R1s.size(); i++) {
         readers[i].join();
      }
      // set the stop flag for the writers
