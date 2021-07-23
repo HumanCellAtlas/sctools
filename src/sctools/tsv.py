@@ -15,8 +15,9 @@ iter_tag_groups_from_tsv                         function to iterate over lines 
 
 """
 
-from typing import Set, Iterator, Generator
+from typing import Iterator, Generator
 from io import TextIOWrapper
+
 
 # todo change this to throw away "None" lines instead of appending them if we are filtering them
 def iter_tag_groups_from_tsv(

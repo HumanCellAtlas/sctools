@@ -28,9 +28,8 @@ sctools.metrics.writer
 from contextlib import closing
 
 import pysam
-from typing import Set, Iterator, Generator
+from typing import Set
 
-from io import TextIOWrapper
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellMetrics, GeneMetrics
 from sctools.metrics.writer import MetricCSVWriter
@@ -203,6 +202,8 @@ class GatherCellMetricsFast(MetricGatherer):
             metric_aggregator = CellMetrics()
             # process the records of the new cell
             prev_molecule_gene_tags = (None, None)
+            prev_moleculee_tag = None
+            prev_gene_tag = None
             cellwise_molecule_gene_records = []
 
             for _cellwise_record in cellwise_records:
