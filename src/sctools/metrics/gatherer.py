@@ -202,7 +202,7 @@ class GatherCellMetricsFast(MetricGatherer):
             metric_aggregator = CellMetrics()
             # process the records of the new cell
             prev_molecule_gene_tags = (None, None)
-            prev_moleculee_tag = None
+            prev_molecule_tag = None
             prev_gene_tag = None
             cellwise_molecule_gene_records = []
 
@@ -379,6 +379,8 @@ class GatherGeneMetricsFast(MetricGatherer):
             metric_aggregator = GeneMetrics()
             # process the records of the new cell
             prev_molecule_gene_tags = (None, None)
+            prev_molecule_tag = None
+            prev_gene_tag = None
             cellwise_molecule_gene_records = []
 
             for _cellwise_record in cellwise_records:
