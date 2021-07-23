@@ -19,17 +19,6 @@ RUN  pip3 install /sctools
 ARG libStatGen_version="1.0.14"
 ARG htslib_version="1.13"
 
-
-RUN cd /sctools/fastqpreprocessing &&\
-    wget https://github.com/statgen/libStatGen/archive/v${libStatGen_version}.tar.gz &&\
-    wget https://github.com/samtools/htslib/releases/download/${htslib_version}/htslib-${htslib_version}.tar.bz2 &&\
-
-RUN  pip3 install /sctools
-
-ARG libStatGen_version="1.0.14"
-ARG htslib_version="1.13"
-
-
 RUN cd /sctools/fastqpreprocessing &&\
     wget https://github.com/statgen/libStatGen/archive/v${libStatGen_version}.tar.gz &&\
     wget https://github.com/samtools/htslib/releases/download/${htslib_version}/htslib-${htslib_version}.tar.bz2 &&\

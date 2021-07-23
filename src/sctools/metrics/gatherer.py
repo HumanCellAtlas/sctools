@@ -201,48 +201,55 @@ class GatherCellMetricsFast(MetricGatherer):
         def compute_metrics(cellwise_records, cell_metrics_output):
             # create a metrics aggregator for the current cell
             metric_aggregator = CellMetrics()
-            # process the records of the new cell 
+            # process the records of the new cell
             prev_molecule_gene_tags = (None, None)
             cellwise_molecule_gene_records = []
 
             for _cellwise_record in cellwise_records:
-                cellwise_record = [x.strip() for x in _cellwise_record.split('\t') ]
-                cell_tag, molecule_tag, gene_tag = cellwise_record[0], cellwise_record[1], cellwise_record[2]
+                cellwise_record = [x.strip() for x in _cellwise_record.split("\t")]
+                cell_tag, molecule_tag, gene_tag = (
+                    cellwise_record[0],
+                    cellwise_record[1],
+                    cellwise_record[2],
+                )
 
                 molecule_gene_tags = (molecule_tag, gene_tag)
                 # not the first record and either molecule tar or gene tag is different from previous
-                if prev_molecule_gene_tags!=molecule_gene_tags and \
-                     cellwise_molecule_gene_records!=[]:
+                if (
+                    prev_molecule_gene_tags != molecule_gene_tags
+                    and cellwise_molecule_gene_records != []
+                ):
 
-                     # compute metrics for the molecule and gene tags
-                     metric_aggregator.parse_molecule_fast(
-                         tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
-                         records=cellwise_molecule_gene_records,
-                     )
-#                             print(cell_tag, molecule_tag, gene_tag)
-                     # create for the next combination of molecule and gene_tag records 
-                     cellwise_molecule_gene_records = []
+                    # compute metrics for the molecule and gene tags
+                    metric_aggregator.parse_molecule_fast(
+                        tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
+                        records=cellwise_molecule_gene_records,
+                    )
+                    #                             print(cell_tag, molecule_tag, gene_tag)
+                    # create for the next combination of molecule and gene_tag records
+                    cellwise_molecule_gene_records = []
 
                 # otherwise continue with the data
-                cellwise_molecule_gene_records.append(cellwise_record[3:] )  # the first two are molecute and gene_tags
+                cellwise_molecule_gene_records.append(
+                    cellwise_record[3:]
+                )  # the first two are molecute and gene_tags
                 prev_molecule_gene_tags = molecule_gene_tags
                 prev_molecule_tag = molecule_tag
                 prev_gene_tag = gene_tag
 
             #  Now process the last batch
             if cellwise_molecule_gene_records:
-               metric_aggregator.parse_molecule_fast(
+                metric_aggregator.parse_molecule_fast(
                     tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
-                    records=cellwise_molecule_gene_records,)
+                    records=cellwise_molecule_gene_records,
+                )
 
             cellwise_molecule_gene_records = []
 
             # write a record for each cell
-            metric_aggregator.finalize(
-               mitochondrial_genes=self._mitochondrial_gene_ids
-            )
+            metric_aggregator.finalize(mitochondrial_genes=self._mitochondrial_gene_ids)
             cell_metrics_output.write(cell_tag, vars(metric_aggregator))
-                    
+
         # open the files
         with open(self.bam_file, mode=mode) as tsv_reader, closing(
             MetricCSVWriter(self._output_stem, self._compress)
@@ -250,9 +257,10 @@ class GatherCellMetricsFast(MetricGatherer):
             # write the header
             cell_metrics_output.write_header(vars(CellMetrics()))
 
-            for _cellwise_records, curr_tag in  iter_tag_groups_from_tsv(tsv_iterator=tsv_reader):
-                 compute_metrics(_cellwise_records, cell_metrics_output)
-
+            for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(
+                tsv_iterator=tsv_reader
+            ):
+                compute_metrics(_cellwise_records, cell_metrics_output)
 
 
 class GatherGeneMetrics(MetricGatherer):
@@ -368,45 +376,53 @@ class GatherGeneMetricsFast(MetricGatherer):
         def compute_metrics(cellwise_records, cell_metrics_output):
             # create a metrics aggregator for the current cell
             metric_aggregator = GeneMetrics()
-            # process the records of the new cell 
+            # process the records of the new cell
             prev_molecule_gene_tags = (None, None)
             cellwise_molecule_gene_records = []
 
             for _cellwise_record in cellwise_records:
-                cellwise_record = [x.strip() for x in _cellwise_record.split('\t') ]
-                cell_tag, molecule_tag, gene_tag = cellwise_record[0], cellwise_record[1], cellwise_record[2]
+                cellwise_record = [x.strip() for x in _cellwise_record.split("\t")]
+                cell_tag, molecule_tag, gene_tag = (
+                    cellwise_record[0],
+                    cellwise_record[1],
+                    cellwise_record[2],
+                )
 
                 molecule_gene_tags = (molecule_tag, gene_tag)
                 # not the first record and either molecule tar or gene tag is different from previous
-                if prev_molecule_gene_tags!=molecule_gene_tags and \
-                     cellwise_molecule_gene_records!=[]:
+                if (
+                    prev_molecule_gene_tags != molecule_gene_tags
+                    and cellwise_molecule_gene_records != []
+                ):
 
-                     # compute metrics for the molecule and gene tags
-                     metric_aggregator.parse_molecule_fast(
-                         tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
-                         records=cellwise_molecule_gene_records,
-                     )
-#                             print(cell_tag, molecule_tag, gene_tag)
-                     # create for the next combination of molecule and gene_tag records 
-                     cellwise_molecule_gene_records = []
+                    # compute metrics for the molecule and gene tags
+                    metric_aggregator.parse_molecule_fast(
+                        tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
+                        records=cellwise_molecule_gene_records,
+                    )
+                    #                             print(cell_tag, molecule_tag, gene_tag)
+                    # create for the next combination of molecule and gene_tag records
+                    cellwise_molecule_gene_records = []
 
                 # otherwise continue with the data
-                cellwise_molecule_gene_records.append(cellwise_record[3:] )  # the first two are molecute and gene_tags
+                cellwise_molecule_gene_records.append(
+                    cellwise_record[3:]
+                )  # the first two are molecute and gene_tags
                 prev_molecule_gene_tags = molecule_gene_tags
                 prev_molecule_tag = molecule_tag
                 prev_gene_tag = gene_tag
 
             #  Now process the last batch
             if cellwise_molecule_gene_records:
-               metric_aggregator.parse_molecule_fast(
+                metric_aggregator.parse_molecule_fast(
                     tags=(cell_tag, prev_molecule_tag, prev_gene_tag),
-                    records=cellwise_molecule_gene_records,)
+                    records=cellwise_molecule_gene_records,
+                )
 
             cellwise_molecule_gene_records = []
 
             metric_aggregator.finalize()
             cell_metrics_output.write(cell_tag, vars(metric_aggregator))
-                    
 
         # open the files
         with open(self.bam_file, mode=mode) as tsv_reader, closing(
@@ -415,5 +431,7 @@ class GatherGeneMetricsFast(MetricGatherer):
             # write the header
             gene_metrics_output.write_header(vars(GeneMetrics()))
 
-            for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(tsv_iterator=tsv_reader):
-                 compute_metrics(_cellwise_records, gene_metrics_output)
+            for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(
+                tsv_iterator=tsv_reader
+            ):
+                compute_metrics(_cellwise_records, gene_metrics_output)
