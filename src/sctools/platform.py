@@ -392,7 +392,7 @@ class GenericPlatform:
 
         # load mitochondrial gene ids from the annotation file
         mitochondrial_gene_ids: Set(str) = set()
-        #if args.gtf_annotation_file:
+        # if args.gtf_annotation_file:
         #    mitochondrial_gene_ids = gtf.get_mitochondrial_gene_names(
         #        args.gtf_annotation_file
         #    )
@@ -402,7 +402,6 @@ class GenericPlatform:
         )
         cell_metric_gatherer.extract_metrics()
         return 0
-
 
     @classmethod
     def merge_gene_metrics(cls, args: Iterable[str] = None) -> int:

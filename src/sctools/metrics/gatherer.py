@@ -243,6 +243,7 @@ class GatherCellMetricsFast(MetricGatherer):
             Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
 
         """
+
         # open the files
         with open(self.bam_file, mode=mode) as tsv_reader, closing(
             MetricCSVWriter(self._output_stem, self._compress)
@@ -370,6 +371,7 @@ class GatherGeneMetricsFast(MetricGatherer):
             Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
 
         """
+
         # open the files
         with open(self.bam_file, mode=mode) as tsv_reader, closing(
             MetricCSVWriter(self._output_stem, self._compress)

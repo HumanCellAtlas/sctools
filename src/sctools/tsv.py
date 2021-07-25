@@ -15,8 +15,9 @@ iter_tag_groups_from_tsv                         function to iterate over lines 
 
 """
 
-from typing import Set, Iterator, Generator
+from typing import Iterator, Generator
 from io import TextIOWrapper
+
 
 # todo change this to throw away "None" lines instead of appending them if we are filtering them
 def iter_tag_groups_from_tsv(
@@ -45,13 +46,13 @@ def iter_tag_groups_from_tsv(
 
     # get first read and tag set
     lines = [next(tsv_iterator)]
-    fields = [x.strip() for x in lines[0].split('\t') ]
-    current_tag = fields[0] 
+    fields = [x.strip() for x in lines[0].split("\t")]
+    current_tag = fields[0]
 
     # now iterate over alignment sets
     for alignment in tsv_iterator:
-        fields = [x.strip() for x in alignment.split('\t') ]
-        next_tag = fields[0] 
+        fields = [x.strip() for x in alignment.split("\t")]
+        next_tag = fields[0]
 
         if next_tag == current_tag:
             lines.append(alignment)
@@ -65,4 +66,3 @@ def iter_tag_groups_from_tsv(
 
     if not filter_null or current_tag is not None:
         yield lines, current_tag
-
