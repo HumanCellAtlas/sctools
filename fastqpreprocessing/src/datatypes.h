@@ -15,7 +15,9 @@
 
 using namespace std;
 
-typedef std::tuple<std::string /* CB+<tab>+UB+<tab>+<GE>*/,  
+typedef std::tuple<std::string *, std::string *, std::string *> TRIPLET;
+
+typedef std::tuple<TRIPLET * /*  tuple<std::string *, std::string *, std::string *>*/,  
                    std::string /* reference */, 
                    std::string /* biotype */,  
                    int /* pos */, 
@@ -36,11 +38,11 @@ typedef std::tuple<std::string, int, int>  QUEUETUPLE;
 
 /*
 bool operator<(const QUEUETUPLE &a, const  QUEUETUPLE &b) {
-    return get<0>(a) < get<0>(b);
+    return get<0>(a) > get<0>(b);
 };
 */
 
-typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
+typedef std::pair<std::string, bool> STRING_BOOL_PAIR;
 
 typedef std::vector<std::string>  STRING_VECTOR;
 

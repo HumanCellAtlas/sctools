@@ -3,10 +3,16 @@
 
 #define STRING_LEN  40
 
-inline bool sortbyfirst(const std::pair<std::string, int>& a, 
-                  const std::pair<std::string, int>& b) {
-
-            return a.first > b.first;
+inline bool sortbyfirst(const std::pair<TRIPLET *, int>& a, 
+                  const std::pair<TRIPLET *, int>& b) {
+    if ((*get<0>(*a.first)).compare(*get<0>(*b.first)) !=0) {
+       return ((*get<0>(*a.first)).compare(*get<0>(*b.first)) < 0);
+    } else { 
+       if ((*get<1>(*a.first)).compare(*get<1>(*b.first)) !=0) {
+           return ((*get<1>(*a.first)).compare(*get<1>(*b.first)) < 0);
+       }
+    } 
+    return ((*get<2>(*a.first)).compare(*get<2>(*b.first)) < 0);
 }
 
 
@@ -18,21 +24,30 @@ std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, st
     ofstream output_fp;
     output_fp.open(tempfile);
 
-    std::vector<std::pair<std::string, int>> index_pairs;
+    std::vector<std::pair<TRIPLET *, int>> index_pairs;
     int k  = 0;
      
-    for( auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
-       index_pairs.push_back(std::make_pair(get<0>(*it) , k));
+    for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
+        index_pairs.push_back(std::make_pair(get<0>(*it) , k));
     }
 
     // sort using the lambda function
     std::sort(index_pairs.begin(), index_pairs.end(), sortbyfirst);
-    //return "hello";
 
     stringstream str(stringstream::out|stringstream::binary);
 
-    for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++) {
-          str << get<0>(tuple_records[it->second]) /* three tags */ << "\t"
+    for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++, k++) {
+          
+          // what is you ran out of disk space ???? NEED TO add logic
+          if (k%10000==0) {
+             output_fp.write(str.str().c_str(), str.str().length());
+             str.str("");
+             str.clear();
+          }
+
+          str << *get<0>(*it->first) /*  frist tag */ << "\t"
+              << *get<1>(*it->first) /*  second tag */ << "\t"
+              << *get<2>(*it->first) /*  third tag */ << "\t"
               << get<1>(tuple_records[it->second]) /* record[0] */  << "\t"
               << get<2>(tuple_records[it->second]) /* record[1] */  << "\t" 
               << get<3>(tuple_records[it->second]) /* record[2] */  << "\t" 
@@ -48,9 +63,15 @@ std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, st
               << get<13>(tuple_records[it->second]) /* record[12] */ << "\t"
               << get<14>(tuple_records[it->second]) /* record[13] */
               << std::endl; 
+
+
     }
+
     // what is you ran out of disk space ???? NEED TO add logic
     output_fp.write(str.str().c_str(), str.str().length());
+
+    str.str("");
+    str.clear();
     output_fp.close();
     return tempfile;
 }

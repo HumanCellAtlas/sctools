@@ -10,6 +10,8 @@
 #include "tagsort.h"
 #include <regex>
 
+#define DATA_BUFFER_SIZE 100000
+
 int filling_counter = 0;
 
 /*
@@ -21,11 +23,14 @@ void fill_buffer(Context &contx) {
     contx.data[contx.i].clear();
     int k = 0;
 
-    for (std::string line; std::getline(*(contx.file_handles[contx.i]), line); k++) {
+    // the order of the loop condition is iportant first make sure if you can accomodate then try to read, 
+    // otherwise it might create a read but never processed
+    for (std::string line; k < contx.BUF_SIZE &&  std::getline(*(contx.file_handles[contx.i]), line); k++) {
        contx.data[contx.i].push_back(line);
        filling_counter += 1;
-   //    if (k == contx.BUF_SIZE-1) break;
     }
+
+//    std::cout << " Filling buffer " << contx.i << " with " << contx.data[contx.i].size() << " lines " << std::endl;
     contx.data_size[contx.i] = contx.data[contx.i].size();
 
     if (contx.data_size[contx.i] != 0) {
@@ -35,6 +40,14 @@ void fill_buffer(Context &contx) {
        contx.ptrs[contx.i] = contx.BUF_SIZE;
        contx.isempty[contx.i] = true;
     }
+
+#ifdef DEBUG
+    std::cout << "-->" << std::endl;
+    for (int m = 0; m < contx.NUM_PARTS; m++) {
+       std::cout << "\t" << m << " : " << contx.data_size[m] << " : " << contx.ptrs[m] << std::endl;
+    }
+#endif
+
 }
 
 /*
@@ -47,34 +60,19 @@ void fill_buffer(Context &contx) {
 void merge_partial_files(const std::vector<std::string> &partial_files, 
                          const std::string &output_file ) {
 
-    Context contx; 
-    contx.NUM_PARTS = partial_files.size();
-    contx.BUF_SIZE = 100000;
+    // input the buffer size and partial files
+    Context contx(partial_files.size(), DATA_BUFFER_SIZE); 
+    auto cmp = [](const QUEUETUPLE &a, const  QUEUETUPLE &b) {
+        return get<0>(a) > get<0>(b);
+     };
 
+    std::priority_queue<QUEUETUPLE, std::vector<QUEUETUPLE>,  decltype(cmp) > heap(cmp);
+ 
+    // open files 
     for (auto i=0; i < contx.NUM_PARTS; i++) {
        ifstream *input_fp = new ifstream;
        input_fp->open(partial_files[i]); 
        contx.file_handles.push_back(input_fp);
-    }
-
-    // set the isempty for each file to false
-    for (auto i=0; i < contx.NUM_PARTS; i++) {
-       contx.isempty.push_back(false);
-    }
-
-    // set a vector of vectors of data for each file
-    for (auto i=0; i < contx.NUM_PARTS; i++) {
-       contx.data.push_back(std::vector<std::string>());
-    }
-
-    // set the data_size of the buffer for each file to 0
-    for (auto i=0; i < contx.NUM_PARTS; i++) {
-       contx.data_size.push_back(0);
-    }
-
-    // set the pointer to f each buffer to contxt.BUF_SIZE
-    for (auto i=0; i < contx.NUM_PARTS; i++) {
-       contx.ptrs.push_back(contx.BUF_SIZE);
     }
 
     //fill the buffers
@@ -82,25 +80,27 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
         contx.i = i;
         fill_buffer(contx);
     }
-
-   std::regex rgx("\t");
-   std::sregex_token_iterator end;
+    
+    std::regex rgx("\t");
+    std::sregex_token_iterator end;
 
     // create the heap from the first batch loaded data
-    contx.num_active_files= 0;
+    contx.num_active_files = 0;
     for (auto i=0; i< contx.NUM_PARTS; i++){
         contx.i = i;
         if (contx.ptrs[i] != contx.BUF_SIZE) {
-           contx.num_active_files += 1;
            std::sregex_token_iterator iter(contx.data[i][contx.ptrs[i]].begin(), contx.data[i][contx.ptrs[i]].end(), rgx, -1);
            std::stringstream comp_tag;
            for (auto k = 0; k < 3 && iter!=end; ++iter, k++) {
               if (k>0) comp_tag << "\t";
               comp_tag << *iter;
            }
-           contx.heap.push(QUEUETUPLE(comp_tag.str(), i, contx.ptrs[i]++));
+           heap.push(QUEUETUPLE(comp_tag.str(), i, contx.ptrs[i]));
+           contx.ptrs[i]++;
+           contx.num_active_files += 1;
         }
     }
+
     //  now merge by pop an push     
     ofstream fout;
     fout.open(output_file); 
@@ -111,57 +111,73 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
 
     stringstream str(stringstream::out|stringstream::binary);
     //while (contx.num_active_files > 0) {
-
-    while (!contx.heap.empty()) {
-
+    std::string  prev_comp_tag = "";
+    while (!heap.empty()) {
        // read the top
-       QUEUETUPLE qtuple = contx.heap.top();
-       auto val = get<0>(qtuple);
-       i = get<1>(qtuple);
-       j = get<2>(qtuple);
+       QUEUETUPLE qtuple = heap.top();
+       std::string curr_comp_tag = get<0>(qtuple);
+       assert(prev_comp_tag.compare(curr_comp_tag) <= 0);
 
-        // pop it now
-       contx.heap.pop();
+#ifdef DEBUG
+       contx.print_status();
+       if (prev_comp_tag.compare(curr_comp_tag) <= 0 )  {
+          std::cout << "Expecte " << prev_comp_tag << "\n\t\t" << curr_comp_tag << std::endl;
+       } else {
+          std::cout << "Anomaly " << prev_comp_tag << "\n\t\t" << curr_comp_tag << std::endl;
+          exit(0);
+       }
+#endif
 
+       i = get<1>(qtuple);  //buffer no
+       j = get<2>(qtuple);  //the pointer into the ith buffer array
 
-       if (num_alignments%100000==0 && num_alignments > 0) {
+       // pop it now
+       heap.pop();
+
+       // start writing in chunks from the stream buffer
+       if (num_alignments%contx.BUF_SIZE==0) {
            fout.write(str.str().c_str(), str.str().length());
            str.clear();
            str.str("");
        } 
+
+       // load into stream buffer
        string field  = contx.data[i][j];
        str << field << std::endl;
        num_alignments += 1;
 
-       /*   add a new element to the heapq
-            if there is no data then fill it unless the file is empty
-       */
-
         // if ismpty is true means the file has been fully read 
-        if (contx.isempty[i] == false && contx.ptrs[i] == contx.data_size[i]) {
-            contx.i = i;
-            fill_buffer(contx);
-        } 
+       if (contx.isempty[i] == false && contx.ptrs[i] == contx.data_size[i]) {
+           contx.i = i;
+           fill_buffer(contx);
+       } 
 
-         // make sure it is not empty
-        if (contx.data_size[i] > 0) {
-           // std::string comp_tag = contx.data[i][contx.ptrs[i]];
-
+       //if (num_alignments%10000 == 0 )
+       //std::cout << " heap size " << heap.size() << std::endl;
+       /*  add a new element to the heapq
+           if there is no data then fill it unless the file is empty
+       */
+       // make sure it is not empty
+       if (contx.data_size[i] > 0) {
+          // std::string comp_tag = contx.data[i][contx.ptrs[i]];
            std::sregex_token_iterator iter(contx.data[i][contx.ptrs[i]].begin(), contx.data[i][contx.ptrs[i]].end(), rgx, -1);
            std::stringstream comp_tag;
            for (auto k = 0; k < 3 && iter!=end; ++iter, k++) {
               if (k>0) comp_tag << "\t";
               comp_tag << *iter;
            }
-
-           contx.heap.push(QUEUETUPLE(comp_tag.str(), i, contx.ptrs[i]++));
-        } else { // one more file is fully read 
-            contx.num_active_files -= 1;
-        }
+           heap.push(QUEUETUPLE(comp_tag.str(), i, contx.ptrs[i]));
+           contx.ptrs[i]++;
+       } else { // one more file is fully read 
+           contx.num_active_files -= 1;
+       }
+       prev_comp_tag = curr_comp_tag;
     }
  
     // write out the remaining data
     fout.write(str.str().c_str(), str.str().length());
+    str.str("");
+    str.clear();
 
     // close the input files as they are empty
     for (unsigned int i=0; i < contx.file_handles.size(); i++) {
@@ -171,15 +187,8 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     // close output files as there is no more to write
     fout.close();
 
-    // we no longer need the partial files
-    for (unsigned int i=0; i < partial_files.size(); i++) {
-        if(remove(partial_files[i].c_str()) != 0)
-          std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
-    }
     std::cout << "Written "<< num_alignments << " alignments in total" << std::endl;
-
     contx.clear();
-
 }
 
 /* Flag set by ‘--verbose’. */
@@ -202,17 +211,20 @@ int main (int argc, char **argv)
 
   /* first create a list of sorted, and simplified sorted files */
   std::vector<string> partial_files;
-
   partial_files = htslib::create_sorted_file_splits_htslib(options);
 
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */
-
+  std::cout << "Merging " <<  partial_files.size() << " sorted files!"<< std::endl;
   merge_partial_files(partial_files, options.output_file);
+
+  // we no longer need the partial files
+  for (unsigned int i=0; i < partial_files.size(); i++) {
+      if(remove(partial_files[i].c_str()) != 0)
+        std::cerr << string("Error deleting file") <<  partial_files[i] << std::endl;
+  }
   partial_files.clear();
-
   std::cout << "Aligments " <<  filling_counter << " loaded to buffer " << std::endl;
-
 
   return 0;
 }

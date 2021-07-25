@@ -7,7 +7,7 @@
 #include <htslib/sam.h>
 #include "htslib_tagsort.h"
 
-#define NUM_ALIGNMENTS_PER_CHUNK 1000000
+#define NUM_ALIGNMENTS_PER_CHUNK 100000
 #define THRESHOLD 30.0
 
 extern "C" {
@@ -97,8 +97,15 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     uint32_t len = 0; //length of qual seq.
     int threshold = THRESHOLD; //qual score threshold
 
+    std::unordered_map<std::string, std::string *>  string_map;
     std::string tags[3]; 
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
+/*
+       if (i > 250000) { 
+           std::cout << "Remove me from file " << __FILE__ << " line no " << __LINE__ << std::endl;
+           break;
+       }
+*/
        // extract the barcodes corrected and  corrected
        barcode = (char *)get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
        barcode_raw = (char *)get_Ztag_or_default(aln, "CR", empty);
@@ -136,17 +143,17 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
 
        // corrected molecule barcodes (UMIs)
-       umi = (char *)get_Ztag_or_default(aln, options.umi_tag.c_str(), empty);
+       umi = (char *)get_Ztag_or_default(aln, options.umi_tag.c_str(), none);
        // raw molecule barcodes
        umi_raw = (char *)get_Ztag_or_default(aln, "UR", empty);
 
        // to be called perfect,  the corrected and raw molecular barcodes should match 
+       unsigned int umi_len = strlen(umi);
        int perfect_molecule_barcode = 1;
-       if (strlen(umi)!=strlen(umi_raw)) {  // not equal length case
+       if (strcmp(umi, "None")==0) {  // not equal length case
           perfect_molecule_barcode = 0;     
        } else {   
           // if equal then compare char by char
-          unsigned int umi_len = strlen(umi);
           for (k=0; k < umi_len; k++) 
             if (umi[k] != umi_raw[k]) {
               perfect_molecule_barcode = 0;     
@@ -166,7 +173,6 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
           if (((uint8_t)umi_qual[k] - 33)  > threshold) num_umi_above_threshold += 1;
        }
        float frac_umi_qual_above_threshold =  (float)num_umi_above_threshold/(float)len;
-
 
        gene_id = (char *)get_Ztag_or_default(aln, options.gene_tag.c_str(), none);
        location_tag = (char *)get_Ztag_or_default(aln, "XF", empty);
@@ -222,7 +228,15 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
            split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
            num_alignments += tuple_records.size();
            partial_files.push_back(split_file_path);
-           tuple_records.clear();
+
+           for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
+              delete get<0>(*it);
+           }
+           tuple_records.clear(); 
+           for(auto it=string_map.begin(); it!=string_map.end(); it++) { 
+              delete it->second; 
+           }
+           string_map.clear();
        }
 
        // the order of the three tags are define by the order of the supplied input arguments 
@@ -231,9 +245,21 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        tags[options.tag_order[options.umi_tag]] = umi;
        tags[options.tag_order[options.gene_tag]] = gene_id;
    
+       if (string_map.find(barcode)==string_map.end()) {
+           string_map[barcode] = new std::string(barcode);
+       }
+       if (string_map.find(umi)==string_map.end()) {
+           string_map[umi] = new std::string(umi);
+       }
+       if (string_map.find(gene_id)==string_map.end()) {
+           string_map[gene_id] = new std::string(gene_id);
+       }
+        
+       TRIPLET* triplet = new TRIPLET(string_map[tags[0]],  string_map[tags[1]], string_map[tags[2]]);
+
        tuple_records.push_back(
             std::make_tuple( 
-                             std::string(tags[0]) + std::string("\t") + std::string(tags[1]) + std::string("\t") + std::string(tags[2]), 
+                             triplet, /* triplet of tags pointers */ 
                              std::string(chr),  /* record[0] */
                              std::string(location_tag), /* record[1] */
                              pos,   /* record [2] */
@@ -267,8 +293,18 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
     std::cout << std::endl << "Read " << i << " records" << std::endl;
     std::cout << std::endl << "Read " << num_alignments << " records as batches" << std::endl;
-    return partial_files;
+
+    for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
+        delete get<0>(*it);
+    }
     tuple_records.clear(); 
+
+    for(auto it=string_map.begin(); it!=string_map.end(); it++) { 
+        delete it->second; 
+    }
+    string_map.clear();
+
+    return partial_files;
 }  //while loop
 
 } //namespace 

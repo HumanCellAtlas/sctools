@@ -28,31 +28,33 @@ def compare_metric_files(ref_metrics, query_metrics):
 
     tol = 0.0000001
     nerrors = 0
+    j = 0
     for key, fields in query_metrics.items():
        if key not in ref_metrics:
            print("Key {} missing in reference".format(key))
        if key!='header':
          #print()
-         #print(key)
          #print('query: ', query_metrics[key])
          #print('ref  : ', ref_metrics[key])
          errors = False
          for i, (_x, _y) in enumerate(zip(query_metrics[key], ref_metrics[key])):
             if _x=='nan' or _y=='nan': 
                if _x!=_y:
-                 print("\tMismatch: key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(key, i, column_map_query[i],  i, column_map_query[i],  _x, _y))
+                 print("\tMismatch: num {} key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(j, key, i, column_map_query[i],  i, column_map_query[i],  _x, _y))
                  errors = True
             else: 
                x = float(_x) 
                y = float(_y) 
-               if i not in [13, 14,  15,  16] and abs(x-y) > tol:
-                   print("\tMismatch: key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(key, i, column_map_query[i],  i, column_map_query[i],  x, y))
+               if i not in [13, 14, 15, 16] and abs(x-y) > tol:
+                   print("\tMismatch: num {}  key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(j, key, i, column_map_query[i],  i, column_map_query[i],  x, y))
                    errors = True
 
          nerrors +=  int(errors)
-         if nerrors > 0:
+         if nerrors > 100:
             sys.exit(0)
+         j = j + 1
           
+               #if i not in [13, 14,  15,  16] and abs(x-y) > tol:
 def main(args):
     # first create a list of sorted, and simplified sorted files
     ref_metrics = read_metrics_file(args.ref_file)

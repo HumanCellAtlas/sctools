@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unordered_map>
+#include <memory>
 
 #include "inputoptions.h"
 #include "datatypes.h"
