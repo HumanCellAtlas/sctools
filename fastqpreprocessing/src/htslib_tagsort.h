@@ -8,16 +8,21 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <thread>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unordered_map>
 #include <memory>
+#include <semaphore.h>
 
+#include <htslib/sam.h>
 #include "inputoptions.h"
 #include "datatypes.h"
 #include "sort_write.h"
+#include "globals.h"
+
 
 /**
  * @brief From the input bam create a list of txt files with the records (lines) 

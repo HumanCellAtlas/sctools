@@ -4,11 +4,20 @@
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
-#include <htslib/sam.h>
 #include "htslib_tagsort.h"
 
-#define NUM_ALIGNMENTS_PER_CHUNK 100000
+#define NUM_ALIGNMENTS_PER_CHUNK 1000000
 #define THRESHOLD 30.0
+
+extern sem_t semaphore;
+
+#define SEM_INIT(X)  (sem_init(&X, 0, 1) )
+#define SEM_WAIT(X)                                      \
+ ({                                                      \
+     if (sem_wait(&X) == -1)                             \
+         error("sem_wait: semaphore");                   \
+ })
+
 
 extern "C" {
     bam_hdr_t * sam_hdr_read(samFile *); //read header
@@ -79,7 +88,6 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     bam1_t *aln = bam_init1(); //initialize an alignment
 
 
-    vector<TAGTUPLE>  tuple_records;
     char empty[] = {'\0'};
     char none[] = {'N', 'o', 'n', 'e', '\0'};
     char nochr[] = {'*', '\0'};
@@ -93,15 +101,22 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
    // Keep reading records until ReadRecord returns false.
     long int i =0;
     unsigned int k = 0;
+    unsigned int batch = 0;
     long int num_alignments =0;
     uint32_t len = 0; //length of qual seq.
     int threshold = THRESHOLD; //qual score threshold
 
-    std::unordered_map<std::string, std::string *>  string_map;
+    vector<TAGTUPLE>  tuple_records[2];
+    std::unordered_map<std::string, std::string *>  string_map[2];
+
     std::string tags[3]; 
+
+    SEM_INIT(semaphore);
+    std::vector<std::thread> thread_ids;
+
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
 /*
-       if (i > 250000) { 
+       if (i > 25000) { 
            std::cout << "Remove me from file " << __FILE__ << " line no " << __LINE__ << std::endl;
            break;
        }
@@ -222,21 +237,26 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        }
    
        if (i!=0 && i%num_align_per_file==0) {
-           std::cout << "Batch number : " << partial_files.size() << std::endl;
+           std::cout << "Batch number : " << batch << std::endl;
            std::string split_file_path;
            
-           split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
-           num_alignments += tuple_records.size();
-           partial_files.push_back(split_file_path);
+           SEM_WAIT(semaphore);
+           std::thread thread_id =  std::thread(write_out_partial_txt_file, tuple_records[batch%2],  tmp_folder, std::ref(partial_files));
 
-           for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
+           thread_ids.push_back(std::move(thread_id));
+
+           num_alignments += tuple_records[batch%2].size();
+           batch++;
+
+           for(auto it=tuple_records[batch%2].begin(); it!=tuple_records[batch%2].end(); it++) { 
               delete get<0>(*it);
            }
-           tuple_records.clear(); 
-           for(auto it=string_map.begin(); it!=string_map.end(); it++) { 
+           tuple_records[batch%2].clear(); 
+
+           for(auto it=string_map[batch%2].begin(); it!=string_map[batch%2].end(); it++) { 
               delete it->second; 
            }
-           string_map.clear();
+           string_map[batch%2].clear();
        }
 
        // the order of the three tags are define by the order of the supplied input arguments 
@@ -245,19 +265,19 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
        tags[options.tag_order[options.umi_tag]] = umi;
        tags[options.tag_order[options.gene_tag]] = gene_id;
    
-       if (string_map.find(barcode)==string_map.end()) {
-           string_map[barcode] = new std::string(barcode);
+       if (string_map[batch%2].find(barcode)==string_map[batch%2].end()) {
+           string_map[batch%2][barcode] = new std::string(barcode);
        }
-       if (string_map.find(umi)==string_map.end()) {
-           string_map[umi] = new std::string(umi);
+       if (string_map[batch%2].find(umi)==string_map[batch%2].end()) {
+           string_map[batch%2][umi] = new std::string(umi);
        }
-       if (string_map.find(gene_id)==string_map.end()) {
-           string_map[gene_id] = new std::string(gene_id);
+       if (string_map[batch%2].find(gene_id)==string_map[batch%2].end()) {
+           string_map[batch%2][gene_id] = new std::string(gene_id);
        }
         
-       TRIPLET* triplet = new TRIPLET(string_map[tags[0]],  string_map[tags[1]], string_map[tags[2]]);
+       TRIPLET* triplet = new TRIPLET(string_map[batch%2][tags[0]],  string_map[batch%2][tags[1]], string_map[batch%2][tags[2]]);
 
-       tuple_records.push_back(
+       tuple_records[batch%2].push_back(
             std::make_tuple( 
                              triplet, /* triplet of tags pointers */ 
                              std::string(chr),  /* record[0] */
@@ -284,25 +304,48 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     sam_hdr_destroy(bamHdr);
     hts_close(fp_in);
 
-    if (tuple_records.size()>0) {
-        std::string split_file_path = write_out_partial_txt_file(tuple_records, tmp_folder);
-        num_alignments += tuple_records.size();
-        tuple_records.clear();
-        partial_files.push_back(split_file_path);
-     }
+    if (tuple_records[batch%2].size()>0) {
+        SEM_WAIT(semaphore);
 
+        write_out_partial_txt_file(tuple_records[batch%2], tmp_folder, partial_files);
+        num_alignments += tuple_records[batch%2].size();
+
+        for(auto it=tuple_records[batch%2].begin(); it!=tuple_records[batch%2].end(); it++) { 
+            delete get<0>(*it);
+        }
+        tuple_records[batch%2].clear(); 
+
+        for(auto it=string_map[batch%2].begin(); it!=string_map[batch%2].end(); it++) { 
+            delete it->second; 
+        }
+        string_map[batch%2].clear();
+        //partial_files.push_back(split_file_path);
+    }
+
+
+    for(auto it=thread_ids.begin(); it!=thread_ids.end(); it++) { 
+       it->join();
+    }
+    thread_ids.erase(thread_ids.begin(), thread_ids.end()); 
+    
     std::cout << std::endl << "Read " << i << " records" << std::endl;
     std::cout << std::endl << "Read " << num_alignments << " records as batches" << std::endl;
 
-    for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
-        delete get<0>(*it);
+    // one of them has data, which is from the last thread inside the while loop
+    // but we can clean both anyway
+    for (k = 0; k < 2; k++)  {
+      for(auto it=tuple_records[k%2].begin(); it!=tuple_records[k%2].end(); it++) { 
+         delete get<0>(*it);
+      }
+      tuple_records[k%2].clear(); 
     }
-    tuple_records.clear(); 
 
-    for(auto it=string_map.begin(); it!=string_map.end(); it++) { 
+    for (k = 0; k < 2; k++)  {
+      for(auto it=string_map[k%2].begin(); it!=string_map[k%2].end(); it++) { 
         delete it->second; 
+      }
+      string_map[k%2].clear();
     }
-    string_map.clear();
 
     return partial_files;
 }  //while loop

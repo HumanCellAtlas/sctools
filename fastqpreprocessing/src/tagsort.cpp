@@ -10,7 +10,8 @@
 #include "tagsort.h"
 #include <regex>
 
-#define DATA_BUFFER_SIZE 100000
+#define DATA_BUFFER_SIZE 1000
+
 
 int filling_counter = 0;
 

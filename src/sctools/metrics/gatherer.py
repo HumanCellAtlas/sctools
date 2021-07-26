@@ -324,6 +324,7 @@ class GatherGeneMetrics(MetricGatherer):
                         bam_iterator=cell_iterator
                     ):
 
+                        print(gene_tag, cell_tag, molecule_tag)
                         # process the data
                         metric_aggregator.parse_molecule(
                             tags=(gene_tag, cell_tag, molecule_tag),
@@ -382,6 +383,9 @@ class GatherGeneMetricsFast(MetricGatherer):
             for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(
                 tsv_iterator=tsv_reader
             ):
+                if curr_tag and len(curr_tag.split(",")) > 1:
+                    continue
+
                 metric_aggregator = GeneMetrics()
                 gene_tag = self.compute_metrics(_cellwise_records, metric_aggregator)
                 # write a record for each gene id

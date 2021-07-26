@@ -3,9 +3,11 @@
 
 #include <string>
 #include <vector>
+#include <semaphore.h>
 
 #include "datatypes.h"
 #include "utilities.h"
+#include "globals.h"
 
 /**
  * @brief This function takes a vector of tuples of the tags, sorts them
@@ -20,7 +22,7 @@
  * @param tuple_records: vector<TAGTUPLE> &, reference to a vector of TAGTUPLES
  * @return a string for the random file name
 */
-std::string write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, std::string const & tmp_folder);
-
+void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records,  \
+          std::string const & tmp_folder,  std::vector<string> &partial_files);
 
 #endif
