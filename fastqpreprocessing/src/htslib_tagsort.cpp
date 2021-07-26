@@ -112,8 +112,8 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
     std::string tags[3]; 
 
     SEM_INIT(semaphore);
-    std::vector<std::thread> thread_ids;
 
+    std::thread thread_id;
     while(sam_read1(fp_in, bamHdr,aln) > 0) {
 /*
        if (i > 25000) { 
@@ -241,9 +241,8 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
            std::string split_file_path;
            
            SEM_WAIT(semaphore);
-           std::thread thread_id =  std::thread(write_out_partial_txt_file, tuple_records[batch%2],  tmp_folder, std::ref(partial_files));
-
-           thread_ids.push_back(std::move(thread_id));
+           if (batch>0) thread_id.join();
+           thread_id =  std::thread(write_out_partial_txt_file, tuple_records[batch%2],  tmp_folder, std::ref(partial_files));
 
            num_alignments += tuple_records[batch%2].size();
            batch++;
@@ -306,6 +305,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
 
     if (tuple_records[batch%2].size()>0) {
         SEM_WAIT(semaphore);
+        if (batch>0) thread_id.join();
 
         write_out_partial_txt_file(tuple_records[batch%2], tmp_folder, partial_files);
         num_alignments += tuple_records[batch%2].size();
@@ -319,14 +319,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
             delete it->second; 
         }
         string_map[batch%2].clear();
-        //partial_files.push_back(split_file_path);
     }
-
-
-    for(auto it=thread_ids.begin(); it!=thread_ids.end(); it++) { 
-       it->join();
-    }
-    thread_ids.erase(thread_ids.begin(), thread_ids.end()); 
     
     std::cout << std::endl << "Read " << i << " records" << std::endl;
     std::cout << std::endl << "Read " << num_alignments << " records as batches" << std::endl;
