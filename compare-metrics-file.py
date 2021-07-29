@@ -45,7 +45,7 @@ def compare_metric_files(ref_metrics, query_metrics):
             else: 
                x = float(_x) 
                y = float(_y) 
-               if i not in [13, 14, 15, 16] and abs(x-y) > tol:
+               if i not in [14, 15, 16] and abs(x-y) > tol:
                    print("\tMismatch: num {}  key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(j, key, i, column_map_query[i],  i, column_map_query[i],  x, y))
                    errors = True
 
