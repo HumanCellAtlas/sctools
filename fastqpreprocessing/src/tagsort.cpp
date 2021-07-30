@@ -71,8 +71,12 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
  
     // open files 
     for (auto i=0; i < contx.NUM_PARTS; i++) {
+#ifdef GZSTREAM
+       igzstream *input_fp = new igzstream;
+#else
        ifstream *input_fp = new ifstream;
-       input_fp->open(partial_files[i]); 
+#endif
+       input_fp->open(partial_files[i].c_str()); 
        contx.file_handles.push_back(input_fp);
     }
 
@@ -103,8 +107,12 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
     }
 
     //  now merge by pop an push     
+#ifdef GZSTREAM
+    ogzstream  fout;
+#else
     ofstream fout;
-    fout.open(output_file); 
+#endif
+    fout.open(output_file.c_str()); 
 
     // pop and push from the heap
     int num_alignments = 0;

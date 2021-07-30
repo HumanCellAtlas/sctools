@@ -28,10 +28,15 @@ using namespace std;
 void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
               std::string const & tmp_folder,  std::vector<string> &partial_files) {;
 
-    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
+    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt.gz");
 
+#ifdef GZSTREAM
+    ogzstream  output_fp;
+#else
     ofstream output_fp;
-    output_fp.open(tempfile);
+#endif
+
+    output_fp.open(tempfile.c_str());
 
     std::vector<std::pair<TRIPLET *, int>> index_pairs;
     int k  = 0;

@@ -4,6 +4,7 @@
 #include "utilities.h"
 #include "datatypes.h"
 #include "inputoptions.h"
+#include "gzstream.h"
 
 #include <functional>
 #include <queue>
@@ -23,7 +24,12 @@
 
 struct Context {
    vector<vector<std::string>> data;
+#ifdef GZSTREAM
+   vector<igzstream *> file_handles;
+#else
    vector<ifstream *> file_handles;
+#endif
+
    vector<int> data_size;
    vector<int> ptrs;
    vector<bool> isempty;

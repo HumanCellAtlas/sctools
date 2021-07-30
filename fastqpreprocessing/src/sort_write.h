@@ -5,6 +5,7 @@
 #include <vector>
 #include <semaphore.h>
 
+#include "gzstream.h"
 #include "datatypes.h"
 #include "utilities.h"
 #include "globals.h"
