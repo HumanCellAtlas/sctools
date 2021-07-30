@@ -1,6 +1,6 @@
 IDIR =../libStatGen/include
 IDIR2 =../htslib-1.13
-C = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4 
+CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4 
 #CC = g++ -std=c++17 -fPIC  -DHTSLIB -DGZSTREAM -Wall -O4 
 #CC = g++ -std=c++17 -fPIC  -DLIBSTATGEN
 
