@@ -47,9 +47,12 @@ inline char *get_Ztag_or_default(bam1_t *aln, const char *tagname, char *default
     uint8_t *p;
     char *tag_value = NULL;
     if ((p=bam_aux_get(aln, tagname))==NULL) {
-         tag_value = default_value;
+        tag_value = default_value;
     } else {
         tag_value = bam_aux2Z(p);
+        if (strcmp(tag_value, "-")==0)  {
+           tag_value = default_value;
+        }
     }
     return  tag_value;
 }
