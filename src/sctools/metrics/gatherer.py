@@ -245,7 +245,8 @@ class GatherCellMetricsFast(MetricGatherer):
         """
 
         # open the files
-        with open(self.bam_file, mode=mode) as tsv_reader, closing(
+        with gzip.open(self.bam_file, mode=mode) if self.bam_file.endswisth('.gz') else \
+            open(self.bam_file, mode=mode)  as tsv_reader, closing(
             MetricCSVWriter(self._output_stem, self._compress)
         ) as cell_metrics_output:
             # write the header
@@ -373,8 +374,9 @@ class GatherGeneMetricsFast(MetricGatherer):
 
         """
 
-        # open the files
-        with open(self.bam_file, mode=mode) as tsv_reader, closing(
+        # open the files note self.bam_file is not always a bam file
+        with gzip.open(self.bam_file, mode=mode) if self.bam_file.endswisth('.gz') else \
+           open(self.bam_file, mode=mode)  as tsv_reader, closing(
             MetricCSVWriter(self._output_stem, self._compress)
         ) as gene_metrics_output:
             # write the header
