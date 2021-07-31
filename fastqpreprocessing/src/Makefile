@@ -3,6 +3,7 @@ IDIR2 =../htslib-1.13
 CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4 
 #CC = g++ -std=c++17 -fPIC  -DHTSLIB -DGZSTREAM -Wall -O4 
 #CC = g++ -std=c++17 -fPIC  -DLIBSTATGEN
+
 CFLAGS = -I$(IDIR) -L../libStatGen 
 
 ODIR=obj
