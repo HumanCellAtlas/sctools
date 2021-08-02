@@ -4,11 +4,8 @@
 #define STRING_LEN  40
 
 extern sem_t semaphore;
-#define SEM_POST(X)                                      \
- ({                                                      \
-     if (sem_post(&X) == -1)                             \
-        error("sem_post: semaphore");                   \
- })
+extern std::vector<string> partial_files;
+extern std::mutex mtx;
 
 inline bool sortbyfirst(const std::pair<TRIPLET *, int>& a, 
                   const std::pair<TRIPLET *, int>& b) {
@@ -26,9 +23,9 @@ inline bool sortbyfirst(const std::pair<TRIPLET *, int>& a,
 using namespace std;
 /** @copydoc write_out_partial_txt_file */
 void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
-              std::string const & tmp_folder,  std::vector<string> &partial_files) {;
+              std::string const & tmp_folder) {;
 
-    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt.gz");
+    std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
 
 #ifdef GZSTREAM
     ogzstream  output_fp;
@@ -86,9 +83,10 @@ void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
     str.str("");
     str.clear();
     output_fp.close();
+    
+    mtx.lock();
     partial_files.push_back(tempfile);
-
-    SEM_POST(semaphore);
+    mtx.unlock();
 }
 
 

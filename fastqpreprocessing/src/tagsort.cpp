@@ -6,13 +6,11 @@
  ***********************************************/
 
 #include "htslib_tagsort.h"
-
 #include "tagsort.h"
 #include <regex>
 
-#define DATA_BUFFER_SIZE 1000
 
-
+extern std::vector<string> partial_files;
 int filling_counter = 0;
 
 /*
@@ -58,8 +56,7 @@ void fill_buffer(Context &contx) {
  * @param output_file
 */
 
-void merge_partial_files(const std::vector<std::string> &partial_files, 
-                         const std::string &output_file ) {
+bool merge_partial_files(const std::string &output_file ) {
 
     // input the buffer size and partial files
     Context contx(partial_files.size(), DATA_BUFFER_SIZE); 
@@ -76,7 +73,17 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
 #else
        ifstream *input_fp = new ifstream;
 #endif
+
+       // set exceptionss to be thrown on failure
+       //input_fp->exceptions(std::ifstream::failbit | std::ifstream::badbit);
        input_fp->open(partial_files[i].c_str()); 
+       if(!input_fp->is_open()) {
+            std::cerr << "ERROR failed to open the file " << partial_files[i] << std::endl;
+            std::cerr << "      consider increasing the number of alignments per thread." << std::endl;
+            std::cerr << "      That might require you to run of on a machine with more RAM." << std::endl;
+            return false;
+       }
+
        contx.file_handles.push_back(input_fp);
     }
 
@@ -198,6 +205,7 @@ void merge_partial_files(const std::vector<std::string> &partial_files,
 
     std::cout << "Written "<< num_alignments << " alignments in total" << std::endl;
     contx.clear();
+    return true;
 }
 
 /* Flag set by ‘--verbose’. */
@@ -211,7 +219,7 @@ int main (int argc, char **argv)
   std::cout << "bam input " << options.bam_input << std::endl;
   std::cout << "temp folder " << options.temp_folder << std::endl;
   std::cout << "output file " <<  options.output_file << std::endl;
-  std::cout << "temp folder " << options.inmemory_chunk_size << std::endl;
+  std::cout << "temp folder " << options.alignments_per_thread << std::endl;
   std::cout << "tags:" << std::endl;
 
   for(auto it = options.tag_order.begin(); it != options.tag_order.end(); it++) { 
@@ -219,13 +227,15 @@ int main (int argc, char **argv)
   }
 
   /* first create a list of sorted, and simplified sorted files */
-  std::vector<string> partial_files;
-  partial_files = htslib::create_sorted_file_splits_htslib(options);
+  htslib::create_sorted_file_splits_htslib(options);
 
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */
   std::cout << "Merging " <<  partial_files.size() << " sorted files!"<< std::endl;
-  merge_partial_files(partial_files, options.output_file);
+
+  if(!merge_partial_files(options.output_file)) {
+     std::cout << "Failed to complete the merging as the number of concurrently open files increased the max limit" << std::endl;
+  }
 
   // we no longer need the partial files
   for (unsigned int i=0; i < partial_files.size(); i++) {

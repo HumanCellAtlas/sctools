@@ -23,11 +23,11 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
           {"bam-input",                  required_argument, 0, 'b'},
           {"temp-folder",                required_argument, 0, 't'},
           {"output",                     required_argument, 0, 'o'},
-          {"inmemory-chunk-size",        required_argument, 0, 'p'},
+          {"alignments-per-thread",      required_argument, 0, 'p'},
+          {"nthreads",                   required_argument, 0, 'T'},
           {"barcode-tag",                required_argument, 0, 'C'},
           {"umi-tag",                    required_argument, 0, 'U'},
           {"gene-tag",                   required_argument, 0, 'G'},
- //         {"bamlib",                    required_argument, 0, 'B'},
           {0, 0, 0, 0}
   };
 
@@ -37,7 +37,8 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
            "input bam file [required]",
            "temp folder for disk sorting [options: default /tmp]",
            "output file [required]",
-           "size of chunks for in-memory sorting [optional: default 1 GB]",
+           "number of alignments per thread [optional: default 1000000], if this number is increased then more RAM is required but reduces the number of file splits",
+           "number of threads [optional: default 1]",
            "barcode-tag the call barcode tag [required]", 
            "umi-tag the umi tag [required]: the tsv file output is sorted according the tags in the options barcode-tag, umi-tag or gene-tag",
            "gene-tag the gene tag [required]", 
@@ -50,7 +51,7 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
   int option_index = 0;
   int curr_size = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:t:o:p:C:U:G:v",
+                          "b:t:o:p:T:C:U:G:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -78,7 +79,10 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
             options.output_file = string(optarg);
             break;
         case 'p':
-            options.inmemory_chunk_size = atof(optarg);
+            options.alignments_per_thread = atoi(optarg);
+            break;
+        case 'T':
+            options.nthreads = atoi(optarg);
             break;
         case 'C':
             options.barcode_tag = string(optarg);
@@ -158,23 +162,21 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
 
 
   // The size of a set of aligments for in-memory sorting must be positive
-  if (options.inmemory_chunk_size <= 0) {
-     std::cout << "ERROR: The size (in GB) of chunks for in-memory sorting must be positive\n";
-     std::cerr << "ERROR: The size (in GB) of chunks for in-memory sorting must be positive\n";
+  if (options.alignments_per_thread < 1000) {
+     std::cout << "ERROR: The number of alignments per thread must be at least 1000\n";
+     std::cerr << "ERROR: The number of alignments per thread must be at least 1000\n";
      exit_with_error = true;
       exit(1);
   }
 
-/*
-  // check the bam lib
-  if (options.bamlib!=std::string("HTSLIB") &&  options.bamlib!=std::string("LIBGENSTAT")) {
-      std::cout << "ERROR " << "The bam reading library must be one of \"HTSLIB\" or \"LIBGENSTAT\"!\n";
-      std::cerr << "ERROR " << "The bam reading library must be one of \"HTSLIB\" or \"LIBGENSTAT\"!\n";
-      std::cout << "BAMLIB " << options.bamlib << std::endl;
-      exit_with_error = true;
+ // The number of threads must be between 1 and MAX_THREADS
+  if (options.nthreads > MAX_THREADS or options.nthreads < 1) {
+     std::cout << "ERROR: The number of threads must be between 1 and " << MAX_THREADS << "\n";
+     std::cerr << "ERROR: The number of threads must be between 1 and " << MAX_THREADS << "\n";
+     exit_with_error = true;
       exit(1);
   }
-*/
+
   if (exit_with_error) {
      exit(1);
   }

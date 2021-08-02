@@ -24,6 +24,6 @@
  * @return a string for the random file name
 */
 void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records,  \
-          std::string const & tmp_folder,  std::vector<string> &partial_files);
+          std::string const & tmp_folder);
 
 #endif

@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "globals.h"
 
 using namespace std;
 
@@ -118,7 +119,8 @@ typedef struct _input_options_tagsort {
   /// Initialize some of the values
   _input_options_tagsort() {
      temp_folder =  std::string("/tmp/");
-     inmemory_chunk_size = 1.0;
+     alignments_per_thread = NUM_ALNS_PER_THREAD;
+     nthreads = 1;
   }
   /// name of the bam file 
   std::string bam_input;
@@ -126,9 +128,10 @@ typedef struct _input_options_tagsort {
   std::string temp_folder;
   // output file
   std::string output_file;
-  /// size of data to load for inmemory sorting (in GB)
-  double inmemory_chunk_size;
-
+  // number of alignment per thread 
+  unsigned int alignments_per_thread;
+  // number of threads
+  unsigned int nthreads;
   // barcode tag
   std::string barcode_tag;
   // umi tag

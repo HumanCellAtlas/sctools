@@ -5,6 +5,7 @@
 #include "datatypes.h"
 #include "inputoptions.h"
 #include "gzstream.h"
+#include "globals.h"
 
 #include <functional>
 #include <queue>

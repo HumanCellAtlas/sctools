@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +17,7 @@
 #include <unordered_map>
 #include <memory>
 #include <semaphore.h>
+#include <set>
 
 #include <htslib/sam.h>
 #include "inputoptions.h"
@@ -38,7 +40,7 @@
 
 namespace htslib {
 
-std::vector<string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options);
+void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options);
 
 }
  
