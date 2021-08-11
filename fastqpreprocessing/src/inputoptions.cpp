@@ -10,6 +10,10 @@
 using namespace std;
 namespace fs = std::experimental::filesystem;
 
+void error_message(const char *msg) {
+      std::cerr << msg;
+}
+
 /** @copydoc read_options_tagsort */
 void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options) {
   int c;
@@ -17,33 +21,39 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
 
   static struct option long_options[] = {
           /* These options set a flag. */
-          {"verbose",                   no_argument,       0, 'v'},
+          {"compute-metric",             no_argument,       0, 'm'},
+          {"output-sorted-info",         no_argument,       0, 'n'},
           /* These options don’t set a flag.
              We distinguish them by their indices. */
           {"bam-input",                  required_argument, 0, 'b'},
+          {"gtf-file",                   required_argument, 0, 'a'},
           {"temp-folder",                required_argument, 0, 't'},
-          {"output",                     required_argument, 0, 'o'},
+          {"sorted-output",              required_argument, 0, 'o'},
+          {"metric-output",              required_argument, 0, 'M'},
           {"alignments-per-thread",      required_argument, 0, 'p'},
           {"nthreads",                   required_argument, 0, 'T'},
           {"barcode-tag",                required_argument, 0, 'C'},
           {"umi-tag",                    required_argument, 0, 'U'},
           {"gene-tag",                   required_argument, 0, 'G'},
+          {"metric-type",                required_argument, 0, 'K'},
           {0, 0, 0, 0}
   };
 
   // help messages when the user types -h
   const char *help_messages[] = {
-           "verbose messages  ",
+           "compute metric, metrics are computed if this option is provided [optional]",
+           "sorted output file is produced if this option is provided [optional]",
            "input bam file [required]",
+           "gtf file (unzipped) required then metric type is cell [required with metric cell]",
            "temp folder for disk sorting [options: default /tmp]",
-           "output file [required]",
+           "sorted output file [optional]",
+           "metric file, the metrics are output in this file  [optional]",
            "number of alignments per thread [optional: default 1000000], if this number is increased then more RAM is required but reduces the number of file splits",
            "number of threads [optional: default 1]",
            "barcode-tag the call barcode tag [required]", 
            "umi-tag the umi tag [required]: the tsv file output is sorted according the tags in the options barcode-tag, umi-tag or gene-tag",
            "gene-tag the gene tag [required]", 
-           "tags to sort by [required]",
-           "bam lib to use HTSLIB or LIBGENSTAT [required]"
+           "metric type, either \"cell\" or \"gene\" [required]"
   };
 
 
@@ -51,14 +61,18 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
   int option_index = 0;
   int curr_size = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:t:o:p:T:C:U:G:v",
+                          "b:a:t:no:mM:p:T:C:U:G:K:",
                           long_options,
                           &option_index)) !=- 1
                          )
   {
       // process the option or arguments
       switch (c) {
-        case 'v':
+        case 'm':
+            options.compute_metric = 1;
+            break;
+        case 'n':
+            options.output_sorted_info = 1;
             break;
         case 0:
           /* If this option set a flag, do nothing else now. */
@@ -72,11 +86,17 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
         case 'b':
             options.bam_input = string(optarg);
             break;
+        case 'a':
+            options.gtf_file = string(optarg);
+            break;
         case 't':
             options.temp_folder = string(optarg);
             break;
         case 'o':
-            options.output_file = string(optarg);
+            options.sorted_output_file = string(optarg);
+            break;
+        case 'M':
+            options.metric_output_file = string(optarg);
             break;
         case 'p':
             options.alignments_per_thread = atoi(optarg);
@@ -99,6 +119,9 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
             curr_size = options.tag_order.size();
             options.tag_order[string(optarg)] = curr_size;
             break;
+        case 'K':
+            options.metric_type = string(optarg);
+            break;
         case '?':
         case 'h':
           i = 0;
@@ -119,65 +142,80 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
     }
 
   // Check the options
+  // either metric computation or the sorted tsv file must be produced
+  if (options.output_sorted_info!=1 && options.compute_metric!=1) {
+      error_message("ERROR: The choice of either the  sorted alignment info or metric computation must be specified\n");
+      exit(1);
+  } else {
+      if ( 
+           !(options.metric_output_file.size()!=0 && options.compute_metric==1) &&
+           !(options.sorted_output_file.size()!=0 && options.output_sorted_info==1)
+         ) {
+         error_message("ERROR: --compute-metric and --metric-output should be both specified together\n");
+         exit(1);
+      }
+  }
+
+  // metric type must be either of type cell or gene
+  if (options.metric_type.size() == 0 || 
+      (options.metric_type.compare("cell")!=0 && options.metric_type.compare("gene")!=0)
+    ) {
+     error_message("ERROR: Metric type must either be \"cell\" or \"gene\"\n");
+     exit(1);
+  }
+
+  // if metric type is cell then the gtf file must be provided
+  if (options.metric_type.compare("cell")==0 && options.gtf_file.size()==0) {
+     error_message("ERROR: The gtf file name must be provided with metric_type \"cell\"\n");
+     exit(1);
+  } 
+
+  // the gtf file should not be gzipped
+  std::regex reg1(".gz$", regex_constants::icase);
+  if (std::regex_search(options.gtf_file, reg1)) {
+     error_message("ERROR: The gtf file must not be gzipped\n");
+     exit(1);
+  }
+
   // bam input file must be there
-  bool exit_with_error = false;
   if (options.bam_input.size() == 0) {
-     std::cout << "ERROR: Must specify a input file name " << std::endl;
-     std::cerr << "ERROR: Must specify a input file name " << std::endl;
-     exit_with_error = true;
+     error_message("ERROR: Must specify a input file name\n");
      exit(1);
   }
 
-  // output file must exist
-  if (options.output_file.size() == 0) {
-     std::cout << "ERROR: Must specify a output file name " << std::endl;
-     std::cerr << "ERROR: Must specify a output file name " << std::endl;
-     exit_with_error = true;
-     exit(1);
-  }
-
+  std::stringstream ss;
   // check for input file
   if (not fs::exists(options.bam_input.c_str())) {
-      std::cout << "ERROR " << "bam_input" << options.bam_input << " is missing!\n";
-      std::cerr << "ERROR " << "bam_input" << options.bam_input << " is missing!\n";
-      exit_with_error = true;
-      exit(1);
+     ss.str("");
+     ss << "ERROR " << "bam_input" << options.bam_input << " is missing!\n";
+     error_message(ss.str().c_str());
+     exit(1);
   }
 
   // check for the temp folder
   if (not fs::exists(options.temp_folder.c_str())) {
-      std::cout << "ERROR " << "temp folder " << options.temp_folder <<  " is missing!\n";
-      std::cerr << "ERROR " << "temp folder " << options.temp_folder <<  " is missing!\n";
-      exit_with_error = true;
-      exit(1);
+     ss.str("");
+     ss << "ERROR " << "temp folder " << options.temp_folder <<  " is missing!\n";
+     error_message(ss.str().c_str());
+     exit(1);
   }
 
   // check for three distinct tags, barcode, umi and gene_id tags
   if (options.tag_order.size()!=3) {
-      std::cout << "ERROR " << "Must have three distinct tags \n";
-      std::cerr << "ERROR " << "Must have three distinct tags \n";
-      exit_with_error = true;
-      exit(1);
+     error_message("ERROR:  Must have three distinct tags\n");
+     exit(1);
   }
-
 
   // The size of a set of aligments for in-memory sorting must be positive
   if (options.alignments_per_thread < 1000) {
-     std::cout << "ERROR: The number of alignments per thread must be at least 1000\n";
-     std::cerr << "ERROR: The number of alignments per thread must be at least 1000\n";
-     exit_with_error = true;
-      exit(1);
+     error_message("ERROR: The number of alignments per thread must be at least 1000\n");
+     exit(1);
   }
 
  // The number of threads must be between 1 and MAX_THREADS
   if (options.nthreads > MAX_THREADS or options.nthreads < 1) {
-     std::cout << "ERROR: The number of threads must be between 1 and " << MAX_THREADS << "\n";
-     std::cerr << "ERROR: The number of threads must be between 1 and " << MAX_THREADS << "\n";
-     exit_with_error = true;
-      exit(1);
-  }
-
-  if (exit_with_error) {
+     ss << "ERROR: The number of threads must be between 1 and " << MAX_THREADS << "\n";
+     error_message(ss.str().c_str());
      exit(1);
   }
 }
@@ -231,7 +269,7 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
       // process the option or arguments
       switch (c) {
         case 'v':
-            verbose_flag = 1;
+            options.verbose_flag = 1;
             break;
         case 0:
           /* If this option set a flag, do nothing else now. */
@@ -320,6 +358,7 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
 
      exit_with_error = true;
   }
+
   // Bam file size must be positive
   if (options.bam_size <= 0) {
      std::cout << "ERROR: Size of a bam file (in GB) cannot be negative\n";

@@ -130,3 +130,20 @@ std::string random_string(size_t length)
     std::generate_n(str.begin(), length, randchar);
     return str;
 }
+
+
+/** @copydoc read_lines **/
+std::vector<std::string> read_lines(const std::string &file_name) {
+  string line;
+  std::vector<std::string> lines;
+  ifstream myfile(file_name.c_str());
+  if (myfile.is_open()) {
+    while ( getline (myfile,line) ) {
+      lines.push_back(line);
+    }
+    myfile.close();
+  } else {
+    throw std::runtime_error("Could not open file");
+  }
+  return lines;
+}

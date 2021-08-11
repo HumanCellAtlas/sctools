@@ -1,6 +1,7 @@
 IDIR =../libStatGen/include
 IDIR2 =../htslib-1.13
-CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4 
+#CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -g -Wwrite-strings 
+CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4  -Wwrite-strings 
 #CC = g++ -std=c++17 -fPIC  -DHTSLIB -DGZSTREAM -Wall -O4 
 #CC = g++ -std=c++17 -fPIC  -DLIBSTATGEN
 
@@ -19,7 +20,7 @@ _TARGET1_OBJ = fastqprocess.o
 TARGET1_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET1_OBJ))
 
 TARGET2 = TagSort
-_TARGET2_OBJ = tagsort.o htslib_tagsort.o gzstream.o globals.o sort_write.o
+_TARGET2_OBJ = tagsort.o htslib_tagsort.o gzstream.o globals.o sort_write.o metricgatherer.o
 TARGET2_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET2_OBJ))
 
 

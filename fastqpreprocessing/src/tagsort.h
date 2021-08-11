@@ -6,6 +6,7 @@
 #include "inputoptions.h"
 #include "gzstream.h"
 #include "globals.h"
+#include "metricgatherer.h"
 
 #include <functional>
 #include <queue>
@@ -16,6 +17,7 @@
 #include <tuple>
 #include <cstdint>
 #include <iostream>
+#include <regex>
 
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +33,7 @@ struct Context {
    vector<ifstream *> file_handles;
 #endif
 
+   vector<long int> file_offset;
    vector<int> data_size;
    vector<int> ptrs;
    vector<bool> isempty;
@@ -44,6 +47,16 @@ struct Context {
 
        num_active_files = 0;
 
+       // set file file handles to 0
+       for (auto i=0; i < this->NUM_PARTS; i++) {
+          this->file_handles.push_back(0);
+       }
+   
+       // set the file offsets to 0
+       for (auto i=0; i < this->NUM_PARTS; i++) {
+          this->file_offset.push_back(0);
+       }
+   
        // set the isempty for each file to false
        for (auto i=0; i < this->NUM_PARTS; i++) {
           this->isempty.push_back(false);
@@ -75,9 +88,7 @@ struct Context {
 
 
    void clear() {
-       for(auto it = file_handles.begin(); it != file_handles.end(); ++it) {
-          delete *it; 
-       }
+       file_handles.clear();
        data_size.clear();
        ptrs.clear();
        isempty.clear();

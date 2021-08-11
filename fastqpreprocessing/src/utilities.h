@@ -87,4 +87,15 @@ void _print_file_info(const std::vector<std::string> &fastqs, \
  * @return a random alphanumeric string of specified length
 */
 std::string random_string(size_t length);
+
+/**
+ * @brief this function reads the lines in a  text file into a vector 
+ * of strings
+ *
+ * @param file_name: file name
+ * @return a vector of strings
+*/
+
+std::vector<std::string> read_lines(const std::string &file_name);
+
 #endif

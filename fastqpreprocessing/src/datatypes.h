@@ -18,6 +18,24 @@ using namespace std;
 
 typedef std::tuple<std::string *, std::string *, std::string *> TRIPLET;
 
+typedef struct TagCounter {
+    TagCounter() {
+      prev_tag = "";
+    }
+    std::unordered_map<std::string, int> data;
+    std::string prev_tag;
+    int count = 0;
+
+    void clear() { data.clear(); }
+
+    void update(const std::string &tag) {
+       if (tag.compare(prev_tag)!=0)  {
+          count++;
+          prev_tag = tag;
+       }
+    }
+} TAG_COUNTER;
+
 typedef std::tuple<TRIPLET * /*  tuple<std::string *, std::string *, std::string *>*/,  
                    std::string /* reference */, 
                    std::string /* biotype */,  
@@ -69,9 +87,6 @@ typedef struct _tags_holder {
 } TAGS_HOLDER;
 
 
-
-
-
 // structure for correcting the barcodes
 typedef struct _white_list_data {
     /// an unordered map from whitelist barcodes and 1-mutations
@@ -90,7 +105,10 @@ typedef struct _input_options_fastqprocess {
      umi_length = -1;
      sample_id = "";
      bam_size = 1.0;
+     verbose_flag = 0;
   }
+  //verbose flag
+  unsigned int verbose_flag;
   /// I1, R1 and R2 files name
   std::vector<std::string> I1s, R1s, R2s;
   /// Barcode white list file
@@ -113,21 +131,38 @@ typedef struct _input_options_fastqprocess {
 */
 void read_options_fastqprocess(int, char **, INPUT_OPTIONS_FASTQPROCESS &);
 
+enum METRIC_TYPE {CELL, GENE};
 
 // Structure to hold input options for tagsort
 typedef struct _input_options_tagsort {
   /// Initialize some of the values
   _input_options_tagsort() {
+     bam_input = "";
+     gtf_file = "";
      temp_folder =  std::string("/tmp/");
      alignments_per_thread = NUM_ALNS_PER_THREAD;
      nthreads = 1;
+     compute_metric = 0;
+     output_sorted_info = 0;
+     metric_type = "";
   }
+  // metric type
+  std::string metric_type;
+
+  // output sorted info
+  unsigned int output_sorted_info;
+  // compute metric
+  unsigned int compute_metric;
   /// name of the bam file 
   std::string bam_input;
+  /// name of the gtf file 
+  std::string gtf_file;
   // temp folder for disk sorting
   std::string temp_folder;
-  // output file
-  std::string output_file;
+  // metric_output file
+  std::string metric_output_file;
+  // sorted tsv output file
+  std::string sorted_output_file;
   // number of alignment per thread 
   unsigned int alignments_per_thread;
   // number of threads

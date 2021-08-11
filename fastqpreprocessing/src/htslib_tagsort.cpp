@@ -6,9 +6,13 @@
  ***********************************************/
 #include "htslib_tagsort.h"
 
+unsigned int num_thread_deallocations = 0;
 extern sem_t semaphore;
 extern std::mutex mtx;
 extern std::set<unsigned int> busy_buffer, idle_buffer, threads_to_join;
+
+char*  error_sem_wait = "sem_wait: semaphore"; 
+char*  error_sem_post = "sem_post: semaphore"; 
 
 #define SEM_PRINT_VAL(X,Y)                               \
   ({                                                     \
@@ -20,13 +24,13 @@ extern std::set<unsigned int> busy_buffer, idle_buffer, threads_to_join;
 #define SEM_WAIT(X)                                      \
  ({                                                      \
      if (sem_wait(&X) == -1)                             \
-         error("sem_wait: semaphore");                   \
+         error(error_sem_wait);                          \
  })
 
 #define SEM_POST(X)                                      \
  ({                                                      \
      if (sem_post(&X) == -1)                             \
-        error("sem_post: semaphore");                    \
+        error(error_sem_wait);                           \
  })
 
 
@@ -259,7 +263,9 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
     threads_to_join.insert(buf_no);
     mtx.unlock();
 
+    num_thread_deallocations += 1;
     SEM_POST(semaphore);
+
 }
  
 /**
@@ -273,7 +279,6 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
  * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-namespace htslib {
 void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
 
     string input_bam = options.bam_input;
@@ -290,6 +295,7 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in); //read header
     bam1_t ***aln_arr;
 
+    // allocated memory for the alignments for the various threads
     if ((aln_arr = (bam1_t ***)malloc(sizeof(bam1_t**)*options.nthreads))==NULL) {
        std::cerr << "ERROR Failed to allocate memory " <<   std::endl;
        exit(1);
@@ -299,7 +305,7 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
            std::cerr << "ERROR Failed to allocate memory for alignments " <<   std::endl;
        }
        for (unsigned int k = 0; k < options.alignments_per_thread; k++) {
-          aln_arr[i][k]= bam_init1(); //initialize an alignment
+         aln_arr[i][k]= bam_init1(); //initialize an alignment
        }
     }
 
@@ -338,11 +344,13 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
           std::cout << "Alignments read " << i << std::endl;
        }
        buf_i++;
-       num_alignments++;
-/* if (i > 25000) { 
+/*
+       if (num_alignments > 40000000) { 
            std::cout << "Remove me from file " << __FILE__ << " line no " << __LINE__ << std::endl;
            break;
-       } */
+       } 
+*/
+       num_alignments++;
 
        if (buf_i!=0 && buf_i==options.alignments_per_thread) {
            std::cout << "Batch number : " << batch << std::endl;
@@ -361,7 +369,11 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
                busy_buffers.erase(*buf_it);
                idle_buffers.insert(*buf_it);
            }
+
+           //destroy the alignments
+
            threads_to_join.clear();
+
            mtx.unlock();
 
            // now find an idle buffer and make it busy so that we can load new data
@@ -395,17 +407,19 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
 
     // release the memory and clear data-structures
     for (unsigned int i = 0; i < options.nthreads; i++) {
+       std::cout << "releasing memory for thread " << i << std::endl;
        for (unsigned int k = 0; k < options.alignments_per_thread; k++) {
           bam_destroy1(aln_arr[i][k]);
        }
        free(aln_arr[i]);
     }
     free(aln_arr);
+
     sam_hdr_destroy(bamHdr);
     hts_close(fp_in);
 
+    std::cout << "Deallocate threads " << num_thread_deallocations << std::endl; 
     std::cout << std::endl << "Read " << i << " records" << std::endl;
     std::cout << "Read " << num_alignments << " records as batches" << std::endl;
 }  // function 
 
-} //namespace 
