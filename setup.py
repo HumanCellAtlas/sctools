@@ -40,13 +40,9 @@ setup(
             "Attach10xBarcodes = sctools.platform:TenXV2.attach_barcodes",
             "SplitBam = sctools.platform:GenericPlatform.split_bam",
             "CalculateGeneMetrics = sctools.platform:GenericPlatform."
-            + "calculate_gene_metrics",
-            "CalculateGeneMetricsFast = sctools.platform:GenericPlatform."
-            + "calculate_gene_metrics_fast",
+            + "calculate_gene_metrics_from_tsv",
             "CalculateCellMetrics = sctools.platform:GenericPlatform."
-            + "calculate_cell_metrics",
-            "CalculateCellMetricsFast = sctools.platform:GenericPlatform."
-            + "calculate_cell_metrics_fast",
+            + "calculate_cell_metrics_from_tsv",
             "MergeGeneMetrics = sctools.platform:GenericPlatform."
             + "merge_gene_metrics",
             "MergeCellMetrics = sctools.platform:GenericPlatform."

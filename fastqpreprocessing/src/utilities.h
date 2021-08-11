@@ -5,7 +5,7 @@
  *  @file   utilities.h
  *  @brief  Utility functions for file processing
  *  @author Kishori Konwar
- *  @date   2020-08-26
+ *  @date   2021-08-11
  ***********************************************/
 
 #include <math.h>

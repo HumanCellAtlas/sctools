@@ -2,10 +2,10 @@
 #define __DATA_TYPES__
 
 /**
- *  @file   inputoptions.h
+ *  @file   input_options.h
  *  @brief  Utility functions for input options processing
  *  @author Kishori Konwar
- *  @date   2020-08-26
+ *  @date   2021-08-11
  ***********************************************/
 
 #include <getopt.h>
@@ -55,17 +55,11 @@ typedef std::tuple<TRIPLET * /*  tuple<std::string *, std::string *, std::string
 
 typedef std::tuple<std::string, int, int>  QUEUETUPLE;
 
-/*
-bool operator<(const QUEUETUPLE &a, const  QUEUETUPLE &b) {
-    return get<0>(a) > get<0>(b);
-};
-*/
-
 typedef std::pair<std::string, bool> STRING_BOOL_PAIR;
 
 typedef std::vector<std::string>  STRING_VECTOR;
 
-typedef std::unordered_map <std::string, int64_t> STRING_INT32_MAP;
+typedef std::unordered_map <std::string, int64_t> STRING_INT64_MAP;
 
 
 typedef struct _tags {
@@ -91,7 +85,7 @@ typedef struct _tags_holder {
 typedef struct _white_list_data {
     /// an unordered map from whitelist barcodes and 1-mutations
     /// to the index of the correct barcode
-    STRING_INT32_MAP mutations;
+    STRING_INT64_MAP mutations;
     /// vector of whitelist barcodes
     STRING_VECTOR barcodes;
 } WHITE_LIST_DATA;

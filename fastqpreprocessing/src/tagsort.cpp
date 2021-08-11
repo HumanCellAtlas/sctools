@@ -2,7 +2,7 @@
  *  @file   tagsort.cpp
  *  @brief  functions for file processing
  *  @author Kishori M. Konwar
- *  @date   2020-08-27
+ *  @date   2021-08-11
  ***********************************************/
 
 #include "htslib_tagsort.h"
@@ -52,7 +52,6 @@ unsigned int split_buffer_to_fields(const std::string &str, char *line, char **f
  * @param gtf file name, unzipped
  * @return std::set<std::sting>
 */
-
 std::set<std::string> get_mitochondrial_gene_names(
     const std::string &gtf_file) {
 
@@ -70,7 +69,7 @@ std::set<std::string> get_mitochondrial_gene_names(
 
     input_fp->open(gtf_file.c_str(), std::ifstream::in); 
     if(!input_fp->is_open()) {
-        std::cerr << "ERROR failed to open the file " << gtf_file<< std::endl;
+        std::cerr << "ERROR failed to open the GTF file " << gtf_file<< std::endl;
         exit(1);
     }
 
@@ -156,7 +155,6 @@ void fill_buffer(Context &contx) {
     input_fp->close();
     delete input_fp;
 
-//    std::cout << " Filling buffer " << contx.i << " with " << contx.data[contx.i].size() << " lines " << std::endl;
     contx.data_size[contx.i] = contx.data[contx.i].size();
 
     if (contx.data_size[contx.i] != 0) {
@@ -189,8 +187,9 @@ bool process_partial_files(const INPUT_OPTIONS_TAGSORT &options) {
     const std::string &metric_type  = options.metric_type;  
     const std::string &metric_output_file = options.metric_output_file;
 
-    std::set<std::string> mitochondrial_genes = \
-         get_mitochondrial_gene_names(options.gtf_file);
+    std::set<std::string> mitochondrial_genes;
+    if (options.gtf_file.size()>0)
+       mitochondrial_genes = get_mitochondrial_gene_names(options.gtf_file);
 
     // input the buffer size and partial files
     Context contx(partial_files.size(), DATA_BUFFER_SIZE); 
@@ -306,14 +305,8 @@ bool process_partial_files(const INPUT_OPTIONS_TAGSORT &options) {
           fill_buffer(contx);
        } 
 
-       //if (num_alignments%10000 == 0 )
-       //std::cout << " heap size " << heap.size() << std::endl;
-       /*  add a new element to the heapq
-           if there is no data then fill it unless the file is empty
-       */
        // make sure it is not empty
        if (contx.data_size[i] > 0) {
-          // std::string comp_tag = contx.data[i][contx.ptrs[i]];
           std::sregex_token_iterator iter(contx.data[i][contx.ptrs[i]].begin(), contx.data[i][contx.ptrs[i]].end(), rgx, -1);
           std::stringstream comp_tag;
           for (auto k = 0; k < 3 && iter!=end; ++iter, k++) {
@@ -379,14 +372,6 @@ int main (int argc, char **argv) {
   /* first create a list of sorted, and simplified sorted files */
   create_sorted_file_splits_htslib(options);
   
-/* KK
-  try {
-      partial_files = read_lines("file_names.txt");
-  } catch (std::exception &ex) {
-      std::cout << "Cannot open file, because: " << ex.what() << "!\n";
-  }
-*/
-
   /* now merge the sorted files to create one giant sorted file by using 
     a head to compare the values based on the tags used  */
   std::cout << "Merging " <<  partial_files.size() << " sorted files!"<< std::endl;

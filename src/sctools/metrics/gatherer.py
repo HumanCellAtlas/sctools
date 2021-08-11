@@ -110,7 +110,7 @@ class MetricGatherer:
             ):
 
                 # compute metrics for the molecule and gene tags
-                metric_aggregator.parse_molecule_fast(
+                metric_aggregator.parse_molecule_from_tsv(
                     tags=(first_tag, prev_second_tag, prev_third_tag),
                     records=cellwise_data_field_records,
                 )
@@ -128,7 +128,7 @@ class MetricGatherer:
 
         #  Now process the last batch
         if cellwise_data_field_records:
-            metric_aggregator.parse_molecule_fast(
+            metric_aggregator.parse_molecule_from_tsv(
                 tags=(first_tag, prev_second_tag, prev_third_tag),
                 records=cellwise_data_field_records,
             )

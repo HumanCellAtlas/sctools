@@ -331,7 +331,7 @@ class MetricAggregator:
             # todo figure out antisense and make this notation clearer; info likely in dropseqtools
             self._plus_strand_reads += not record.is_reverse
 
-    def parse_molecule_fast(self, tags: Sequence[str], records: List[str]) -> None:
+    def parse_molecule_from_tsv(self, tags: Sequence[str], records: List[str]) -> None:
         """Parse information from all records of a molecule.
 
         The parsed information is stored in the MetricAggregator in-place.
@@ -349,19 +349,13 @@ class MetricAggregator:
             # should normally come in order in a sorted file
 
             # extract sub-class-specific information
-            self.parse_extra_fields_fast(tags=tags, record=record)
+            self.parse_extra_fields_from_tsv(tags=tags, record=record)
 
-            # if tags[0]=='TAAACCGCAAACTGTC':
-            #    print(tags)
             self.n_reads += 1
-            # self.noise_reads += self.is_noise(record)  # todo implement me
 
             # the tags passed to this function define a molecule, this increments the counter,
             # identifying a new molecule only if a new tag combination is observed
             self._molecule_histogram[tags] += 1
-
-            # print(5, record[5])
-            # print( record)
 
             self._molecule_barcode_fraction_bases_above_30.update(float(record[13]))
 
@@ -399,14 +393,14 @@ class MetricAggregator:
                 self.reads_mapped_uniquely += 1
             else:
                 self.reads_mapped_multiple += (
-                    1  # todo without multi-mapping, this number is zero!
+                    1  # without multi-mapping, this number is zero!
                 )
             self.duplicate_reads += int(record[11])
 
             # cigar N field (3) indicates a read is spliced if the value is non-zero
             self.spliced_reads += int(record[10])
 
-            # todo figure out antisense and make this notation clearer; info likely in dropseqtools
+            #  figure out antisense and make this notation clearer; info likely in dropseqtools
             self._plus_strand_reads += 1 if strand else 0
 
     def parse_extra_fields(
@@ -605,7 +599,7 @@ class CellMetrics(MetricAggregator):
         # todo track reads_mapped_too_many_loci after multi-alignment is done
         self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
-    def parse_extra_fields_fast(self, tags: Sequence[str], record: List[str]) -> None:
+    def parse_extra_fields_from_tsv(self, tags: Sequence[str], record: List[str]) -> None:
         """Parses a record to extract gene-specific information
 
         Gene-specific metric data is stored in-place in the MetricAggregator
@@ -628,14 +622,7 @@ class CellMetrics(MetricAggregator):
         else:  # empty
             self.reads_unmapped += 1
 
-        # try:
-        #    alignment_location = record.get_tag(consts.ALIGNMENT_LOCATION_TAG_KEY)
-        #    if alignment_location == consts.INTERGENIC_ALIGNMENT_LOCATION_TAG_VALUE:
-        #        self.reads_mapped_intergenic += 1
-        # except KeyError:
-        #    self.reads_unmapped += 1
-
-        # todo track reads_mapped_too_many_loci after multi-alignment is done
+        # track reads_mapped_too_many_loci after multi-alignment is done
         self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
 
@@ -703,7 +690,7 @@ class GeneMetrics(MetricAggregator):
         """
         self._cells_histogram[tags[1]] += 1
 
-    def parse_extra_fields_fast(self, tags: Sequence[str], record: List[str]) -> None:
+    def parse_extra_fields_from_tsv(self, tags: Sequence[str], record: List[str]) -> None:
         """Parses a record to extract cell-specific information
 
         Cell-specific metric data is stored in-place in the MetricAggregator

@@ -1,6 +1,11 @@
 #ifndef __SORT_WRITE_H__
 #define __SORT_WRITE_H__
-
+/**
+ *  @file   sort_write.h
+ *  @brief  functions for file processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
 #include <string>
 #include <vector>
 #include <semaphore.h>

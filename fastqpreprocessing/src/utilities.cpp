@@ -2,7 +2,7 @@
  *  @file   utilities.cpp
  *  @brief  Utility functions for file processing
  *  @author Kishori Konwar
- *  @date   2020-08-27
+ *  @date   2021-08-11
  ***********************************************/
 
 #include "utilities.h"

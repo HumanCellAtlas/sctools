@@ -1,5 +1,12 @@
 #ifndef __METRIC_GATHERER__
 #define __METRIC_GATHERER__
+/**
+ *  @file   metricgatherer.h
+ *  @brief  functions for file processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
+
 #include <unordered_map>
 #include <map>
 #include <string>

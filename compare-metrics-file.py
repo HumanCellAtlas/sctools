@@ -16,13 +16,12 @@ def read_metrics_file(file_name):
     return metric_data
 
 
-def compare_metric_files(ref_metrics, query_metrics):
+def compare_metric_files(ref_metrics, query_metrics, source1, source2):
 
     if ref_metrics["header"] != query_metrics["header"]:
         print("Header mismatch!")
         sys.exit(0)
 
-    # print('Header', ref_metrics['header'])
     column_map_ref = {i: x.strip() for i, x in enumerate(ref_metrics["header"])}
     column_map_query = {i: x.strip() for i, x in enumerate(query_metrics["header"])}
 
@@ -33,20 +32,19 @@ def compare_metric_files(ref_metrics, query_metrics):
        if key not in ref_metrics:
            print("Key {} missing in reference".format(key))
        if key!='header':
-         #print()
-         #print('query: ', query_metrics[key])
-         #print('ref  : ', ref_metrics[key])
          errors = False
          for i, (_x, _y) in enumerate(zip(query_metrics[key], ref_metrics[key])):
             if _x=='nan' or _y=='nan': 
                if _x!=_y:
-                 print("\tMismatch: num {} key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(j, key, i, column_map_query[i],  i, column_map_query[i],  _x, _y))
+                 print("\tMismatch: num {} key {} {}:({},  {}) and {}:({}, {}) as  {}!={}".format(j, key, source1, i, column_map_query[i], 
+                         source2, i, column_map_query[i],  _x, _y))
                  errors = True
             else: 
                x = float(_x) 
                y = float(_y) 
                if i not in [14, 15, 16] and abs(x-y) > tol:
-                   print("\tMismatch: num {}  key {}  query ({},  {}) and ref({}, {}) as  {}!={}".format(j, key, i, column_map_query[i],  i, column_map_query[i],  x, y))
+                   print("\tMismatch: num {} key {} {}:({},  {}) and {}:({}, {}) as  {}!={}".format(j, key, source1, i, column_map_query[i], 
+                         source2, i, column_map_query[i],  _x, _y))
                    errors = True
 
          nerrors +=  int(errors)
@@ -60,11 +58,11 @@ def main(args):
     query_metrics = read_metrics_file(args.query_file)
     i = 0
 
-    print("Query against ref")
-    compare_metric_files(ref_metrics, query_metrics)
+    print("Query against Ref")
+    compare_metric_files(ref_metrics, query_metrics, "Ref", "Query")
 
-    print("Ref against query")
-    compare_metric_files(query_metrics, ref_metrics)
+    print("Ref against Query")
+    compare_metric_files(query_metrics, ref_metrics, "Query", "Ref")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,16 @@
 #ifndef __TAG_SORT__
 #define __TAG_SORT__
 
+/**
+ *  @file   tagsort.h
+ *  @brief  Utility functions for input options processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
+
 #include "utilities.h"
 #include "datatypes.h"
-#include "inputoptions.h"
+#include "input_options.h"
 #include "gzstream.h"
 #include "globals.h"
 #include "metricgatherer.h"

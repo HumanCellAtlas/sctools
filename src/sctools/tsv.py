@@ -5,7 +5,7 @@ Tools for Manipulating TSV format files
 .. currentmodule:: sctools
 
 This module provides functions and classes to subsample lines from tsv files that correspond to
-alignments, split bam files into chunks, and iterate over sorted tsv files by one or more tags
+alignments, split tsv files into chunks, and iterate over sorted tsv files by one or more tags
 
 
 Methods
@@ -18,8 +18,6 @@ iter_tag_groups_from_tsv                         function to iterate over lines 
 from typing import Iterator, Generator
 from io import TextIOWrapper
 
-
-# todo change this to throw away "None" lines instead of appending them if we are filtering them
 def iter_tag_groups_from_tsv(
     tsv_iterator: Iterator[TextIOWrapper], filter_null: bool = False
 ) -> Generator:
@@ -30,7 +28,7 @@ def iter_tag_groups_from_tsv(
     tag : str
         BAM tag to group over
     tsv_iterator : Iterator[pysam.AlignedSegment]
-        open bam file that can be iterated over
+        open tsv file that can be iterated over
     filter_null : bool, optional
         If False, all lines that lack the requested tag are yielded together. Else, all lines
         that lack the tag will be discarded (default = False).

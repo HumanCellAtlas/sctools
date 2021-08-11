@@ -1,10 +1,10 @@
 /**
- *  @file   inputoptions.cpp
+ *  @file   input_options.cpp
  *  @brief  functions for optons and input checking
  *  @author Kishori Konwar
- *  @date   2021-07-07
+ *  @date   2021-08-11
  ***********************************************/
-#include "inputoptions.h"
+#include "input_options.h"
 #include <experimental/filesystem>
 
 using namespace std;

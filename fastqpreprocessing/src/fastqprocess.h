@@ -27,7 +27,7 @@
 #include <mutex>     
 
 #include "utilities.h"
-#include "inputoptions.h"
+#include "input_options.h"
 
 
 /// Samrecord bins to be accessed by all threads

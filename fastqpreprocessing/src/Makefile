@@ -12,7 +12,7 @@ LDIR =../libStatGen/
 
 LIBS = -lStatGen -lz -lpthread -lstdc++fs 
 
-_DEPS = fastqprocess.h utilities.h inputoptions.h 
+_DEPS = fastqprocess.h utilities.h input_options.h 
 #DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 TARGET1 = fastqprocess
@@ -31,7 +31,7 @@ install: $(TARGET1) $(TARGET2)
 
 all: $(TARGET1) $(TARGET2)
 
-_COMMON_OBJ =  utilities.o inputoptions.o 
+_COMMON_OBJ =  utilities.o input_options.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_COMMON_OBJ))
 
 $(ODIR)/%.o: %.cpp $(_DEPS)

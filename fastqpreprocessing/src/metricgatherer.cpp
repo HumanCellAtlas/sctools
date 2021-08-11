@@ -1,3 +1,9 @@
+/**
+ *  @file   metricgatherer.cpp
+ *  @brief  functions for file processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
 #include "metricgatherer.h"
 
 #define ASSERT(condition) { if(!(condition)){ std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl; } }

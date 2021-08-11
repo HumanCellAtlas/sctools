@@ -261,7 +261,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def calculate_gene_metrics_fast(cls, args: Iterable[str] = None) -> int:
+    def calculate_gene_metrics_from_tsv(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for calculating gene metrics from a sorted bamfile.
 
         Writes metrics to .csv
@@ -351,7 +351,7 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def calculate_cell_metrics_fast(cls, args: Iterable[str] = None) -> int:
+    def calculate_cell_metrics_from_tsv(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for calculating cell metrics from an already sorted tsv file.
 
         Writes metrics to .csv

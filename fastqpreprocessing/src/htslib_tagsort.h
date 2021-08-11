@@ -1,7 +1,13 @@
 #ifndef __HTSLIB_TAG_SORT__
 #define __HTSLIB_TAG_SORT__
 
-//#include "utilities.h"
+/**
+ *  @file   htslib_tagsort.h
+ *  @brief  Utility functions for input options processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
+
 #include <tuple>
 #include <cstdint>
 #include <string>
@@ -20,7 +26,7 @@
 #include <set>
 
 #include <htslib/sam.h>
-#include "inputoptions.h"
+#include "input_options.h"
 #include "datatypes.h"
 #include "sort_write.h"
 #include "globals.h"

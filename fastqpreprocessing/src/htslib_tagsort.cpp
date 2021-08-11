@@ -2,8 +2,9 @@
  *  @file   htslib_tagsort.cpp
  *  @brief  functions for file processing
  *  @author Kishori Konwar
- *  @date   2020-08-27
+ *  @date   2021-08-11
  ***********************************************/
+
 #include "htslib_tagsort.h"
 
 unsigned int num_thread_deallocations = 0;
@@ -119,6 +120,7 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
        float sum_barcode_qual = 0;
        float num_bp_above_threshold = 0;
        len = strlen(barcode_qual);
+
        for (unsigned int k = 0; k < len; k++) {
           // barcodes qual strings are in ASCII symbols subtracting 33 gives the phred qual score
           sum_barcode_qual += ((uint8_t)barcode_qual[k] -33);
@@ -146,7 +148,6 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
               break;
            }
        }
-
        // qual score for molecular barcodes
        umi_qual = (char *)get_Ztag_or_default(aln[i], "UY", empty);
 
@@ -257,7 +258,6 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
          delete it->second; 
     }
     string_map.clear();
-    //std::cout << "Num alignments processed " << n << std::endl;
 
     mtx.lock();
     threads_to_join.insert(buf_no);
@@ -265,7 +265,6 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
 
     num_thread_deallocations += 1;
     SEM_POST(semaphore);
-
 }
  
 /**
@@ -344,12 +343,6 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
           std::cout << "Alignments read " << i << std::endl;
        }
        buf_i++;
-/*
-       if (num_alignments > 40000000) { 
-           std::cout << "Remove me from file " << __FILE__ << " line no " << __LINE__ << std::endl;
-           break;
-       } 
-*/
        num_alignments++;
 
        if (buf_i!=0 && buf_i==options.alignments_per_thread) {

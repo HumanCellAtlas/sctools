@@ -1,6 +1,11 @@
 #include "sort_write.h"
 #include <sstream>
-
+/**
+ *  @file   sort_write.cpp
+ *  @brief  functions for file processing
+ *  @author Kishori Konwar
+ *  @date   2021-08-11
+ ***********************************************/
 #define STRING_LEN  40
 
 extern sem_t semaphore;
@@ -77,7 +82,6 @@ void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
 
 
     }
-    // what if you ran out of disk space how do you inform the user? 
     output_fp.write(str.str().c_str(), str.str().length());
 
     str.str("");
