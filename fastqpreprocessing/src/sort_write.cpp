@@ -43,7 +43,7 @@ void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
     std::vector<std::pair<TRIPLET *, int>> index_pairs;
     int k  = 0;
      
-    for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
+    for (auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++) { 
         index_pairs.push_back(std::make_pair(get<0>(*it) , k));
     }
 
@@ -53,7 +53,6 @@ void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
     stringstream str(stringstream::out|stringstream::binary);
 
     for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++, k++) {
-          
           // what is you ran out of disk space ???? NEED TO add logic
           if (k%10000==0) {
              output_fp.write(str.str().c_str(), str.str().length());
@@ -91,6 +90,8 @@ void  write_out_partial_txt_file(const vector<TAGTUPLE> &tuple_records, \
     mtx.lock();
     partial_files.push_back(tempfile);
     mtx.unlock();
+
+    freeStlContainer(index_pairs);
     index_pairs.clear();
 }
 

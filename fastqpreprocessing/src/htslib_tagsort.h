@@ -29,6 +29,7 @@
 #include "input_options.h"
 #include "datatypes.h"
 #include "sort_write.h"
+#include "utilities.h"
 #include "globals.h"
 
 

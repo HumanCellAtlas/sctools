@@ -98,4 +98,15 @@ std::string random_string(size_t length);
 
 std::vector<std::string> read_lines(const std::string &file_name);
 
+template<typename T>
+inline void freeStlContainer(T& p_container)
+{
+   return;
+/*
+   T empty;
+   using std::swap;
+   swap(p_container, empty);
+*/
+}
+
 #endif

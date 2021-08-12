@@ -318,9 +318,7 @@ bool process_partial_files(const INPUT_OPTIONS_TAGSORT &options) {
        } else { // one more file is fully read 
           contx.num_active_files -= 1;
        }
-       if (heap.size() > 425) {
-          std::cout << "heap size exceeded\n";
-       }
+
        if (num_alignments%1000000 == 0) {
           std::cout << "num alns read " << num_alignments << std::endl;
        }

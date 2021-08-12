@@ -22,6 +22,9 @@ char*  error_sem_post = "sem_post: semaphore";
   })                                                     \
 
 #define SEM_INIT(X, n)  (sem_init(&X, 0, n) )
+
+#define SEM_DESTROY(X)  (sem_destroy(&X) )
+
 #define SEM_WAIT(X)                                      \
  ({                                                      \
      if (sem_wait(&X) == -1)                             \
@@ -39,6 +42,7 @@ extern "C" {
     bam_hdr_t * sam_hdr_read(samFile *); //read header
     htsFile *hts_open(const char *fn, const char *mode);
 }
+
 
 /*
   @brief get the int tag or -1
@@ -92,7 +96,7 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
 
     uint32_t len = 0; //length of qual seq.
 
-    for(unsigned int i = 0; i < n; i++) {
+    for (unsigned int i = 0; i < n; i++) {
        // extract the barcodes corrected and  corrected
        barcode = (char *)get_Ztag_or_default(aln[i], options.barcode_tag.c_str(), none);
        barcode_raw = (char *)get_Ztag_or_default(aln[i], "CR", empty);
@@ -127,7 +131,7 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
           if (((uint8_t)barcode_qual[k] - 33)  > threshold) num_bp_above_threshold += 1;
        }
        int avg_cell_barcode_qual = sum_barcode_qual/(float)len;
-       float cell_barcode_qual_above_threshold =  (float)num_bp_above_threshold/(float)len;
+       float cell_barcode_qual_above_threshold = (float)num_bp_above_threshold/(float)len;
 
 
        // corrected molecule barcodes (UMIs)
@@ -196,7 +200,6 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
        avg_sequence_qual = sum_qual/(float)len;
        qual_above_threshold = qual_above_threshold/(float)len;
 
-
        uint32_t *cigar = bam_get_cigar(aln[i]);
        // see if it is spliced, i.e., N appears in the CIGAR string
        uint32_t spliced_read = 0;
@@ -215,11 +218,13 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
        tags[options.tag_order[options.gene_tag]] = gene_id;
    
        if (string_map.find(barcode)==string_map.end()) {
-           string_map[barcode] = new std::string(barcode);
+           string_map[std::string(barcode)] = new std::string(barcode);
        }
+
        if (string_map.find(umi)==string_map.end()) {
-           string_map[umi] = new std::string(umi);
+           string_map[std::string(umi)] = new std::string(umi);
        }
+
        if (string_map.find(gene_id)==string_map.end()) {
            string_map[gene_id] = new std::string(gene_id);
        }
@@ -249,15 +254,20 @@ void process_alignments(INPUT_OPTIONS_TAGSORT &options, bam1_t **aln, bam_hdr_t 
 
     write_out_partial_txt_file(tuple_records, options.temp_folder);
 
-    for(auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
-          delete get<0>(*it);
+    // delete the triplet
+    for (auto it=tuple_records.begin(); it!=tuple_records.end(); it++) { 
+       delete get<0>(*it);
     }
     tuple_records.clear(); 
+    freeStlContainer(tuple_records);
 
-    for(auto it=string_map.begin(); it!=string_map.end(); it++) { 
-         delete it->second; 
+    //  free the memory for the strings
+    for (auto it=string_map.begin(); it!=string_map.end(); it++) { 
+       delete it->second; 
     }
+
     string_map.clear();
+    freeStlContainer(string_map);
 
     mtx.lock();
     threads_to_join.insert(buf_no);
@@ -339,9 +349,11 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
     mtx.unlock();
 
     while(sam_read1(fp_in, bamHdr,aln_arr[buf_no][buf_i]) > 0) {
-       if (i%10000000==0) { 
+       if (i > 10000000 ) { 
           std::cout << "Alignments read " << i << std::endl;
+          break;
        }
+
        buf_i++;
        num_alignments++;
 
@@ -362,11 +374,8 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
                busy_buffers.erase(*buf_it);
                idle_buffers.insert(*buf_it);
            }
-
-           //destroy the alignments
-
+           // clear the threads
            threads_to_join.clear();
-
            mtx.unlock();
 
            // now find an idle buffer and make it busy so that we can load new data
@@ -389,6 +398,7 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
     for (unsigned int k=0; k< options.nthreads; k++) {
         SEM_WAIT(semaphore);
     }
+    SEM_DESTROY(semaphore);
 
     // join any completed thread that are ready to be joined
     mtx.lock();
