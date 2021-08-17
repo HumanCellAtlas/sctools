@@ -98,7 +98,7 @@ class Metrics {
     int reads_mapped_intronic = 0;
     int reads_mapped_utr = 0;
 
-    // todo implement this once we have a gene model
+    // in future we can implement this when we have a gene model
     // self.reads_mapped_outside_window = 0  # reads should be within 1000 bases of UTR
     // self._read_distance_from_termination_site = OnlineGaussianSufficientStatistic()
 
@@ -110,7 +110,7 @@ class Metrics {
     // alignment splicing information
     int spliced_reads = 0;
     int antisense_reads = 0;
-    int plus_strand_reads = 0;  // strand balance  # todo implement property here
+    int plus_strand_reads = 0;  // strand balance  
 
     // higher-order methods, filled in by finalize() when all data is extracted
     float molecule_barcode_fraction_bases_above_30_mean = -1;

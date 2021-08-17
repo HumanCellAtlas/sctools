@@ -227,11 +227,7 @@ bool process_partial_files(const INPUT_OPTIONS_TAGSORT &options) {
     }
 
     //  now merge by pop an push     
-#ifdef GZSTREAM
-    ogzstream  fout;
-#else
     ofstream fout;
-#endif
     if (compute_metric==true) fout.open(sorted_output_file.c_str()); 
 
     // pop and push from the heap

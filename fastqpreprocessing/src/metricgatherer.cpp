@@ -60,7 +60,7 @@ void Metrics::clear() {
   // alignment splicing information
   spliced_reads = 0;
   antisense_reads = 0;
-  plus_strand_reads = 0;  // strand balance  # todo implement property here
+  plus_strand_reads = 0;  // strand balance 
 
   // higher-order methods, filled in by finalize() when all data is extracted
   molecule_barcode_fraction_bases_above_30_mean = -1;
@@ -202,14 +202,14 @@ void Metrics::parse_line(std::string &str, ofstream &fmetric_out,
      reads_mapped_utr += 1;
    }
 
-   // todo check if read maps outside window (needs gene model)
-   // todo create distances from terminate side (needs gene model) uniqueness
+   // in futher check if read maps outside window (when we add a  gene model)
+   // and  create distances from terminate side (needs gene model) uniqueness
    int number_mappings = std::stoi(std::string(record[offset + 8]));
 
    if (number_mappings==1)
      this->reads_mapped_uniquely += 1;
    else
-     this->reads_mapped_multiple += 1;  // todo without multi-mapping, this number is zero!)
+     this->reads_mapped_multiple += 1;  // without multi-mapping, this number is zero!
 
    this->duplicate_reads += std::stoi(std::string(record[offset + 11]));
 

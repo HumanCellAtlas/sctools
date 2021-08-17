@@ -11,7 +11,6 @@
 #include "utilities.h"
 #include "datatypes.h"
 #include "input_options.h"
-#include "gzstream.h"
 #include "globals.h"
 #include "metricgatherer.h"
 
@@ -34,11 +33,7 @@
 
 struct Context {
    vector<vector<std::string>> data;
-#ifdef GZSTREAM
-   vector<igzstream *> file_handles;
-#else
    vector<ifstream *> file_handles;
-#endif
 
    vector<long int> file_offset;
    vector<int> data_size;
