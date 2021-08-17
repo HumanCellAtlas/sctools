@@ -261,44 +261,6 @@ class GenericPlatform:
         return 0
 
     @classmethod
-    def calculate_gene_metrics_from_tsv(cls, args: Iterable[str] = None) -> int:
-        """Command line entrypoint for calculating gene metrics from a sorted bamfile.
-
-        Writes metrics to .csv
-
-        Parameters
-        ----------
-        args : Iterable[str], optional
-            arguments list, for testing (see test/test_entrypoints.py for example). The default
-            value of None, when passed to `parser.parse_args` causes the parser to
-            read `sys.argv`
-
-        Returns
-        -------
-        return_call : 0
-            return call if the program completes successfully
-
-        """
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-i", "--input-bam", required=True, help="Input bam file name."
-        )
-        parser.add_argument(
-            "-o", "--output-filestem", required=True, help="Output file stem."
-        )
-
-        if args is not None:
-            args = parser.parse_args(args)
-        else:
-            args = parser.parse_args()
-
-        gene_metric_gatherer = metrics.gatherer.GatherGeneMetricsFast(
-            args.input_bam, args.output_filestem
-        )
-        gene_metric_gatherer.extract_metrics()
-        return 0
-
-    @classmethod
     def calculate_cell_metrics(cls, args: Iterable[str] = None) -> int:
         """Command line entrypoint for calculating cell metrics from a sorted bamfile.
 
@@ -346,59 +308,6 @@ class GenericPlatform:
 
         cell_metric_gatherer = metrics.gatherer.GatherCellMetrics(
             args.input_bam, args.output_filestem, mitochondrial_gene_ids
-        )
-        cell_metric_gatherer.extract_metrics()
-        return 0
-
-    @classmethod
-    def calculate_cell_metrics_from_tsv(cls, args: Iterable[str] = None) -> int:
-        """Command line entrypoint for calculating cell metrics from an already sorted tsv file.
-
-        Writes metrics to .csv
-
-        Parameters
-        ----------
-        args : Iterable[str], optional
-            Arguments list, for testing (see test/test_entrypoints.py for example). The default
-            value of None, when passed to `parser.parse_args` causes the parser to
-            read `sys.argv`
-
-        Returns
-        -------
-        return_call : 0
-            return call if the program completes successfully
-
-        """
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-i", "--input-tsv", required=True, help="Input tsv file name."
-        )
-        parser.add_argument(
-            "-o", "--output-filestem", required=True, help="Output file stem."
-        )
-
-        parser.add_argument(
-            "-a",
-            "--gtf-annotation-file",
-            required=False,
-            default=None,
-            help="gtf annotation file that bam_file was aligned against",
-        )
-
-        if args is not None:
-            args = parser.parse_args(args)
-        else:
-            args = parser.parse_args()
-
-        # load mitochondrial gene ids from the annotation file
-        mitochondrial_gene_ids: Set(str) = set()
-        # if args.gtf_annotation_file:
-        #    mitochondrial_gene_ids = gtf.get_mitochondrial_gene_names(
-        #        args.gtf_annotation_file
-        #    )
-
-        cell_metric_gatherer = metrics.gatherer.GatherCellMetricsFast(
-            args.input_tsv, args.output_filestem, mitochondrial_gene_ids
         )
         cell_metric_gatherer.extract_metrics()
         return 0
