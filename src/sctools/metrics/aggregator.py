@@ -246,8 +246,10 @@ class MetricAggregator:
             all the tags that define this molecule. one of {[CB, GE, UB], [GE, CB, UB]}
         records : Iterable[pysam.AlignedSegment]
             the sam records associated with the molecule
+
         """
         for record in records:
+
             # todo think about how I could use the duplicate tag to reduce computation; duplicates
             # should normally come in order in a sorted file
 
@@ -330,78 +332,6 @@ class MetricAggregator:
 
             # todo figure out antisense and make this notation clearer; info likely in dropseqtools
             self._plus_strand_reads += not record.is_reverse
-
-    def parse_molecule_from_tsv(self, tags: Sequence[str], records: List[str]) -> None:
-        """Parse information from all records of a molecule.
-
-        The parsed information is stored in the MetricAggregator in-place.
-
-        Parameters
-        ----------
-        tags : Sequence[str]
-            all the tags that define this molecule. one of {[CB, GE, UB], [GE, CB, UB]}
-        records : List[(str, str, str, str, str)]
-            the records associated with the molecule
-
-        """
-        for record in records:
-            # todo think about how I could use the duplicate tag to reduce computation; duplicates
-            # should normally come in order in a sorted file
-
-            # extract sub-class-specific information
-            self.parse_extra_fields_from_tsv(tags=tags, record=record)
-
-            self.n_reads += 1
-
-            # the tags passed to this function define a molecule, this increments the counter,
-            # identifying a new molecule only if a new tag combination is observed
-            self._molecule_histogram[tags] += 1
-
-            self._molecule_barcode_fraction_bases_above_30.update(float(record[13]))
-
-            self.perfect_molecule_barcodes += int(record[9])
-
-            self._genomic_reads_fraction_bases_quality_above_30.update(float(record[7]))
-
-            self._genomic_read_quality.update(float(record[6]))
-
-            # the remaining portions deal with aligned reads, so if the read is not mapped, we are
-            # done with it
-            if record[0] == "*":
-                continue
-
-            # get components that define a unique sequence fragment and increment the histogram
-            position = int(record[2])
-            strand = True if int(record[3]) == 1 else False
-            reference = record[0]
-            self._fragment_histogram[reference, position, strand, tags] += 1
-
-            alignment_location = record[1]
-            if alignment_location == consts.CODING_ALIGNMENT_LOCATION_TAG_VALUE:
-                self.reads_mapped_exonic += 1
-            elif alignment_location == consts.INTRONIC_ALIGNMENT_LOCATION_TAG_VALUE:
-                self.reads_mapped_intronic += 1
-            elif alignment_location == consts.UTR_ALIGNMENT_LOCATION_TAG_VALUE:
-                self.reads_mapped_utr += 1
-
-            # todo check if read maps outside window (needs gene model)
-            # todo create distances from terminate side (needs gene model)
-
-            # uniqueness
-            number_mappings = int(record[8])
-            if number_mappings == 1:
-                self.reads_mapped_uniquely += 1
-            else:
-                self.reads_mapped_multiple += (
-                    1  # without multi-mapping, this number is zero!
-                )
-            self.duplicate_reads += int(record[11])
-
-            # cigar N field (3) indicates a read is spliced if the value is non-zero
-            self.spliced_reads += int(record[10])
-
-            #  figure out antisense and make this notation clearer; info likely in dropseqtools
-            self._plus_strand_reads += 1 if strand else 0
 
     def parse_extra_fields(
         self, tags: Sequence[str], record: pysam.AlignedSegment
@@ -599,32 +529,6 @@ class CellMetrics(MetricAggregator):
         # todo track reads_mapped_too_many_loci after multi-alignment is done
         self._genes_histogram[tags[2]] += 1  # note that no gene == None
 
-    def parse_extra_fields_from_tsv(self, tags: Sequence[str], record: List[str]) -> None:
-        """Parses a record to extract gene-specific information
-
-        Gene-specific metric data is stored in-place in the MetricAggregator
-
-        Parameters
-        ----------
-        tags : Sequence[str]
-            The GE, UB and CB tags that define this molecule
-        record : pysam.AlignedSegment
-            SAM record to be parsed
-
-        """
-        self._cell_barcode_fraction_bases_above_30.update(float(record[5]))
-
-        self.perfect_cell_barcodes += int(record[12])
-
-        if len(record[1]) != 0:
-            if record[1] == consts.INTERGENIC_ALIGNMENT_LOCATION_TAG_VALUE:
-                self.reads_mapped_intergenic += 1
-        else:  # empty
-            self.reads_unmapped += 1
-
-        # track reads_mapped_too_many_loci after multi-alignment is done
-        self._genes_histogram[tags[2]] += 1  # note that no gene == None
-
 
 class GeneMetrics(MetricAggregator):
     """Gene Metric Aggregator
@@ -676,21 +580,6 @@ class GeneMetrics(MetricAggregator):
     def parse_extra_fields(
         self, tags: Sequence[str], record: pysam.AlignedSegment
     ) -> None:
-        """Parses a record to extract cell-specific information
-
-        Cell-specific metric data is stored in-place in the MetricAggregator
-
-        Parameters
-        ----------
-        tags : Sequence[str]
-            The CB, UB and GE tags that define this molecule
-        record : pysam.AlignedSegment
-            SAM record to be parsed
-
-        """
-        self._cells_histogram[tags[1]] += 1
-
-    def parse_extra_fields_from_tsv(self, tags: Sequence[str], record: List[str]) -> None:
         """Parses a record to extract cell-specific information
 
         Cell-specific metric data is stored in-place in the MetricAggregator

@@ -33,7 +33,6 @@ from typing import Set
 from sctools.bam import iter_cell_barcodes, iter_genes, iter_molecule_barcodes
 from sctools.metrics.aggregator import CellMetrics, GeneMetrics
 from sctools.metrics.writer import MetricCSVWriter
-from sctools.tsv import iter_tag_groups_from_tsv
 
 
 class MetricGatherer:
@@ -86,54 +85,6 @@ class MetricGatherer:
         """
         raise NotImplementedError
 
-    def compute_metrics(self, entitywise_records, metric_aggregator):
-        # create a metrics aggregator for the current cell
-        # process the records of the new cell
-        prev_second_third_tags = (None, None)
-        prev_second_tag = None
-        prev_third_tag = None
-        cellwise_data_field_records = []
-
-        for _entitywise_record in entitywise_records:
-            entitywise_record = [x.strip() for x in _entitywise_record.split("\t")]
-            first_tag, second_tag, third_tag = (
-                entitywise_record[0],
-                entitywise_record[1],
-                entitywise_record[2],
-            )
-
-            second_third_tags = (second_tag, third_tag)
-            # not the first record and either molecule tar or gene tag is different from previous
-            if (
-                prev_second_third_tags != second_third_tags
-                and cellwise_data_field_records != []
-            ):
-
-                # compute metrics for the molecule and gene tags
-                metric_aggregator.parse_molecule_from_tsv(
-                    tags=(first_tag, prev_second_tag, prev_third_tag),
-                    records=cellwise_data_field_records,
-                )
-                #                             print(cell_tag, molecule_tag, gene_tag)
-                # create for the next combination of molecule and gene_tag records
-                cellwise_data_field_records = []
-
-            # otherwise continue with the data
-            cellwise_data_field_records.append(
-                entitywise_record[3:]
-            )  # the first two are molecute and gene_tags
-            prev_second_third_tags = second_third_tags
-            prev_second_tag = second_tag
-            prev_third_tag = third_tag
-
-        #  Now process the last batch
-        if cellwise_data_field_records:
-            metric_aggregator.parse_molecule_from_tsv(
-                tags=(first_tag, prev_second_tag, prev_third_tag),
-                records=cellwise_data_field_records,
-            )
-        cellwise_data_field_records = []
-        return first_tag
 
 class GatherCellMetrics(MetricGatherer):
 
@@ -207,61 +158,6 @@ class GatherCellMetrics(MetricGatherer):
                 )
                 cell_metrics_output.write(cell_tag, vars(metric_aggregator))
 
-class GatherCellMetricsFast(MetricGatherer):
-
-    extra_docs = """
-    Notes
-    -----
-    ``bam_file`` must be sorted by gene (``GE``), molecule (``UB``), and cell (``CB``), where gene
-    varies fastest.
-
-    Examples
-    --------
-    >>> from sctools.metrics.gatherer import GatherCellMetrics
-    >>> import os, tempfile
-
-    >>> # example data
-    >>> bam_file = os.path.abspath(__file__) + '../test/data/test.bam'
-    >>> temp_dir = tempfile.mkdtemp()
-    >>> g = GatherCellMetrics(bam_file=bam_file, output_stem=temp_dir + 'test', compress=True)
-    >>> g.extract_metrics()
-
-    See Also
-    --------
-    GatherGeneMetrics
-
-    """
-
-    __doc__ += extra_docs
-
-    def extract_metrics(self, mode: str = "r") -> None:
-        """Extract cell metrics from self.bam_file
-
-        Parameters
-        ----------
-        mode : str, optional
-            Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
-
-        """
-
-        # open the files
-        with gzip.open(self.bam_file, mode=mode) if self.bam_file.endswisth('.gz') else \
-            open(self.bam_file, mode=mode)  as tsv_reader, closing(
-            MetricCSVWriter(self._output_stem, self._compress)
-        ) as cell_metrics_output:
-            # write the header
-            cell_metrics_output.write_header(vars(CellMetrics()))
-
-            for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(
-                tsv_iterator=tsv_reader
-            ):
-                # create a metrics aggregator for the current cell
-                metric_aggregator = CellMetrics()
-                cell_tag = self.compute_metrics(_cellwise_records, metric_aggregator)
-                # write a record for each cell
-                metric_aggregator.finalize(mitochondrial_genes=self._mitochondrial_gene_ids)
-                cell_metrics_output.write(cell_tag, vars(metric_aggregator))
-
 
 class GatherGeneMetrics(MetricGatherer):
 
@@ -325,71 +221,12 @@ class GatherGeneMetrics(MetricGatherer):
                         bam_iterator=cell_iterator
                     ):
 
-                        print(gene_tag, cell_tag, molecule_tag)
                         # process the data
                         metric_aggregator.parse_molecule(
                             tags=(gene_tag, cell_tag, molecule_tag),
                             records=molecule_iterator,
                         )
 
-                # write a record for each gene id
-                metric_aggregator.finalize()
-                gene_metrics_output.write(gene_tag, vars(metric_aggregator))
-
-
-class GatherGeneMetricsFast(MetricGatherer):
-
-    extra_docs = """
-    Notes
-    -----
-    ``bam_file`` must be sorted by molecule (``UB``), cell (``CB``), and gene (``GE``), where
-    molecule varies fastest.
-
-    Examples
-    --------
-    >>> from sctools.metrics.gatherer import GatherCellMetrics
-    >>> import os, tempfile
-
-    >>> # example data
-    >>> bam_file = os.path.abspath(__file__) + '../test/data/test.bam'
-    >>> temp_dir = tempfile.mkdtemp()
-    >>> g = GatherCellMetrics(bam_file=bam_file, output_stem=temp_dir + 'test', compress=True)
-    >>> g.extract_metrics()
-
-    See Also
-    --------
-    GatherGeneMetrics
-
-    """
-
-    __doc__ += extra_docs
-
-    def extract_metrics(self, mode: str = "r") -> None:
-        """Extract gene metrics from self.bam_file
-
-        Parameters
-        ----------
-        mode : str, optional
-            Open mode for self.bam. 'r' -> sam, 'rb' -> bam (default = 'rb').
-
-        """
-
-        # open the files note self.bam_file is not always a bam file
-        with gzip.open(self.bam_file, mode=mode) if self.bam_file.endswisth('.gz') else \
-           open(self.bam_file, mode=mode)  as tsv_reader, closing(
-            MetricCSVWriter(self._output_stem, self._compress)
-        ) as gene_metrics_output:
-            # write the header
-            gene_metrics_output.write_header(vars(GeneMetrics()))
-
-            for _cellwise_records, curr_tag in iter_tag_groups_from_tsv(
-                tsv_iterator=tsv_reader
-            ):
-                if curr_tag and len(curr_tag.split(",")) > 1:
-                    continue
-
-                metric_aggregator = GeneMetrics()
-                gene_tag = self.compute_metrics(_cellwise_records, metric_aggregator)
                 # write a record for each gene id
                 metric_aggregator.finalize()
                 gene_metrics_output.write(gene_tag, vars(metric_aggregator))
