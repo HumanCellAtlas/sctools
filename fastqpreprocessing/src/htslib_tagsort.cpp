@@ -348,11 +348,6 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
     mtx.unlock();
 
     while(sam_read1(fp_in, bamHdr,aln_arr[buf_no][buf_i]) > 0) {
-       if (i > 10000000 ) { 
-          std::cout << "Alignments read " << i << std::endl;
-          break;
-       }
-
        buf_i++;
        num_alignments++;
 
