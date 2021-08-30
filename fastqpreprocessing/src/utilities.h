@@ -1,11 +1,13 @@
+#ifndef __OPTIMUS_UTILITES__
+#define __OPTIMUS_UTILITES__
+
 /**
  *  @file   utilities.h
  *  @brief  Utility functions for file processing
  *  @author Kishori Konwar
- *  @date   2020-08-26
+ *  @date   2021-08-11
  ***********************************************/
-#ifndef __OPTIMUS_UTILITES__
-#define __OPTIMUS_UTILITES__
+
 #include <math.h>
 #include <cstdint>
 #include <vector>
@@ -13,45 +15,10 @@
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
+#include <algorithm>
+#include <experimental/filesystem>
 
-typedef std::pair<std::string, bool>  STRING_BOOL_PAIR;
-
-typedef std::vector<std::string>  STRING_VECTOR;
-
-typedef std::unordered_map <std::string, int64_t> STRING_INT32_MAP;
-
-// structure for correcting the barcodes
-typedef struct _white_list_data {
-    /// an unordered map from whitelist barcodes and 1-mutations
-    /// to the index of the correct barcode
-    STRING_INT32_MAP mutations;
-    /// vector of whitelist barcodes
-    STRING_VECTOR barcodes;
-} WHITE_LIST_DATA;
-
-/// Structure to hold input options
-typedef struct _input_options {
-  /// Initialize some of the values
-  _input_options() {
-     barcode_length = -1;
-     umi_length = -1;
-     sample_id = "";
-     bam_size = 1.0;
-  }
-  /// I1, R1 and R2 files name
-  std::vector<std::string> I1s, R1s, R2s;
-  /// Barcode white list file
-  std::string white_list_file;
-  //// chemistry dependent (V2/V3) barcode and UMI length
-  int barcode_length, umi_length;
-  /// Bam file size to split by (in GB)
-  double bam_size;
-  /// sample name
-  std::string sample_id;
-} INPUT_OPTIONS;
-
-
+#include "datatypes.h"
 /**
  * @brief Compute the number of bam files
  *
@@ -61,7 +28,7 @@ typedef struct _input_options {
 
  * @param options Input options structure that contains file name
 */
-int64_t get_num_blocks(const INPUT_OPTIONS &options);
+int64_t get_num_blocks(const INPUT_OPTIONS_FASTQPROCESS &options);
 
 /**
  * @brief Build barcode correction map white list barcodes & mutations
@@ -79,15 +46,6 @@ int64_t get_num_blocks(const INPUT_OPTIONS &options);
  *         of the correct barcode
 */
 WHITE_LIST_DATA *read_white_list(const std::string &white_list_file);
-
-/**
- * @brief Reads the options to the program
- *
- * @param argc  no of arguments to the main function
- * @param argv arguments array to the main function
- * @param options the structure for holding the options for getopt
-*/
-void read_options(int, char **, INPUT_OPTIONS &);
 
 /**
  *  @brief Computes the size of a file in bytes
@@ -119,5 +77,36 @@ void error(char *msg);
 */
 void _print_file_info(const std::vector<std::string> &fastqs, \
     const std::string &type);
+
+
+/**
+ * @brief this function generates a random string  of a specified length
+ * consisting of alphanumeric characters
+ *
+ * @param length: length of the string
+ * @return a random alphanumeric string of specified length
+*/
+std::string random_string(size_t length);
+
+/**
+ * @brief this function reads the lines in a  text file into a vector 
+ * of strings
+ *
+ * @param file_name: file name
+ * @return a vector of strings
+*/
+
+std::vector<std::string> read_lines(const std::string &file_name);
+
+template<typename T>
+inline void freeStlContainer(T& p_container)
+{
+   return;
+/*
+   T empty;
+   using std::swap;
+   swap(p_container, empty);
+*/
+}
 
 #endif

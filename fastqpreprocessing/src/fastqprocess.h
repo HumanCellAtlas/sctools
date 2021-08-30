@@ -1,13 +1,11 @@
+#ifndef __FASTQ_PROCESS_H__
+#define __FASTQ_PROCESS_H__
 /**
  *  @file   fastqprocess.h
  *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
-
-#ifndef __FASTQ_PROCESS_H__
-#define __FASTQ_PROCESS_H__
-
 #include <FastQFile.h>
 #include "FastQStatus.h"
 #include "BaseAsciiMap.h"
@@ -27,7 +25,9 @@
 #include <vector>
 #include <functional>
 #include <mutex>     
+
 #include "utilities.h"
+#include "input_options.h"
 
 
 /// Samrecord bins to be accessed by all threads
@@ -79,7 +79,7 @@ typedef struct SamRecordBins {
  * @params white_list_data data-structure to store barcode correction
  *         map and vector of correct barcodes
 */
-void process_inputs(const INPUT_OPTIONS & options, \
+void process_inputs(const INPUT_OPTIONS_FASTQPROCESS & options, \
                    const WHITE_LIST_DATA * white_list_data);
 
 /**
