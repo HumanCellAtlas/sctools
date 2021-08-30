@@ -83,17 +83,17 @@ typedef struct _tags_holder {
 
 // structure for correcting the barcodes
 typedef struct _white_list_data {
-    /// an unordered map from whitelist barcodes and 1-mutations
-    /// to the index of the correct barcode
+    // an unordered map from whitelist barcodes and 1-mutations
+    // to the index of the correct barcode
     STRING_INT64_MAP mutations;
-    /// vector of whitelist barcodes
+    // vector of whitelist barcodes
     STRING_VECTOR barcodes;
 } WHITE_LIST_DATA;
 
 
-/// Structure to hold input options for fastqprocess
+// Structure to hold input options for fastqprocess
 typedef struct _input_options_fastqprocess {
-  /// Initialize some of the values
+  // Initialize some of the values
   _input_options_fastqprocess() {
      barcode_length = -1;
      umi_length = -1;
@@ -101,17 +101,21 @@ typedef struct _input_options_fastqprocess {
      bam_size = 1.0;
      verbose_flag = 0;
   }
-  //verbose flag
+  // verbose flag
   unsigned int verbose_flag;
-  /// I1, R1 and R2 files name
+
+  // I1, R1 and R2 files name
   std::vector<std::string> I1s, R1s, R2s;
-  /// Barcode white list file
+  // Barcode white list file
+
   std::string white_list_file;
-  //// chemistry dependent (V2/V3) barcode and UMI length
+  // chemistry dependent (V2/V3) barcode and UMI length
   int barcode_length, umi_length;
-  /// Bam file size to split by (in GB)
+
+  // Bam file size to split by (in GB)
   double bam_size;
-  /// sample name
+
+  // sample name
   std::string sample_id;
 } INPUT_OPTIONS_FASTQPROCESS;
 
@@ -129,7 +133,7 @@ enum METRIC_TYPE {CELL, GENE};
 
 // Structure to hold input options for tagsort
 typedef struct _input_options_tagsort {
-  /// Initialize some of the values
+  // Initialize some of the values
   _input_options_tagsort() {
      bam_input = "";
      gtf_file = "";
@@ -147,9 +151,9 @@ typedef struct _input_options_tagsort {
   unsigned int output_sorted_info;
   // compute metric
   unsigned int compute_metric;
-  /// name of the bam file 
+  // name of the bam file 
   std::string bam_input;
-  /// name of the gtf file 
+  // name of the gtf file 
   std::string gtf_file;
   // temp folder for disk sorting
   std::string temp_folder;

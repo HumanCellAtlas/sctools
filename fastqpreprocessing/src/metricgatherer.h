@@ -21,18 +21,18 @@
 
 using namespace std;
 
-//    Implementation of Welford's online mean and variance algorithm
-//
-//    Methods
-//    -------
-//    update(new_value: float)
-//        incorporate new_value into the online estimate of mean and variance
-//    getMean()
-//        return the mean value
-//    calculate_variance()
-//        calculate and return the variance
-//    mean_and_variance()
-//        return both mean and variance
+/*
+    Methods
+    -------
+    update(new_value: float)
+        incorporate new_value into the online estimate of mean and variance
+    getMean()
+        return the mean value
+    calculate_variance()
+        calculate and return the variance
+    mean_and_variance()
+        return both mean and variance
+*/
 class OnlineGaussianSufficientStatistic {
     private:
         double _mean_squared_error = 0.0;

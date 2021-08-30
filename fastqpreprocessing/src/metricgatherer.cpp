@@ -34,18 +34,12 @@ std::string to_nan(float x) {
 void Metrics::clear() {
   n_reads = 0;
   noise_reads = 0; //# long polymers, N-sequences; NotImplemented
-  //_fragment_histogram.clear();
-  //_molecule_histogram.clear();
-  
   freeContainer(_fragment_histogram);
   freeContainer(_molecule_histogram);
 
-  //_molecule_barcode_fraction_bases_above_30.clear();
   freeContainer(_molecule_barcode_fraction_bases_above_30);
   perfect_molecule_barcodes = 0;
-  //_genomic_reads_fraction_bases_quality_above_30.clear();
   freeContainer(_genomic_reads_fraction_bases_quality_above_30);
-  //_genomic_read_quality.clear();
   freeContainer(_genomic_read_quality);
 
   reads_mapped_exonic = 0;
@@ -182,7 +176,6 @@ void Metrics::parse_line(std::string &str, ofstream &fmetric_out,
    std::string strand = std::stoi(std::string(record[offset + 3]))==1 ? "true" : "false";
    string reference = record[offset + 0];
 
-  //  self._fragment_histogram[reference, position, strand, tags] += 1
    std::string _ref_pos_str_tags = reference + std::string("\t") + \
                                   position_str + std::string("\t") + \
                                   strand + std::string("\t") + tags;
@@ -289,11 +282,6 @@ std::string CellMetrics::getHeader() {
 }
 
 // Parses a record to extract gene-specific information
-// Gene-specific metric data is stored in-place in the MetricAggregator
-//  Parameters
-// tags : Sequence[str]
-//            The GE, UB and CB tags that define this molecule
-//        record :
 void CellMetrics::parse_extra_fields(const std::string &first_tag, 
                             const std::string &second_tag,
                             const std::string &third_tag,
@@ -412,6 +400,7 @@ void GeneMetrics::parse_extra_fields(const std::string &first_tag,
   /* updating the cell histogram with tags */
   if (this->_cells_histogram.find(second_tag)==this->_cells_histogram.end())
     this->_cells_histogram[second_tag] = 0;
+
   this->_cells_histogram[second_tag] += 1;
 }
 
@@ -438,6 +427,5 @@ void GeneMetrics::clear() {
   Metrics::clear();
   number_cells_detected_multiple = 0;
   number_cells_expressing = 0;
-  //_cells_histogram.clear();
   freeContainer(_cells_histogram);
 }

@@ -338,7 +338,6 @@ void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options) {
 
     SEM_INIT(semaphore, options.nthreads);
 
-
     int sem_value;
     SEM_WAIT(semaphore);
 
