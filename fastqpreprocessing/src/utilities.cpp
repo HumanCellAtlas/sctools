@@ -148,3 +148,9 @@ std::vector<std::string> read_lines(const std::string &file_name) {
   return lines;
 }
 
+/** @copydoc error_message **/
+void error_message(const char *msg) {
+      std::cerr << msg;
+}
+
+

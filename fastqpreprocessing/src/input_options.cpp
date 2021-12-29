@@ -10,10 +10,6 @@
 using namespace std;
 namespace fs = std::experimental::filesystem;
 
-void error_message(const char *msg) {
-      std::cerr << msg;
-}
-
 /** @copydoc read_options_tagsort */
 void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options) {
   int c;
@@ -241,6 +237,7 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
           {"R1",                required_argument, 0, 'R'},
           {"R2",                required_argument, 0, 'r'},
           {"white-list",        required_argument, 0, 'w'},
+          {"output-format",     required_argument, 0, 'F'},
           {0, 0, 0, 0}
   };
 
@@ -255,13 +252,14 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
            "R1 [required]",
            "R2 [required]",
            "whitelist (from cellranger) of barcodes [required]",
+           "output-format : either FASTQ or BAM [required]",
   };
 
 
   /* getopt_long stores the option index here. */
   int option_index = 0;
   while ((c = getopt_long(argc, argv,
-                          "b:u:B:s:I:R:r:w:v",
+                          "b:u:B:s:I:R:r:w:F:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -303,6 +301,9 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
             break;
         case 'w':
             options.white_list_file = string(optarg);
+            break;
+        case 'F':
+            options.output_format = string(optarg);
             break;
         case '?':
         case 'h':
@@ -370,6 +371,13 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
   if (options.sample_id.size() == 0) {
      std::cout << "ERROR: Must provide a sample id or name\n";
      std::cerr << "ERROR: Must provide a sample id or name\n";
+     exit_with_error = true;
+  }
+
+  // output options must be FASTQ or BAM
+  if (options.output_format!="FASTQ" && options.output_format!="BAM") {
+     std::cout << "ERROR: Output-format must be either FASTQ or BAM\n";
+     std::cerr << "ERROR: Output-format must be either FASTQ or BAM\n";
      exit_with_error = true;
   }
 
