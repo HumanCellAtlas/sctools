@@ -1,14 +1,15 @@
 IDIR =../libStatGen/include
 IDIR2 =../htslib-1.13
+IDIR3 =../gzstream
 
 CC = g++ -std=c++17 -fPIC  -DHTSLIB -Wall -O4  -Wwrite-strings 
 
-CFLAGS = -I$(IDIR) -L../libStatGen 
+CFLAGS = -I$(IDIR) -L../libStatGen  -L../gzstream
 
 ODIR=obj
 LDIR =../libStatGen/
 
-LIBS = -lStatGen -lz -lpthread -lstdc++fs 
+LIBS = -lStatGen -lz -lpthread -lstdc++fs -lgzstream
 
 _DEPS = fastqprocess.h utilities.h input_options.h 
 
@@ -32,7 +33,7 @@ _COMMON_OBJ =  utilities.o input_options.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_COMMON_OBJ))
 
 $(ODIR)/%.o: %.cpp $(_DEPS)
-	$(CC) -c -o $@ $<  -I$(IDIR) -I. -I$(IDIR2)
+	$(CC) -c -o $@ $<  -I$(IDIR) -I. -I$(IDIR2) -I$(IDIR3)
 
 $(TARGET1): $(OBJ) $(TARGET1_OBJ) 
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS) 
