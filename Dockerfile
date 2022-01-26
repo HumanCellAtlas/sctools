@@ -7,7 +7,7 @@ LABEL maintainer="Ambrose J. Carr <acarr@broadinstitute.org>" \
 COPY requirements.txt .
 
 RUN apt-get update && apt-get install -y patch && apt-get install -y libhdf5-dev && apt-get install -y vim
-
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
 RUN mkdir /sctools/
