@@ -118,4 +118,17 @@ void process_file(int32_t tindex, std::string filename, String filename1, \
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
 void bam_writers(int32_t windex, SAM_RECORD_BINS *samrecord_bins);
+
+/**
+ * @brief Function for the writer thread
+ *
+ * @detail
+ *  Dependeing on the number of output bam files there are as many
+ * writer thread as there are output bam files. Each writer thread
+ * writers into only one bam file
+ *
+ * @param  windex  index of the writer thread
+ * @param samrecord_bins  bins for samrecords from the reader threads
+*/
+void fastq_writers(int32_t windex, SAM_RECORD_BINS *samrecord_bins);
 #endif

@@ -7,6 +7,11 @@
 
 #include "fastqprocess.h"
 #include "utilities.h"
+
+#include <gzstream.h>
+#include <iostream>
+#include <fstream>
+
 #include <cstdint>
 
 /// maximum file length
@@ -104,7 +109,15 @@ void process_inputs(const INPUT_OPTIONS_FASTQPROCESS &options,
      // execute the bam file writers threads
      std::thread *writers = new std::thread[num_files];
      for (int i = 0; i < num_files; i++) {
-        writers[i] = std::thread(bam_writers, i, samrecord_data);
+        if (options.output_format=="BAM") {
+          writers[i] = std::thread(bam_writers, i, samrecord_data);
+        } else if (options.output_format=="FASTQ") {
+          writers[i] = std::thread(fastq_writers, i, samrecord_data);
+        } else {
+          std::cout << "ERROR: Output-format must be either FASTQ or BAM\n";
+          std::cerr << "ERROR: Output-format must be either FASTQ or BAM\n";
+          exit(1);
+        }
      }
 
      // execute the fastq readers threads
@@ -158,6 +171,78 @@ void process_inputs(const INPUT_OPTIONS_FASTQPROCESS &options,
      delete [] readers;
      delete [] writers;
 }
+
+/** @copydoc bam_writers */
+void fastq_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
+    std::string outputfile;
+    char buf[MAX_FILE_LENGTH];
+
+    // open to write the outputfile
+    // name of the output R1 fastq file
+    sprintf(buf, "fastq_R1_%d.fastq.gz", windex);
+    outputfile = buf;
+    //ofstream r1_out(outputfile.c_str(), ios::out);
+    ogzstream r1_out(outputfile.c_str());
+    //if (!r1_out.is_open()) {
+    if (!r1_out.good()) {
+      error_message("ERROR: Failed open R1 fastq file\n");
+      exit(1);
+    }
+
+    // name of the output R1 fastq file
+    sprintf(buf, "fastq_R2_%d.fastq.gz", windex);
+    outputfile = buf;
+    //ofstream r2_out(outputfile.c_str(), ios::out);
+    ogzstream r2_out(outputfile.c_str());
+    //if (!r2_out.is_open()) {
+    if (!r2_out.good()) {
+      error_message("ERROR: Failed open R2 fastq file\n");
+      exit(1);
+    }
+
+    // keep writing forever, until there is a flag to stop
+    while (true) {
+      // wait until some data is ready from a reader thread
+      if (sem_wait(&semaphores[windex]) == -1)
+         error("sem_wait:semaphores");
+
+      // write out the record buffers for the reader thread "active_thread_num"
+      // that signalled that buffer is ready to be written
+      SamRecord *samRecord  =
+         samrecord_data->samrecords[samrecord_data->active_thread_num];
+      // go through the index of the samrecords that are stored for the current
+      // writer, i.e., "windex" or the corresponding BAM file
+
+      for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex]) {
+    //       samOut.WriteRecord(samHeader, samRecord[index]);
+          r1_out << "@" << samRecord[index].getReadName() << std::endl
+                 << samRecord[index].getString("CR").c_str() << samRecord[index].getString("UR") << std::endl 
+                 << "+" << std::endl
+                 << samRecord[index].getString("CY") << samRecord[index].getString("UY") << std::endl;
+      }
+
+      for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex]) {
+    //       samOut.WriteRecord(samHeader, samRecord[index]);
+          r2_out << "@" << samRecord[index].getReadName() << std::endl 
+                 << samRecord[index].getSequence() << std::endl 
+                 << "+" << std::endl
+                 << samRecord[index].getQuality() << std::endl;
+      }
+
+      // lets the reads thread know that I am done writing the
+      // buffer that are destined to be my file
+      if (sem_post(&semaphores_workers[windex]) == -1)
+          error("sem_post: semaphores_workers");
+
+      // time to stop variable is valid
+      if (samrecord_data->stop) break;
+    }
+
+    // close the fastq files
+    r1_out.close();
+    r2_out.close();
+}
+
 
 /** @copydoc bam_writers */
 void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
@@ -232,7 +317,7 @@ void fillSamRecord(SamRecord *samRecord, FastQFile &fastQFileI1,
                    FastQFile &fastQFileR1, FastQFile &fastQFileR2,
                    unsigned int barcode_length, unsigned int umi_length,
                    bool has_I1_file_list)  {
-          // check the sequence names matching
+    // check the sequence names matching
     std::string a = std::string(fastQFileR1.myRawSequence.c_str());
     std::string b = std::string(fastQFileR1.myQualityString.c_str());
 

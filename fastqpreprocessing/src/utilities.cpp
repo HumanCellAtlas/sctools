@@ -100,6 +100,7 @@ int64_t get_num_blocks(const INPUT_OPTIONS_FASTQPROCESS &options) {
         if (options.I1s.size()) {
             tot_size +=  filesize(options.I1s[i].c_str());
         }
+        printf("file %s : %ld bytes\n", options.R1s[i].c_str(), filesize(options.R1s[i].c_str()));
         tot_size +=  filesize(options.R1s[i].c_str());
         tot_size +=  filesize(options.R2s[i].c_str());
     }
@@ -147,4 +148,10 @@ std::vector<std::string> read_lines(const std::string &file_name) {
   }
   return lines;
 }
+
+/** @copydoc error_message **/
+void error_message(const char *msg) {
+      std::cerr << msg;
+}
+
 

@@ -74,7 +74,6 @@ typedef struct _tags_holder {
     char *allocated_memory(int size) {
        return 0;
     }
-
     char *double_memory() {
        return 0;
     } 
@@ -106,9 +105,13 @@ typedef struct _input_options_fastqprocess {
 
   // I1, R1 and R2 files name
   std::vector<std::string> I1s, R1s, R2s;
-  // Barcode white list file
 
+  // Barcode white list file
   std::string white_list_file;
+
+  // Output format
+  std::string output_format;
+
   // chemistry dependent (V2/V3) barcode and UMI length
   int barcode_length, umi_length;
 
@@ -118,7 +121,6 @@ typedef struct _input_options_fastqprocess {
   // sample name
   std::string sample_id;
 } INPUT_OPTIONS_FASTQPROCESS;
-
 
 /**
  * @brief Reads the options to the fastqprocess program

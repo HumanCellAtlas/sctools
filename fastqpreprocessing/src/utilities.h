@@ -17,8 +17,9 @@
 #include <fstream>
 #include <algorithm>
 #include <experimental/filesystem>
-
 #include "datatypes.h"
+using namespace std;
+
 /**
  * @brief Compute the number of bam files
  *
@@ -108,5 +109,14 @@ inline void freeStlContainer(T& p_container)
    swap(p_container, empty);
 */
 }
+
+/**
+  * @brief this function prints the message to the stderr
+  *
+  * @param msg: the error message
+*/
+
+void error_message(const char *msg);
+
 
 #endif
