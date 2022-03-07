@@ -415,3 +415,168 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
   }
 }
 
+void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options) {
+  int c;
+  int i;
+
+  int verbose_flag = 0;
+
+  static struct option long_options[] = {
+          /* These options set a flag. */
+          {"verbose",           no_argument,       0, 'v'},
+          /* These options don’t set a flag.
+             We distinguish them by their indices. */
+          {"bam-size",          required_argument, 0, 'B'},
+          {"read-structure",    required_argument, 0, 's'},
+          {"sample-id",         required_argument, 0, 's'},
+          {"R1",                required_argument, 0, 'R'},
+          {"R2",                required_argument, 0, 'r'},
+          {"white-list",        required_argument, 0, 'w'},
+          {"output-format",     required_argument, 0, 'F'},
+          {0, 0, 0, 0}
+  };
+
+  // help messages when the user types -h
+  const char *help_messages[] = {
+           "verbose messages  ",
+           "output BAM file in GB [optional: default 1 GB]",
+           "read structure [required]",
+           "sample id [required]",
+           "R1 [required]",
+           "R2 [required]",
+           "whitelist (from cellranger) of barcodes [required]",
+           "output-format : either FASTQ or BAM [required]",
+  };
+
+
+  /* getopt_long stores the option index here. */
+  int option_index = 0;
+  while ((c = getopt_long(argc, argv,
+                          "B:S:s:R:r:w:F:v",
+                          long_options,
+                          &option_index)) !=- 1
+                         )
+  {
+      // process the option or arguments
+      switch (c) {
+        case 'v':
+            options.verbose_flag = 1;
+            break;
+        case 0:
+          /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
+        case 'B':
+            options.bam_size = atof(optarg);
+            break;
+        case 'S':
+            options.read_structure = string(optarg);
+            break;
+        case 's':
+            options.sample_id = string(optarg);
+            break;
+        case 'R':
+            options.R1s.push_back(string(optarg));
+            break;
+        case 'r':
+            options.R2s.push_back(string(optarg));
+            break;
+        case 'w':
+            options.white_list_file = string(optarg);
+            break;
+        case 'F':
+            options.output_format = string(optarg);
+            break;
+        case '?':
+        case 'h':
+          i = 0;
+          printf("Usage: %s [options] \n", argv[0]);
+          while (long_options[i].name != 0) {
+            printf("\t--%-20s  %-25s  %-35s\n", long_options[i].name,
+                   long_options[i].has_arg == no_argument?
+                  "no argument" : "required_argument",
+                  help_messages[i]);
+            i = i + 1;
+          }
+          /* getopt_long already printed an error message. */
+          return;
+          break;
+        default:
+          abort();
+        }
+    }
+
+  // Check the options
+  // number of R1 and R2 files should be equal
+  bool exit_with_error = false;
+  if ((options.R1s.size() != options.R2s.size())) {
+     std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input: "
+         << "R1 : " << options.R1s.size()
+         << "R2 : " << options.R2s.size()
+         << std::endl;
+
+     std::cerr << "ERROR: Unequal number of R1 and R2 fastq files in input: "
+         << "R1 : " << options.R1s.size()
+         << "R2 : " << options.R2s.size()
+         << std::endl;
+
+     exit_with_error = true;
+  }
+
+  if (options.R1s.size() == 0) {
+     std::cout << "ERROR: No R1 file provided\n";
+     std::cerr << "ERROR: No R1 file provided\n";
+
+     exit_with_error = true;
+  }
+
+
+  // Bam file size must be positive
+  if (options.bam_size <= 0) {
+     std::cout << "ERROR: Size of a bam file (in GB) cannot be negative\n";
+     std::cerr << "ERROR: Size of a bam file (in GB) cannot be negative\n";
+     exit_with_error = true;
+  }
+  // must have read structure
+  if (options.read_structure.size() == 0) {
+     std::cout << "ERROR: Must provide read structures\n";
+     std::cerr << "ERROR: Must provide read structures\n";
+     exit_with_error = true;
+  }
+
+  // must have a sample id
+  if (options.sample_id.size() == 0) {
+     std::cout << "ERROR: Must provide a sample id or name\n";
+     std::cerr << "ERROR: Must provide a sample id or name\n";
+     exit_with_error = true;
+  }
+
+  // output options must be FASTQ or BAM
+  if (options.output_format!="FASTQ" && options.output_format!="BAM") {
+     std::cout << "ERROR: Output-format must be either FASTQ or BAM\n";
+     std::cerr << "ERROR: Output-format must be either FASTQ or BAM\n";
+     exit_with_error = true;
+  }
+
+  // just prints out the files
+  if (verbose_flag) {
+      if (options.R1s.size()) {
+          _print_file_info(options.R1s, std::string("R1"));
+      }
+
+      if (options.R2s.size()) {
+          _print_file_info(options.R2s, std::string("R2"));
+      }
+  }
+
+  if (exit_with_error) {
+     exit(1);
+  }
+}
+
+
