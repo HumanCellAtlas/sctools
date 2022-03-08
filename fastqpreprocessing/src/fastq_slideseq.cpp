@@ -339,6 +339,8 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
     std::string const& a = fastQFileR1.myRawSequence;
     std::string const& b = fastQFileR1.myQualityString;
 
+    // extract the raw barcode and UMI 8C18X6C9M1X and raw barcode and UMI quality string
+
     std::vector<std::pair<char, int>> tagged_lengths = parseReadStructure(read_structure);
     std::string barcode_seq, barcode_quality, umi_seq, umi_quality;
     int cur_ind = 0;
@@ -360,14 +362,6 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
         cur_ind += length;
     }
 
-    // extract the raw barcode and UMI 8C18X6C9M1X
-    std::string barcode = a.substr(0, barcode_length);
-    std::string UMI  = a.substr(barcode_length, umi_length);
-
-    // extract raw barcode and UMI quality string
-    std::string barcodeQString = b.substr(0, barcode_length);
-    std::string UMIQString  = b.substr(barcode_length, umi_length);
-
     // reset the samrecord
     samRecord->resetRecord();
 
@@ -375,7 +369,7 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
     samRecord->addTag("RG", 'Z', "A");
     samRecord->setFlag(4);
 
-    // add idenfifier, sequence and quality score of the alignments
+    // add identifier, sequence and quality score of the alignments
     samRecord->setReadName(fastQFileR2.mySequenceIdentifier.c_str());
     samRecord->setSequence(fastQFileR2.myRawSequence.c_str());
     samRecord->setQuality(fastQFileR2.myQualityString.c_str());
