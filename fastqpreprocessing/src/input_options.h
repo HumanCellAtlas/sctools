@@ -43,7 +43,6 @@ void read_options_tagsort(int, char **, INPUT_OPTIONS_TAGSORT &);
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_fastq_read_structure(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &);
-
+void read_options_fastq_slideseq(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &);
 
 #endif

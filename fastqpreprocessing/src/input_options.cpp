@@ -417,7 +417,7 @@ void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS
   }
 }
 
-void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options) {
+void read_options_fastq_slideseq(int argc, char **argv, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options) {
   int c;
   int i;
 

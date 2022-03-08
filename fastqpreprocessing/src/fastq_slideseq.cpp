@@ -615,9 +615,9 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
 int main (int argc, char **argv)
 {
 
-  INPUT_OPTIONS_FASTQPROCESS options;
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
 
-  read_options_fastqprocess(argc, argv, options);
+  read_options_fastq_slideseq(argc, argv, options);
 
   std::cout << "reading whitelist file " << options.white_list_file << "...";
   WHITE_LIST_DATA *white_list_data = read_white_list(options.white_list_file);
