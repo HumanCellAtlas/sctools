@@ -11,7 +11,8 @@ using namespace std;
 namespace fs = std::experimental::filesystem;
 
 /** @copydoc read_options_tagsort */
-void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options) {
+void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
+{
   int c;
   int i;
 
@@ -218,7 +219,8 @@ void read_options_tagsort(int argc, char **argv, INPUT_OPTIONS_TAGSORT &options)
 
 
 /** @copydoc read_options_fastqprocess */
-void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS &options) {
+void read_options_fastqprocess(int argc, char **argv, INPUT_OPTIONS_FASTQPROCESS &options)
+{
   int c;
   int i;
 
@@ -429,6 +431,7 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
           {"bam-size",          required_argument, 0, 'B'},
           {"read-structure",    required_argument, 0, 'S'},
           {"sample-id",         required_argument, 0, 's'},
+          {"I1",                required_argument, 0, 'I'},
           {"R1",                required_argument, 0, 'R'},
           {"R2",                required_argument, 0, 'r'},
           {"white-list",        required_argument, 0, 'w'},
@@ -442,6 +445,7 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
            "output BAM file in GB [optional: default 1 GB]",
            "read structure [required]",
            "sample id [required]",
+           "I1 [optional]",
            "R1 [required]",
            "R2 [required]",
            "whitelist (from cellranger) of barcodes [required]",
@@ -452,7 +456,7 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
   /* getopt_long stores the option index here. */
   int option_index = 0;
   while ((c = getopt_long(argc, argv,
-                          "B:S:s:R:r:w:F:v",
+                          "B:S:s:I:R:r:w:F:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -479,6 +483,9 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
             break;
         case 's':
             options.sample_id = string(optarg);
+            break;
+        case 'I':
+            options.I1s.push_back(string(optarg));
             break;
         case 'R':
             options.R1s.push_back(string(optarg));
@@ -514,7 +521,8 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
   // Check the options
   // number of R1 and R2 files should be equal
   bool exit_with_error = false;
-  if ((options.R1s.size() != options.R2s.size())) {
+  if ((options.R1s.size() != options.R2s.size()))
+  {
      std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input: "
          << "R1 : " << options.R1s.size()
          << "R2 : " << options.R2s.size()
@@ -528,22 +536,35 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
      exit_with_error = true;
   }
 
-  if (options.R1s.size() == 0) {
+  if (options.R1s.size() == 0)
+  {
      std::cout << "ERROR: No R1 file provided\n";
      std::cerr << "ERROR: No R1 file provided\n";
 
      exit_with_error = true;
   }
 
+  if ((options.I1s.size() != options.R1s.size()) && (options.I1s.size() != 0))
+  {
+     std::cout << "ERROR: Either the number of I1 input files are equal\n"
+                  "       to the number of R1 input files, or no I1 input files\n"
+                  "       should not be provided at all.\n";
+     std::cerr << "ERROR: Either the number of I1 input files are equal\n"
+                  "       to the number of R1 input files, or no I1 input files\n"
+                  "       should not be provided at all.\n";
 
+     exit_with_error = true;
+  }
   // Bam file size must be positive
-  if (options.bam_size <= 0) {
+  if (options.bam_size <= 0)
+  {
      std::cout << "ERROR: Size of a bam file (in GB) cannot be negative\n";
      std::cerr << "ERROR: Size of a bam file (in GB) cannot be negative\n";
      exit_with_error = true;
   }
   // must have read structure
-  if (options.read_structure.size() == 0) {
+  if (options.read_structure.size() == 0)
+  {
      std::cout << "ERROR: Must provide read structures\n";
      std::cerr << "ERROR: Must provide read structures\n";
      exit_with_error = true;

@@ -101,10 +101,10 @@ typedef struct _input_options_fastq_read_structure {
   // verbose flag
   unsigned int verbose_flag;
 
-  // R1 and R2 files name
-  std::vector<std::string> R1s, R2s;
+  // I1, R1 and R2 files name
+  std::vector<std::string> I1s, R1s, R2s;
 
-  // Barcode white list file
+  // Bead Barcode list
   std::string white_list_file;
 
   // Output format
