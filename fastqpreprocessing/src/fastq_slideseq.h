@@ -1,5 +1,5 @@
-#ifndef __FASTQ_PROCESS_H__
-#define __FASTQ_PROCESS_H__
+#ifndef __FASTQ_SLIDESEQ_H__
+#define __FASTQ_SLIDESEQ_H__
 /**
  *  @file   fastqprocess.h
  *  @brief  functions for file processing

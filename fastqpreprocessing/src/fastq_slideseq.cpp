@@ -132,7 +132,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
         } else {
            I1 = std::string("");
         }
-        readers[i] = std::thread(process_file, i, I1,
+        readers[i] = std::thread(process_file, i, I1.c_str(),
                        options.R1s[i].c_str(), options.R2s[i].c_str(),
                        options.read_structure,
                        white_list_data, samrecord_data);
