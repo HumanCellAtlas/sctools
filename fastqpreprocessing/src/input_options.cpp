@@ -427,7 +427,7 @@ void read_options_fastq_read_structure(int argc, char **argv, INPUT_OPTIONS_FAST
           /* These options don’t set a flag.
              We distinguish them by their indices. */
           {"bam-size",          required_argument, 0, 'B'},
-          {"read-structure",    required_argument, 0, 's'},
+          {"read-structure",    required_argument, 0, 'S'},
           {"sample-id",         required_argument, 0, 's'},
           {"R1",                required_argument, 0, 'R'},
           {"R2",                required_argument, 0, 'r'},

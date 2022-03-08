@@ -304,6 +304,22 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
     samOut.Close();
 }
 
+std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
+{
+    std::vector<std::pair<char, int>> ret;
+    int next_ind = 0;
+    while (next_ind < read_structure.size())
+    {
+        int type_ind = read_structure.find_first_not_of("0123456789", next_ind);
+        assert(type_ind != std::string::npos);
+        char type = read_structure[type_ind];
+        int len = std:stoi(read_structure.substr(next_ind, type_ind - next_ind));
+        ret.emplace_back(type, len);
+        next_ind = type_ind + 1;
+    }
+    return ret;
+}
+
 /**
  * @brief fillSamRecord fill a SamRecord with the sequence and TAGs data
  *
@@ -317,29 +333,36 @@ void bam_writers(int windex, SAM_RECORD_BINS *samrecord_data) {
 */
 void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1,
                    FastQFile &fastQFileR1, FastQFile &fastQFileR2,
-                   String read_structure,
+                   std::string read_structure,
                    bool has_I1_file_list)  {
     // check the sequence names matching
-    std::string a = std::string(fastQFileR1.myRawSequence.c_str());
-    std::string b = std::string(fastQFileR1.myQualityString.c_str());
+    std::string const& a = fastQFileR1.myRawSequence;
+    std::string const& b = fastQFileR1.myQualityString;
+
+    std::vector<std::pair<char, int>> tagged_lengths = parseReadStructure(read_structure);
+    std::string barcode_seq, barcode_quality, umi_seq, umi_quality;
+    int cur_ind = 0;
+    for (auto [tag, length] : tagged_lengths)
+    {
+        switch (tag)
+        {
+        case 'C':
+            barcode_seq += a.substr(cur_ind, length);
+            barcode_quality += b.substr(cur_ind, length);
+        break;
+        case 'M':
+            umi_seq += a.substr(cur_ind, length);
+            umi_quality += b.substr(cur_ind, length);
+        break;
+        default:
+        break;
+        }
+        cur_ind += length;
+    }
+
     // parse read structure string and get UMI and barcode
     std::char *read_structure_arr = new char[read_structure.size()];
-     for (unsigned int i = 0; i < read_structure.size(); i++) {
-        char  read_structure_value;
-        // if there is no I1 file then send an empty file name
-        if (read_structure.size() > 0) {
-           read_structure_value = std::string(read_structure[i].c_str());
-        } else {
-           read_structure_value = std::string("");
-        }
-        readers[i] =
-     }
 
-    for( i in read_structure)
-    {
-    // get the index of CB
-
-    }
     // extract the raw barcode and UMI 8C18X6C9M1X
     std::string barcode = a.substr(0, barcode_length);
     std::string UMI  = a.substr(barcode_length, umi_length);
@@ -361,12 +384,12 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
     samRecord->setQuality(fastQFileR2.myQualityString.c_str());
 
     // add barcode and quality
-    samRecord->addTag("CR", 'Z', barcode.c_str());
-    samRecord->addTag("CY", 'Z', barcodeQString.c_str());
+    samRecord->addTag("CR", 'Z', barcode_seq.c_str());
+    samRecord->addTag("CY", 'Z', barcode_quality.c_str());
 
     // add UMI
-    samRecord->addTag("UR", 'Z', UMI.c_str());
-    samRecord->addTag("UY", 'Z', UMIQString.c_str());
+    samRecord->addTag("UR", 'Z', umi_seq.c_str());
+    samRecord->addTag("UY", 'Z', umi_quality.c_str());
 
     // add raw sequence and quality sequence for the index
     if (has_I1_file_list) {
