@@ -134,7 +134,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
         }
         readers[i] = std::thread(process_file, i, I1,
                        options.R1s[i].c_str(), options.R2s[i].c_str(),
-                       options.barcode_length, options.umi_length,
+                       options.read_structure,
                        white_list_data, samrecord_data);
      }
 
