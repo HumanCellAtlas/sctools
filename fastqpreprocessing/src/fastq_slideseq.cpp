@@ -313,7 +313,7 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
         int type_ind = read_structure.find_first_not_of("0123456789", next_ind);
         assert(type_ind != std::string::npos);
         char type = read_structure[type_ind];
-        int len = std:stoi(read_structure.substr(next_ind, type_ind - next_ind));
+        int len = std::stoi(read_structure.substr(next_ind, type_ind - next_ind));
         ret.emplace_back(type, len);
         next_ind = type_ind + 1;
     }
@@ -359,9 +359,6 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
         }
         cur_ind += length;
     }
-
-    // parse read structure string and get UMI and barcode
-    std::char *read_structure_arr = new char[read_structure.size()];
 
     // extract the raw barcode and UMI 8C18X6C9M1X
     std::string barcode = a.substr(0, barcode_length);
