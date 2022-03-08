@@ -134,9 +134,10 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
         }
         readers[i] = std::thread(process_file, i, I1.c_str(),
                        options.R1s[i].c_str(), options.R2s[i].c_str(),
-                       options.read_structure,
+                       options.read_structure.c_str(),
                        white_list_data, samrecord_data);
-     }
+     
+		       }
 
      // every reader thread joins.
      for (unsigned int i = 0; i < options.R1s.size(); i++) {
