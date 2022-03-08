@@ -21,13 +21,18 @@ TARGET2 = TagSort
 _TARGET2_OBJ = tagsort.o htslib_tagsort.o globals.o sort_write.o metricgatherer.o
 TARGET2_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET2_OBJ))
 
+TARGET3 = fastq_slideseq
+_TARGET3_OBJ = fastq_slideseq.o 
+TARGET3_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET3_OBJ))
+
 
 install: $(TARGET1) $(TARGET2)
 	cp $(TARGET1) ../bin/
 	cp $(TARGET2) ../bin/
+	cp $(TARGET3) ../bin/
 	cp ../htslib-1.13/*.so.? ../bin/
 
-all: $(TARGET1) $(TARGET2)
+all: $(TARGET1) $(TARGET2) $(TARGET3)
 
 _COMMON_OBJ =  utilities.o input_options.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_COMMON_OBJ))
@@ -41,7 +46,10 @@ $(TARGET1): $(OBJ) $(TARGET1_OBJ)
 $(TARGET2): $(OBJ) $(TARGET2_OBJ)  
 	$(CC) -Wl,-rpath,/usr/local/bin:fastqpreprocessing/bin:bin:. -o $@ $(OBJ)  $(TARGET2_OBJ)  -I. -L. -lstdc++fs -lz  -L../htslib-1.13 -lhts -lpthread
 
+$(TARGET3): $(OBJ) $(TARGET3_OBJ) 
+	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS) 
+
 .PHONY: clean
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~  *.o *.so *.a
-	rm -rf $(TARGET1) $(TARGET2)
+	rm -rf $(TARGET1) $(TARGET2) $(TARGET3)
