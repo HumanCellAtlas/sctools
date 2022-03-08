@@ -26,7 +26,7 @@ _TARGET3_OBJ = fastq_slideseq.o
 TARGET3_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET3_OBJ))
 
 
-install: $(TARGET1) $(TARGET2)
+install: $(TARGET1) $(TARGET2) $(TARGET3)
 	cp $(TARGET1) ../bin/
 	cp $(TARGET2) ../bin/
 	cp $(TARGET3) ../bin/

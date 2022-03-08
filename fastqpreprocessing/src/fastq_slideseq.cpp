@@ -336,9 +336,8 @@ void fillSamRecordWithReadStructure(SamRecord *samRecord, FastQFile &fastQFileI1
                    std::string read_structure,
                    bool has_I1_file_list)  {
     // check the sequence names matching
-    std::string const& a = fastQFileR1.myRawSequence;
-    std::string const& b = fastQFileR1.myQualityString;
-
+    std::string a = std::string(fastQFileR1.myRawSequence.c_str());
+    std::string b = std::string(fastQFileR1.myQualityString.c_str());
     // extract the raw barcode and UMI 8C18X6C9M1X and raw barcode and UMI quality string
 
     std::vector<std::pair<char, int>> tagged_lengths = parseReadStructure(read_structure);
@@ -550,11 +549,11 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
           SamRecord *samrec = samRecord + r;
           // barcode and UMI and their quality sequences
           fillSamRecordWithReadStructure(samrec, fastQFileI1, fastQFileR1, fastQFileR2,
-              read_structure, has_I1_file_list);
+              std::string(read_structure.c_str()), has_I1_file_list);
 
           // extract the raw barcode and UMI
           std::string a = std::string(fastQFileR1.myRawSequence.c_str());
-          std::string barcode = a.substr(0, barcode_length);
+          std::string barcode = std::string(samrec->getString("CR").c_str());
 
           // bucket barcode is used to pick the target bam file
           // This is done because in the case of incorrigible barcodes
