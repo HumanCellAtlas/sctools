@@ -492,6 +492,7 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
                    SAM_RECORD_BINS *samrecord_data) {
 
     /// setting the shortest sequence allowed to be read
+    FastQFile fastQFileI1(4, 4);
     FastQFile fastQFileR1(4, 4);
     FastQFile fastQFileR2(4, 4);
 
