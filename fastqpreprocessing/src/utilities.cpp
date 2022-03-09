@@ -109,6 +109,29 @@ int64_t get_num_blocks(const INPUT_OPTIONS_FASTQPROCESS &options) {
            /static_cast<double>(options.bam_size));
 }
 
+
+
+/** get_num_blocks_slideseq */
+
+int64_t get_num_blocks(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options) {
+    double tot_size = 0;
+    for (unsigned int i= 0; i < options.R1s.size(); i++) {
+        if (options.I1s.size()) {
+            tot_size +=  filesize(options.I1s[i].c_str());
+        }
+        printf("file %s : %ld bytes\n", options.R1s[i].c_str(), filesize(options.R1s[i].c_str()));
+        tot_size +=  filesize(options.R1s[i].c_str());
+        tot_size +=  filesize(options.R2s[i].c_str());
+    }
+
+    return ceil((tot_size/(1024*1024*1024))
+           /static_cast<double>(options.bam_size));
+}
+
+
+
+
+
 /** @copydoc error */
 void error(char *msg) {
     perror(msg);

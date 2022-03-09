@@ -90,6 +90,37 @@ typedef struct _white_list_data {
 } WHITE_LIST_DATA;
 
 
+typedef struct _input_options_fastq_read_structure {
+  // Initialize some of the values
+  _input_options_fastq_read_structure() {
+     read_structure = "";
+     sample_id = "";
+     bam_size = 1.0;
+     verbose_flag = 0;
+  }
+  // verbose flag
+  unsigned int verbose_flag;
+
+  // I1, R1 and R2 files name
+  std::vector<std::string> I1s, R1s, R2s;
+
+  // Bead Barcode list
+  std::string white_list_file;
+
+  // Output format
+  std::string output_format;
+
+  // Bam file size to split by (in GB)
+  double bam_size;
+
+  // read structure
+  std::string read_structure;
+
+  // sample name
+  std::string sample_id;
+} INPUT_OPTIONS_FASTQ_READ_STRUCTURE;
+
+
 // Structure to hold input options for fastqprocess
 typedef struct _input_options_fastqprocess {
   // Initialize some of the values

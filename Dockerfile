@@ -28,7 +28,7 @@ RUN cd /sctools/fastqpreprocessing &&\
 
 RUN cd /sctools/fastqpreprocessing &&\
     wget http://www.cs.unc.edu/Research/compgeom/gzstream/gzstream.tgz &&\
-    tar -zxvf gzstream.tgz 
+    tar -xvf gzstream.tgz 
 
 RUN cd /sctools/fastqpreprocessing &&\
     patch -f libStatGen/fastq/FastQFile.cpp patches/FastQFile.cpp.patch &&\
