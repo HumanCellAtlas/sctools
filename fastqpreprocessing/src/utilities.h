@@ -30,6 +30,7 @@ using namespace std;
  * @param options Input options structure that contains file name
 */
 int64_t get_num_blocks(const INPUT_OPTIONS_FASTQPROCESS &options);
+int64_t get_num_blocks(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options);
 
 /**
  * @brief Build barcode correction map white list barcodes & mutations
