@@ -1,20 +1,14 @@
 FROM python:3.7.7
 
-LABEL maintainer="Ambrose J. Carr <acarr@broadinstitute.org>" \
-  software="python 3.7.7" \
-  description="python 3.7.7 with pysam, sctools, requests, and a basic science stack"
+LABEL maintainer="Farzaneh Khajouei <fkhajoue@broadinstitute.org>" \
+  software="sctools  v.1.0.0" \
+  description="A collection of tools for single cell data. Splitting fastq files based on cellbarcodes and other tools to compute metrics on single cell data using barcodes and UMIs."
 
-COPY requirements.txt .
 
-RUN apt-get update && apt-get install -y patch && apt-get install -y libhdf5-dev && apt-get install -y vim
-RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
-
+RUN apt-get update && apt-get upgrade && apt-get install -y patch && apt-get install -y libhdf5-dev && apt-get install -y vim && apt-get install -y apt-utils
 RUN mkdir /sctools/
 
 COPY . /sctools 
-
-RUN  pip3 install /sctools
 
 ARG libStatGen_version="1.0.14"
 ARG htslib_version="1.13"
@@ -28,7 +22,7 @@ RUN cd /sctools/fastqpreprocessing &&\
 
 RUN cd /sctools/fastqpreprocessing &&\
     wget http://www.cs.unc.edu/Research/compgeom/gzstream/gzstream.tgz &&\
-    tar -zxvf gzstream.tgz 
+    tar -xvf gzstream.tgz 
 
 RUN cd /sctools/fastqpreprocessing &&\
     patch -f libStatGen/fastq/FastQFile.cpp patches/FastQFile.cpp.patch &&\
