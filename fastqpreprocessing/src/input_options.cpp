@@ -601,7 +601,7 @@ void read_options_fastq_slideseq(int argc, char **argv, INPUT_OPTIONS_FASTQ_READ
 }
 
 
-void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &)
+void read_options_fastq_metrics(int argc, char **argv, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options)
 {
   int c;
   int i;
@@ -613,35 +613,27 @@ void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE
           {"verbose",           no_argument,       0, 'v'},
           /* These options don’t set a flag.
              We distinguish them by their indices. */
-          {"bam-size",          required_argument, 0, 'B'},
           {"read-structure",    required_argument, 0, 'S'},
           {"sample-id",         required_argument, 0, 's'},
-          {"I1",                required_argument, 0, 'I'},
           {"R1",                required_argument, 0, 'R'},
-          {"R2",                required_argument, 0, 'r'},
           {"white-list",        required_argument, 0, 'w'},
-          {"output-format",     required_argument, 0, 'F'},
           {0, 0, 0, 0}
   };
 
   // help messages when the user types -h
   const char *help_messages[] = {
            "verbose messages  ",
-           "output BAM file in GB [optional: default 1 GB]",
            "read structure [required]",
            "sample id [required]",
-           "I1 [optional]",
            "R1 [required]",
-           "R2 [required]",
            "whitelist of cell/bead barcodes [required]",
-           "output-format : either FASTQ or BAM [required]",
   };
 
 
   /* getopt_long stores the option index here. */
   int option_index = 0;
   while ((c = getopt_long(argc, argv,
-                          "B:S:s:I:R:r:w:F:v",
+                          "S:s:R:w:v",
                           long_options,
                           &option_index)) !=- 1
                          )
@@ -660,29 +652,17 @@ void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE
                 printf(" with arg %s", optarg);
             printf("\n");
             break;
-        case 'B':
-            options.bam_size = atof(optarg);
-            break;
         case 'S':
             options.read_structure = string(optarg);
             break;
         case 's':
             options.sample_id = string(optarg);
             break;
-        case 'I':
-            options.I1s.push_back(string(optarg));
-            break;
         case 'R':
             options.R1s.push_back(string(optarg));
             break;
-        case 'r':
-            options.R2s.push_back(string(optarg));
-            break;
         case 'w':
             options.white_list_file = string(optarg);
-            break;
-        case 'F':
-            options.output_format = string(optarg);
             break;
         case '?':
         case 'h':
@@ -706,20 +686,6 @@ void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE
   // Check the options
   // number of R1 and R2 files should be equal
   bool exit_with_error = false;
-  if ((options.R1s.size() != options.R2s.size()))
-  {
-     std::cout << "ERROR: Unequal number of R1 and R2 fastq files in input: "
-         << "R1 : " << options.R1s.size()
-         << "R2 : " << options.R2s.size()
-         << std::endl;
-
-     std::cerr << "ERROR: Unequal number of R1 and R2 fastq files in input: "
-         << "R1 : " << options.R1s.size()
-         << "R2 : " << options.R2s.size()
-         << std::endl;
-
-     exit_with_error = true;
-  }
 
   if (options.R1s.size() == 0)
   {
@@ -729,24 +695,6 @@ void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE
      exit_with_error = true;
   }
 
-  if ((options.I1s.size() != options.R1s.size()) && (options.I1s.size() != 0))
-  {
-     std::cout << "ERROR: Either the number of I1 input files are equal\n"
-                  "       to the number of R1 input files, or no I1 input files\n"
-                  "       should not be provided at all.\n";
-     std::cerr << "ERROR: Either the number of I1 input files are equal\n"
-                  "       to the number of R1 input files, or no I1 input files\n"
-                  "       should not be provided at all.\n";
-
-     exit_with_error = true;
-  }
-  // Bam file size must be positive
-  if (options.bam_size <= 0)
-  {
-     std::cout << "ERROR: Size of a bam file (in GB) cannot be negative\n";
-     std::cerr << "ERROR: Size of a bam file (in GB) cannot be negative\n";
-     exit_with_error = true;
-  }
   // must have read structure
   if (options.read_structure.size() == 0)
   {
@@ -762,21 +710,11 @@ void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE
      exit_with_error = true;
   }
 
-  // output options must be FASTQ or BAM
-  if (options.output_format!="FASTQ" && options.output_format!="BAM") {
-     std::cout << "ERROR: Output-format must be either FASTQ or BAM\n";
-     std::cerr << "ERROR: Output-format must be either FASTQ or BAM\n";
-     exit_with_error = true;
-  }
 
   // just prints out the files
   if (verbose_flag) {
       if (options.R1s.size()) {
           _print_file_info(options.R1s, std::string("R1"));
-      }
-
-      if (options.R2s.size()) {
-          _print_file_info(options.R2s, std::string("R2"));
       }
   }
 
