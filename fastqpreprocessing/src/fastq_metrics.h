@@ -15,10 +15,14 @@
 #include "utilities.h"
 #include "input_options.h"
 
-struct PositionWeightMatrix
+class PositionWeightMatrix
 {
 public:
     PositionWeightMatrix(int length): A(length), C(length), G(length), T(length), N(length){}
+    void recordChunk(std::string s);
+    PositionWeightMatrix& operator+=(const PositionWeightMatrix& rhs);
+    void writeToFile(std::string filename);
+
     std::vector<int> A;
     std::vector<int> C;
     std::vector<int> G;
@@ -29,14 +33,27 @@ public:
 class FastQMetricsShard
 {
 public:
-    FastQMetricsShard(int barcode_length, int umi_length) : barcode_(barcode_length), umi_(umi_length){}
-    void ingestSamRecord(const SamRecord* sam_record);
+    FastQMetricsShard(std::string read_structure) : read_structure_(read_structure),
+                     barcode_length_(getLengthOfType(read_structure_,'C')),
+                     umi_length_(getLengthOfType(read_structure_,'M')),
+                     tagged_lengths_(parseReadStructure(read_structure_)),
+                     barcode_(barcode_length),
+                     umi_(umi_length){}
+    void ingestBarcodeAndUMI( FastQFile &fastQFileR1);
+    void processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
+    static void mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length);
+    FastQMetricsShard& operator+=(const FastQMetricsShard& rhs);
+
+
 private:
+    std::string read_structure_;
+    int barcode_length_;
+    int umi_length_;
+    std::vector<std::pair<char, int>> tagged_lengths_;
     std::unordered_map<string,int> barcode_counts_;
     std::unordered_map<string,int> umi_counts_;
     PositionWeightMatrix barcode_;
     PositionWeightMatrix umi_;
 };
 
-void mergeMetricsShardsToFile(std::string filename, vector<FastQMetricsShard> metrics_shards );
 #endif // __FASTQ_METRICS_H__
