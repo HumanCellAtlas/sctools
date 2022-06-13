@@ -200,6 +200,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
      for (unsigned int i = 0; i < options.R1s.size(); i++) {
         readers[i].join();
      }
+     cout << "Done reading all shards. Will now aggregate and write to file; this will take a few minutes."<<std::endl;
      FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length, CB_length);
 }
 
