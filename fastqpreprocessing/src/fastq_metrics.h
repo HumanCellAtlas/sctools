@@ -36,8 +36,8 @@ public:
                      barcode_length_(getLengthOfType(read_structure_,'C')),
                      umi_length_(getLengthOfType(read_structure_,'M')),
                      tagged_lengths_(parseReadStructure(read_structure_)),
-                     barcode_(barcode_length),
-                     umi_(umi_length){}
+                     barcode_(barcode_length_),
+                     umi_(umi_length_){}
     void ingestBarcodeAndUMI(std::string raw_seq);
     void processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
     static void mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length);

@@ -9,15 +9,7 @@
 #include "fastq_metrics.h"
 #include <fstream>
 #include <iostream>
-
-int getLengthOfType(string read_structure,char type)
-{
-  int total_length = 0;
-  for(auto [curr_type, length] : parseReadStructure(read_structure))
-    if(curr_type == type)
-      total_length += length;
-  return total_length;
-}
+#include <cassert>
 
 
 std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
@@ -36,58 +28,14 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
     return ret;
 }
 
-/*DELETEvoid FastQMetricsShard::ingestSamRecord(const SamRecord* sam_record, FastQFile &fastQFileI1, FastQFile &fastQFileR1, FastQFile &fastQFileR2, std::string read_structure, bool has_I1_file_list)
+int getLengthOfType(string read_structure,char type)
 {
-    // check the sequence names matching
-    std::string a = std::string(fastQFileR1.myRawSequence.c_str());
-    // extract the raw barcode and UMI 8C18X6C9M1X and raw barcode and UMI quality string
-    std::vector<std::pair<char, int>> tagged_lengths = parseReadStructure(read_structure);
-    std::string barcode_seq, umi_seq, spacer_seq;
-    int cur_ind = 0;
-    for (auto [tag, length] : tagged_lengths)
-    {
-        switch (tag)
-        {
-        case 'C':
-            barcode_seq += a.substr(cur_ind, length);
-        break;
-        case 'M':
-            umi_seq += a.substr(cur_ind, length);
-        break;
-        case 'X':
-            spacer_seq += a.substr(cur_ind, length);
-        break;
-        default:
-        break;
-        }
-        cur_ind += length;
-    }
-
-    // reset the samrecord
-    samRecord->resetRecord();
-
-    // add read group and the sam flag
-    samRecord->addTag("RG", 'Z', "A");
-    samRecord->setFlag(4);
-
-    // add identifier and sequence
-    samRecord->setReadName(fastQFileR2.mySequenceIdentifier.c_str());
-    samRecord->setSequence(fastQFileR2.myRawSequence.c_str());
-
-    // add barcode and quality
-    samRecord->addTag("CR", 'Z', barcode_seq.c_str());
-
-    // add UMI
-    samRecord->addTag("UR", 'Z', umi_seq.c_str());
-
-    // add raw sequence and quality sequence for the index
-    if (has_I1_file_list) {
-        std::string indexseq = std::string(fastQFileI1.myRawSequence.c_str());
-        std::string indexSeqQual = std::string(fastQFileI1.myQualityString.c_str());
-        samRecord->addTag("SR", 'Z', indexseq.c_str());
-        samRecord->addTag("SY", 'Z', indexSeqQual.c_str());
-    }
-}*/
+  int total_length = 0;
+  for(auto [curr_type, length] : parseReadStructure(read_structure))
+    if(curr_type == type)
+      total_length += length;
+  return total_length;
+}
 
 void PositionWeightMatrix::recordChunk(string s)
 {
