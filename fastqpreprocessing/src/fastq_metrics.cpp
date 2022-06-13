@@ -1,10 +1,11 @@
 /**
  *  @file   fastq_metrics.cpp
  *  @brief  functions for computing metrics
- *  @author Farzaneh Khajouei
+ *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
-
+#include "FastQFile.h"
+#include "FastQStatus.h"
 #include "fastq_metrics.h"
 #include <fstream>
 #include <iostream>
@@ -35,7 +36,7 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
     return ret;
 }
 
-void FastQMetricsShard::ingestSamRecord(const SamRecord* sam_record, FastQFile &fastQFileI1, FastQFile &fastQFileR1, FastQFile &fastQFileR2, std::string read_structure, bool has_I1_file_list)
+/*DELETEvoid FastQMetricsShard::ingestSamRecord(const SamRecord* sam_record, FastQFile &fastQFileI1, FastQFile &fastQFileR1, FastQFile &fastQFileR2, std::string read_structure, bool has_I1_file_list)
 {
     // check the sequence names matching
     std::string a = std::string(fastQFileR1.myRawSequence.c_str());
@@ -86,7 +87,7 @@ void FastQMetricsShard::ingestSamRecord(const SamRecord* sam_record, FastQFile &
         samRecord->addTag("SR", 'Z', indexseq.c_str());
         samRecord->addTag("SY", 'Z', indexSeqQual.c_str());
     }
-}
+}*/
 
 void PositionWeightMatrix::recordChunk(string s)
 {
@@ -114,7 +115,7 @@ void PositionWeightMatrix::recordChunk(string s)
           N[index]++;
           break;
         default:
-        std::cerr<<"Unknown character:"<<c<<std::endl;
+        std::cerr<<"Unknown character:"<<s[index]<<std::endl;
       }
   }
 }
@@ -183,7 +184,7 @@ void FastQMetricsShard::processShard( std::string filenameR1, std::string read_s
     fastQFileR1.closeFile();
 }
 
-PositionWeightMatrix& PositionWeightMatrix::operator+=(const PositionWeightMatrix& rhs);
+PositionWeightMatrix& PositionWeightMatrix::operator+=(const PositionWeightMatrix& rhs)
 {
   for(int i=0; i < A.size(); i++)
   {
@@ -229,7 +230,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
      vector<std::thread> readers;
      for (unsigned int i = 0; i < options.R1s.size(); i++)
      {
-        reader.emplace_back(processShard,
+        readers.emplace_back(processShard,
                             &fastqMetrics[i],
                             options.R1s[i].c_str(),
                             options.read_structure.c_str(),
@@ -241,7 +242,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
      for (unsigned int i = 0; i < options.R1s.size(); i++) {
         readers[i].join();
      }
-     FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics);
+     FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length_, barcode_length_);
 }
 
 void writeCountsFile(std::unordered_map<string,int> counts, std::string filename)
@@ -262,13 +263,13 @@ void PositionWeightMatrix::writeToFile(std::string filename)
   for (int i = 0; i < A.size(); i++)
     out << (i + 1) << "\t" << A[i] << "\t" << C[i] << "\t" << G[i] << "\t" << T[i] << "\t" << N[i] << "\n";
 }
-static void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length)
+void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length)
 {
   FastQMetricsShard total(umi_length, CB_length);
   for(FastQMetricsShard const& shard : shards)
     total += shard;
 
-  writeCountsFile(total.umi_counts, filename_prefix + ".numReads_perCell_XM.txt");
+  writeCountsFile(total.umi_counts_, filename_prefix + ".numReads_perCell_XM.txt");
   writeCountsFile(total.barcode_counts_, filename_prefix + ".numReads_perCell_XC.txt");
   total.barcode_.writeToFile(filename_prefix + ".barcode_distribution_XC.txt");
   total.umi_.writeToFile(filename_prefix + ".barcode_distribution_XM.txt");

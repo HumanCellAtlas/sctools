@@ -3,14 +3,14 @@
 /**
  *  @file   fastq_metrics.h
  *  @brief  functions for computing metrics
- *  @author Farzaneh Khajouei
+ *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
-#include "SamFile.h"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <thread>
 
 #include "utilities.h"
 #include "input_options.h"
@@ -39,7 +39,7 @@ public:
                      tagged_lengths_(parseReadStructure(read_structure_)),
                      barcode_(barcode_length),
                      umi_(umi_length){}
-    void ingestBarcodeAndUMI( FastQFile &fastQFileR1);
+    void ingestBarcodeAndUMI(std::string raw_seq);
     void processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
     static void mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length);
     FastQMetricsShard& operator+=(const FastQMetricsShard& rhs);
