@@ -209,8 +209,8 @@ void writeCountsFile(std::unordered_map<string,int> counts, std::string filename
   std::vector<std::pair<std::string,int>> sorted_counts;
   for (auto [str, count] : counts)
     sorted_counts.emplace_back(str, count);
-  std::sort(sorted_counts.begin(), sorted_counts.end(),
-            [](std::pair<std::string,int> const& a, std::pair<std::string,int> const& b){return a.second < b.second;});
+  std::sort(sorted_counts.begin(), sorted_counts.end(), //sort counts from most to fewest!
+            [](std::pair<std::string,int> const& a, std::pair<std::string,int> const& b){return a.second > b.second;});
   for (auto [str, count] : sorted_counts)
     out << count << "\t" << str << "\n";
 }
