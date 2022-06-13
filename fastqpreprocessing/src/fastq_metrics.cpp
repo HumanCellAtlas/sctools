@@ -78,7 +78,7 @@ FastQMetricsShard::FastQMetricsShard(std::string read_structure) : read_structur
                      umi_(umi_length_){}
 
 // Read a chunk from a fastq r1 and get UMI and Cellbarcode filled
-void FastQMetricsShard::ingestBarcodeAndUMI(std::string raw_seq)
+void FastQMetricsShard::ingestBarcodeAndUMI(std::string_view raw_seq)
 {
     // extract the raw barcode and UMI 8C18X6C9M1X and raw barcode and UMI quality string
     std::string barcode_seq, umi_seq;
@@ -107,11 +107,11 @@ void FastQMetricsShard::ingestBarcodeAndUMI(std::string raw_seq)
 
 
 // This is a wrapper to use std thread
-void processShard( FastQMetricsShard* fastq_metrics_shard, std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data)
+void processShard( FastQMetricsShard* fastq_metrics_shard, String filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data)
 {
   fastq_metrics_shard->processShard(filenameR1, read_structure, white_list_data);
 }
-void FastQMetricsShard::processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data)
+void FastQMetricsShard::processShard( String filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data)
 {
     /// setting the shortest sequence allowed to be read
     FastQFile fastQFileR1(4, 4);
@@ -128,7 +128,7 @@ void FastQMetricsShard::processShard( std::string filenameR1, std::string read_s
       if (fastQFileR1.readFastQSequence() != FastQStatus::FASTQ_SUCCESS )
         break;
 
-      ingestBarcodeAndUMI(fastQFileR1.myRawSequence);
+      ingestBarcodeAndUMI(std::string_view(fastQFileR1.myRawSequence.c_str(),fastQFileR1.myRawSequence.Length()));
 
       n_lines_read++;
       if (n_lines_read % 10000000 == 0) {
@@ -181,7 +181,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
      // create the data for the threads
      vector <FastQMetricsShard> fastqMetrics;
      for (int i = 0; i < num_files; i++) {
-        fastqMetrics.emplace_back(CB_length, umi_length);
+        fastqMetrics.emplace_back(options.read_structure);
      }
 
      // execute the fastq readers threads

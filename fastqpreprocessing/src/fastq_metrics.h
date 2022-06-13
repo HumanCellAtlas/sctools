@@ -35,8 +35,8 @@ class FastQMetricsShard
 {
 public:
     FastQMetricsShard(std::string read_structure);
-    void ingestBarcodeAndUMI(std::string raw_seq);
-    void processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
+    void ingestBarcodeAndUMI(std::string_view raw_seq);
+    void processShard( String filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
     static void mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length);
     FastQMetricsShard& operator+=(const FastQMetricsShard& rhs);
 
