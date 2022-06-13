@@ -171,7 +171,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
                    const WHITE_LIST_DATA *white_list_data)
 {
      // number of files based on the input size
-     int num_files = get_num_blocks(options);
+     int num_files = options.R1s.size();
 
      // compute UMI and cell_barcode lengths
 
