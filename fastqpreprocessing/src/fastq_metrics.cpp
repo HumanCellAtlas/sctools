@@ -67,6 +67,16 @@ void PositionWeightMatrix::recordChunk(string s)
       }
   }
 }
+
+// constructor function 
+
+FastQMetricsShard::FastQMetricsShard(std::string read_structure) : read_structure_(read_structure),
+                     barcode_length_(getLengthOfType(read_structure_,'C')),
+                     umi_length_(getLengthOfType(read_structure_,'M')),
+                     tagged_lengths_(parseReadStructure(read_structure_)),
+                     barcode_(barcode_length_),
+                     umi_(umi_length_){}
+
 // Read a chunk from a fastq r1 and get UMI and Cellbarcode filled
 void FastQMetricsShard::ingestBarcodeAndUMI(std::string raw_seq)
 {

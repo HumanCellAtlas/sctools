@@ -10,9 +10,11 @@
 #include <unordered_map>
 #include <vector>
 #include <thread>
-
+#include "BaseAsciiMap.h"
 #include "utilities.h"
 #include "input_options.h"
+#include "FastQFile.h"
+#include "FastQStatus.h"
 
 class PositionWeightMatrix
 {
@@ -32,12 +34,7 @@ public:
 class FastQMetricsShard
 {
 public:
-    FastQMetricsShard(std::string read_structure) : read_structure_(read_structure),
-                     barcode_length_(getLengthOfType(read_structure_,'C')),
-                     umi_length_(getLengthOfType(read_structure_,'M')),
-                     tagged_lengths_(parseReadStructure(read_structure_)),
-                     barcode_(barcode_length_),
-                     umi_(umi_length_){}
+    FastQMetricsShard(std::string read_structure);
     void ingestBarcodeAndUMI(std::string raw_seq);
     void processShard( std::string filenameR1, std::string read_structure, const WHITE_LIST_DATA* white_list_data);
     static void mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length);
