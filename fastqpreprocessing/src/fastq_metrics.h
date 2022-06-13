@@ -6,7 +6,6 @@
  *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
-
 #include <string>
 #include <unordered_map>
 #include <vector>

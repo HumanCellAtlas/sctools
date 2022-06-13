@@ -42,7 +42,7 @@ _COMMON_OBJ =  utilities.o input_options.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_COMMON_OBJ))
 
 $(ODIR)/%.o: %.cpp $(_DEPS)
-	$(CC) -c -o $@ $<  -I$(IDIR) -I. -I$(IDIR2) -I$(IDIR3) -I$(IDIR4)
+	$(CC) -c -o $@ $<  -I$(IDIR) -I. -I$(IDIR2) -I$(IDIR3)
 
 $(TARGET1): $(OBJ) $(TARGET1_OBJ) 
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS) 

@@ -6,7 +6,7 @@
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
-#include <FastQFile.h>
+#include "FastQFile.h"
 #include "FastQStatus.h"
 #include "BaseAsciiMap.h"
 #include "SamFile.h"
