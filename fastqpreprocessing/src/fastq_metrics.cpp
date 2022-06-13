@@ -200,7 +200,7 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE &options,
      for (unsigned int i = 0; i < options.R1s.size(); i++) {
         readers[i].join();
      }
-     FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length_, barcode_length_);
+     FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length, CB_length);
 }
 
 void writeCountsFile(std::unordered_map<string,int> counts, std::string filename)
