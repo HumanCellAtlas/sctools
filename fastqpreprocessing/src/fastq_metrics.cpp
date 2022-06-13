@@ -223,7 +223,7 @@ void PositionWeightMatrix::writeToFile(std::string filename)
 }
 void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length)
 {
-  FastQMetricsShard total(umi_length, CB_length);
+  FastQMetricsShard total(shards[0].read_structure_);
   for(FastQMetricsShard const& shard : shards)
     total += shard;
 
