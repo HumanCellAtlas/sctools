@@ -24,43 +24,44 @@
 #include <getopt.h>
 #include <vector>
 #include <functional>
-#include <mutex>     
+#include <mutex>
 
 #include "utilities.h"
 #include "input_options.h"
 
 
 /// Samrecord bins to be accessed by all threads
-typedef struct SamRecordBins {
-    /// array or array of samrecords
-    /// one array for each reader samrecords[r].
-    /// Note that every samrecord[r][i] for 0 <= i < num_records[r]
-    /// is destined to be written to one specfic output bam file.
-    /// These index of the bam file is one of the vectors "file_index[r][b]",
-    /// where b is one of the bam files index
-    SamRecord **samrecords;
+typedef struct SamRecordBins
+{
+  /// array or array of samrecords
+  /// one array for each reader samrecords[r].
+  /// Note that every samrecord[r][i] for 0 <= i < num_records[r]
+  /// is destined to be written to one specfic output bam file.
+  /// These index of the bam file is one of the vectors "file_index[r][b]",
+  /// where b is one of the bam files index
+  SamRecord** samrecords;
 
-    /// number of records in individual reader threads that
-    /// can be written, i.e., num_records[r] stores the number of
-    /// such records in samrecrods[r]
-    int32_t *num_records;
+  /// number of records in individual reader threads that
+  /// can be written, i.e., num_records[r] stores the number of
+  /// such records in samrecrods[r]
+  int32_t* num_records;
 
-    /// An array of arrays of vector, one array "file_index[r]" for reader thread r.
-    /// The value vector in file_index[r][i] stores the indices of the samrecords[r]
-    /// where the record in samrecords[r][i], for 0 <= i < num_records[r]
-    /// should be written. This information is used by the writer threads.
-    vector<int32_t> **file_index;
+  /// An array of arrays of vector, one array "file_index[r]" for reader thread r.
+  /// The value vector in file_index[r][i] stores the indices of the samrecords[r]
+  /// where the record in samrecords[r][i], for 0 <= i < num_records[r]
+  /// should be written. This information is used by the writer threads.
+  vector<int32_t>** file_index;
 
-    /// sample name
-    std::string sample_id;
-    int32_t block_size;
+  /// sample name
+  std::string sample_id;
+  int32_t block_size;
 
-    /// number of output bam files, and one writer thread per bam file
-    int16_t num_files;
-    /// flag to stop the writer
-    bool stop;
-    /// the thread (reader) that is currently wanting to write
-    int32_t active_thread_num;
+  /// number of output bam files, and one writer thread per bam file
+  int16_t num_files;
+  /// flag to stop the writer
+  bool stop;
+  /// the thread (reader) that is currently wanting to write
+  int32_t active_thread_num;
 } SAM_RECORD_BINS;
 
 
@@ -79,8 +80,8 @@ typedef struct SamRecordBins {
  * @params white_list_data data-structure to store barcode correction
  *         map and vector of correct barcodes
 */
-void process_inputs(const INPUT_OPTIONS_FASTQPROCESS & options, \
-                   const WHITE_LIST_DATA * white_list_data);
+void process_inputs(const INPUT_OPTIONS_FASTQPROCESS& options,
+                    const WHITE_LIST_DATA* white_list_data);
 
 /**
  * @brief Process one triplet of file R1/R2 and I1 in a thread
@@ -100,11 +101,11 @@ void process_inputs(const INPUT_OPTIONS_FASTQPROCESS & options, \
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
 
-void process_file(int32_t tindex, std::string filename, String filename1, \
-                  String filename2,  unsigned int barcode_length, \
-                  unsigned int umi_length, \
-                  const WHITE_LIST_DATA *white_list_data, \
-                  SAM_RECORD_BINS * samrecord_bins);
+void process_file(int32_t tindex, std::string filename, String filename1,
+                  String filename2,  unsigned int barcode_length,
+                  unsigned int umi_length,
+                  const WHITE_LIST_DATA* white_list_data,
+                  SAM_RECORD_BINS* samrecord_bins);
 
 /**
  * @brief Function for the writer thread
@@ -117,7 +118,7 @@ void process_file(int32_t tindex, std::string filename, String filename1, \
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void bam_writers(int32_t windex, SAM_RECORD_BINS *samrecord_bins);
+void bam_writers(int32_t windex, SAM_RECORD_BINS* samrecord_bins);
 
 /**
  * @brief Function for the writer thread
@@ -130,5 +131,5 @@ void bam_writers(int32_t windex, SAM_RECORD_BINS *samrecord_bins);
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void fastq_writers(int32_t windex, SAM_RECORD_BINS *samrecord_bins);
+void fastq_writers(int32_t windex, SAM_RECORD_BINS* samrecord_bins);
 #endif
