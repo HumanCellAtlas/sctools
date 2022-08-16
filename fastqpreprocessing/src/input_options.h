@@ -25,7 +25,7 @@ using namespace std;
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_fastqprocess(int, char **, INPUT_OPTIONS_FASTQPROCESS &);
+void read_options_fastqprocess(int, char**, INPUT_OPTIONS_FASTQPROCESS&);
 
 
 /**
@@ -35,7 +35,7 @@ void read_options_fastqprocess(int, char **, INPUT_OPTIONS_FASTQPROCESS &);
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_tagsort(int, char **, INPUT_OPTIONS_TAGSORT &);
+void read_options_tagsort(int, char**, INPUT_OPTIONS_TAGSORT&);
 /*
  * @brief Reads the options to the re-arranging reads based on the read structure.
  *
@@ -43,10 +43,10 @@ void read_options_tagsort(int, char **, INPUT_OPTIONS_TAGSORT &);
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_fastq_slideseq(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &);
+void read_options_fastq_slideseq(int, char**, INPUT_OPTIONS_FASTQ_READ_STRUCTURE&);
 /*
  * @brief Reads the options to compute metrics based on the read structure.
 */
-void read_options_fastq_metrics(int, char **, INPUT_OPTIONS_FASTQ_READ_STRUCTURE &);
+void read_options_fastq_metrics(int, char**, INPUT_OPTIONS_FASTQ_READ_STRUCTURE&);
 
 #endif

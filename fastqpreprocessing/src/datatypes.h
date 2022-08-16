@@ -16,42 +16,49 @@
 
 using namespace std;
 
-typedef std::tuple<std::string *, std::string *, std::string *> TRIPLET;
+typedef std::tuple<std::string*, std::string*, std::string*> TRIPLET;
 
-typedef struct TagCounter {
-    TagCounter() {
-      prev_tag = "";
+typedef struct TagCounter
+{
+  TagCounter()
+  {
+    prev_tag = "";
+  }
+  std::unordered_map<std::string, int> data;
+  std::string prev_tag;
+  int count = 0;
+
+  void clear()
+  {
+    data.clear();
+  }
+
+  void update(const std::string& tag)
+  {
+    if (tag.compare(prev_tag)!=0)
+    {
+      count++;
+      prev_tag = tag;
     }
-    std::unordered_map<std::string, int> data;
-    std::string prev_tag;
-    int count = 0;
-
-    void clear() { data.clear(); }
-
-    void update(const std::string &tag) {
-       if (tag.compare(prev_tag)!=0)  {
-          count++;
-          prev_tag = tag;
-       }
-    }
+  }
 } TAG_COUNTER;
 
-typedef std::tuple<TRIPLET * /*  tuple<std::string *, std::string *, std::string *>*/,  
-                   std::string /* reference */, 
-                   std::string /* biotype */,  
-                   int /* pos */, 
-                   int /*rev strand   1 for yes, 0 otherwise*/, 
-                   float /*avg barcode qual score */, 
-                   float /* frac of barcode qual score >30 */, 
-                   float /*avg qual seq */ , 
-                   float /*fract of >30 score qual seq*/, 
-                   int /*NH*/, 
-                   int /*perfect molecule barcode, 1 is yes, 0 otherwise*/,
-                   int /*spliced reads 1 yes, 0 otherwise*/,
-                   int /*is duplicate */,
-                   int /*perfect cell barcode 1 is yes, 0 otherwise*/,
-                   float /* fraction of umi qual score > 30 */
-                 > TAGTUPLE;
+typedef std::tuple<TRIPLET* /*  tuple<std::string *, std::string *, std::string *>*/,
+        std::string /* reference */,
+        std::string /* biotype */,
+        int /* pos */,
+        int /*rev strand   1 for yes, 0 otherwise*/,
+        float /*avg barcode qual score */,
+        float /* frac of barcode qual score >30 */,
+        float /*avg qual seq */,
+        float /*fract of >30 score qual seq*/,
+        int /*NH*/,
+        int /*perfect molecule barcode, 1 is yes, 0 otherwise*/,
+        int /*spliced reads 1 yes, 0 otherwise*/,
+        int /*is duplicate */,
+        int /*perfect cell barcode 1 is yes, 0 otherwise*/,
+        float /* fraction of umi qual score > 30 */
+        > TAGTUPLE;
 
 typedef std::tuple<std::string, int, int>  QUEUETUPLE;
 
@@ -62,41 +69,48 @@ typedef std::vector<std::string>  STRING_VECTOR;
 typedef std::unordered_map <std::string, int64_t> STRING_INT64_MAP;
 
 
-typedef struct _tags {
-   char **tags;
+typedef struct _tags
+{
+  char** tags;
 } TAGS;
 
-typedef struct _tags_holder {
-    int num_tags;
-    TAGS *tags;
-    char *memorypool;
+typedef struct _tags_holder
+{
+  int num_tags;
+  TAGS* tags;
+  char* memorypool;
 
-    char *allocated_memory(int size) {
-       return 0;
-    }
-    char *double_memory() {
-       return 0;
-    } 
+  char* allocated_memory(int size)
+  {
+    return 0;
+  }
+  char* double_memory()
+  {
+    return 0;
+  }
 } TAGS_HOLDER;
 
 
 // structure for correcting the barcodes
-typedef struct _white_list_data {
-    // an unordered map from whitelist barcodes and 1-mutations
-    // to the index of the correct barcode
-    STRING_INT64_MAP mutations;
-    // vector of whitelist barcodes
-    STRING_VECTOR barcodes;
+typedef struct _white_list_data
+{
+  // an unordered map from whitelist barcodes and 1-mutations
+  // to the index of the correct barcode
+  STRING_INT64_MAP mutations;
+  // vector of whitelist barcodes
+  STRING_VECTOR barcodes;
 } WHITE_LIST_DATA;
 
 
-typedef struct _input_options_fastq_read_structure {
+typedef struct _input_options_fastq_read_structure
+{
   // Initialize some of the values
-  _input_options_fastq_read_structure() {
-     read_structure = "";
-     sample_id = "";
-     bam_size = 1.0;
-     verbose_flag = 0;
+  _input_options_fastq_read_structure()
+  {
+    read_structure = "";
+    sample_id = "";
+    bam_size = 1.0;
+    verbose_flag = 0;
   }
   // verbose flag
   unsigned int verbose_flag;
@@ -122,14 +136,16 @@ typedef struct _input_options_fastq_read_structure {
 
 
 // Structure to hold input options for fastqprocess
-typedef struct _input_options_fastqprocess {
+typedef struct _input_options_fastqprocess
+{
   // Initialize some of the values
-  _input_options_fastqprocess() {
-     barcode_length = -1;
-     umi_length = -1;
-     sample_id = "";
-     bam_size = 1.0;
-     verbose_flag = 0;
+  _input_options_fastqprocess()
+  {
+    barcode_length = -1;
+    umi_length = -1;
+    sample_id = "";
+    bam_size = 1.0;
+    verbose_flag = 0;
   }
   // verbose flag
   unsigned int verbose_flag;
@@ -160,22 +176,24 @@ typedef struct _input_options_fastqprocess {
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_fastqprocess(int, char **, INPUT_OPTIONS_FASTQPROCESS &);
+void read_options_fastqprocess(int, char**, INPUT_OPTIONS_FASTQPROCESS&);
 
 enum METRIC_TYPE {CELL, GENE};
 
 // Structure to hold input options for tagsort
-typedef struct _input_options_tagsort {
+typedef struct _input_options_tagsort
+{
   // Initialize some of the values
-  _input_options_tagsort() {
-     bam_input = "";
-     gtf_file = "";
-     temp_folder =  std::string("/tmp/");
-     alignments_per_thread = NUM_ALNS_PER_THREAD;
-     nthreads = 1;
-     compute_metric = 0;
-     output_sorted_info = 0;
-     metric_type = "";
+  _input_options_tagsort()
+  {
+    bam_input = "";
+    gtf_file = "";
+    temp_folder =  std::string("/tmp/");
+    alignments_per_thread = NUM_ALNS_PER_THREAD;
+    nthreads = 1;
+    compute_metric = 0;
+    output_sorted_info = 0;
+    metric_type = "";
   }
   // metric type
   std::string metric_type;
@@ -184,9 +202,9 @@ typedef struct _input_options_tagsort {
   unsigned int output_sorted_info;
   // compute metric
   unsigned int compute_metric;
-  // name of the bam file 
+  // name of the bam file
   std::string bam_input;
-  // name of the gtf file 
+  // name of the gtf file
   std::string gtf_file;
   // temp folder for disk sorting
   std::string temp_folder;
@@ -194,7 +212,7 @@ typedef struct _input_options_tagsort {
   std::string metric_output_file;
   // sorted tsv output file
   std::string sorted_output_file;
-  // number of alignment per thread 
+  // number of alignment per thread
   unsigned int alignments_per_thread;
   // number of threads
   unsigned int nthreads;
@@ -217,6 +235,6 @@ typedef struct _input_options_tagsort {
  * @param argv arguments array to the main function
  * @param options the structure for holding the options for getopt
 */
-void read_options_tagsort(int, char **, INPUT_OPTIONS_TAGSORT &);
+void read_options_tagsort(int, char**, INPUT_OPTIONS_TAGSORT&);
 
 #endif

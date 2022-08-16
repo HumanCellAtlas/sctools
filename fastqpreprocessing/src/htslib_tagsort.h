@@ -34,16 +34,16 @@
 
 
 /**
- * @brief From the input bam create a list of txt files with the records (lines) 
- * sorted according to the * tags 
+ * @brief From the input bam create a list of txt files with the records (lines)
+ * sorted according to the * tags
  *
  * @details
- * The input bam file is read chunk by chunk, sorted by the tags and the written 
- * out as a text file in the sorted manner. 
+ * The input bam file is read chunk by chunk, sorted by the tags and the written
+ * out as a text file in the sorted manner.
  *
  * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT &options);
+void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options);
 
 #endif
