@@ -5,7 +5,7 @@ LABEL maintainer="Farzaneh Khajouei <fkhajoue@broadinstitute.org>" \
   description="A collection of tools for single cell data. Splitting fastq files based on cellbarcodes and other tools to compute metrics on single cell data using barcodes and UMIs."
 
 
-RUN apt-get update && apt-get upgrade && apt-get install -y patch libhdf5-dev vim apt-utils
+RUN apt-get update && apt-get upgrade -y && apt-get install -y patch libhdf5-dev vim apt-utils
 RUN mkdir /sctools/
 
 COPY . /sctools 
