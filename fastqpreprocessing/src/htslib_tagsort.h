@@ -27,7 +27,6 @@
 
 #include <htslib/sam.h>
 #include "input_options.h"
-#include "datatypes.h"
 #include "sort_write.h"
 #include "utilities.h"
 #include "globals.h"
@@ -41,9 +40,9 @@
  * The input bam file is read chunk by chunk, sorted by the tags and the written
  * out as a text file in the sorted manner.
  *
- * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
+ * @param options: InputOptionsTagsort the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options);
+void create_sorted_file_splits_htslib(InputOptionsTagsort& options);
 
 #endif

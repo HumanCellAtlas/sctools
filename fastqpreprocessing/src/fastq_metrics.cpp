@@ -1,6 +1,6 @@
 /**
  *  @file   fastq_metrics.cpp
- *  @brief  functions for computing metrics
+ *  @brief  computes metrics based on the read structure
  *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
@@ -15,10 +15,10 @@
 std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
 {
   std::vector<std::pair<char, int>> ret;
-  int next_ind = 0;
+  size_t next_ind = 0;
   while (next_ind < read_structure.size())
   {
-    int type_ind = read_structure.find_first_not_of("0123456789", next_ind);
+    size_t type_ind = read_structure.find_first_not_of("0123456789", next_ind);
     assert(type_ind != std::string::npos);
     char type = read_structure[type_ind];
     int len = std::stoi(read_structure.substr(next_ind, type_ind - next_ind));
@@ -28,7 +28,7 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
   return ret;
 }
 
-int getLengthOfType(string read_structure,char type)
+int getLengthOfType(std::string read_structure, char type)
 {
   int total_length = 0;
   for (auto [curr_type, length] : parseReadStructure(read_structure))
@@ -37,9 +37,9 @@ int getLengthOfType(string read_structure,char type)
   return total_length;
 }
 
-void PositionWeightMatrix::recordChunk(string s)
+void PositionWeightMatrix::recordChunk(std::string s)
 {
-  for (int index = 0; index < s.size(); index++)
+  for (size_t index = 0; index < s.size(); index++)
   {
     switch (s[index])
     {
@@ -108,22 +108,19 @@ void FastQMetricsShard::ingestBarcodeAndUMI(std::string_view raw_seq)
 
 // This is a wrapper to use std thread
 void processShard(FastQMetricsShard* fastq_metrics_shard, String filenameR1,
-                  std::string read_structure, const WHITE_LIST_DATA* white_list_data)
+                  std::string read_structure, const WhiteListData* white_list_data)
 {
   fastq_metrics_shard->processShard(filenameR1, read_structure, white_list_data);
 }
 void FastQMetricsShard::processShard(String filenameR1, std::string read_structure,
-                                     const WHITE_LIST_DATA* white_list_data)
+                                     const WhiteListData* white_list_data)
 {
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileR1(4, 4);
   // open the R1 file
-  if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) !=
-      FastQStatus::FASTQ_SUCCESS)
-  {
-    std::cerr << "Failed to open file: " <<  filenameR1;
-    abort();
-  }
+  if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) != FastQStatus::FASTQ_SUCCESS)
+    crash("Failed to open R1 file");
+
   // Keep reading the file until there are no more fastq sequences to process.
   int n_lines_read = 0;
   while (fastQFileR1.keepReadingFile())
@@ -131,7 +128,8 @@ void FastQMetricsShard::processShard(String filenameR1, std::string read_structu
     if (fastQFileR1.readFastQSequence() != FastQStatus::FASTQ_SUCCESS)
       break;
 
-    ingestBarcodeAndUMI(std::string_view(fastQFileR1.myRawSequence.c_str(),fastQFileR1.myRawSequence.Length()));
+    ingestBarcodeAndUMI(std::string_view(fastQFileR1.myRawSequence.c_str(),
+                                         fastQFileR1.myRawSequence.Length()));
 
     n_lines_read++;
     if (n_lines_read % 10000000 == 0)
@@ -146,9 +144,9 @@ void FastQMetricsShard::processShard(String filenameR1, std::string read_structu
   fastQFileR1.closeFile();
 }
 
-PositionWeightMatrix& PositionWeightMatrix::operator+=(const PositionWeightMatrix& rhs)
+PositionWeightMatrix& PositionWeightMatrix::operator+=(PositionWeightMatrix const& rhs)
 {
-  for (int i=0; i < A.size(); i++)
+  for (size_t i = 0; i < A.size(); i++)
   {
     A[i] += rhs.A[i];
     C[i] += rhs.C[i];
@@ -159,32 +157,32 @@ PositionWeightMatrix& PositionWeightMatrix::operator+=(const PositionWeightMatri
   return *this;
 }
 
-FastQMetricsShard& FastQMetricsShard::operator+=(const FastQMetricsShard& rhs)
+FastQMetricsShard& FastQMetricsShard::operator+=(FastQMetricsShard const& rhs)
 {
-  for (auto [key,value] : rhs.barcode_counts_)
+  for (auto [key, value] : rhs.barcode_counts_)
     barcode_counts_[key] += value;
-  for (auto [key,value] : rhs.umi_counts_)
+  for (auto [key, value] : rhs.umi_counts_)
     umi_counts_[key] += value;
 
-  barcode_+=rhs.barcode_;
-  umi_+=rhs.umi_;
+  barcode_ += rhs.barcode_;
+  umi_ += rhs.umi_;
   return *this;
 }
 
 /** @copydoc process_inputs */
-void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE& options,
-                    const WHITE_LIST_DATA* white_list_data)
+void process_inputs(InputOptionsFastqReadStructure const& options,
+                    const WhiteListData* white_list_data)
 {
   // number of files based on the input size
   int num_files = options.R1s.size();
 
   // compute UMI and cell_barcode lengths
 
-  int umi_length = getLengthOfType(options.read_structure,'M');
-  int CB_length = getLengthOfType(options.read_structure,'C');
+  int umi_length = getLengthOfType(options.read_structure, 'M');
+  int CB_length = getLengthOfType(options.read_structure, 'C');
 
   // create the data for the threads
-  vector <FastQMetricsShard> fastqMetrics;
+  std::vector<FastQMetricsShard> fastqMetrics;
   for (int i = 0; i < num_files; i++)
     fastqMetrics.emplace_back(options.read_structure);
 
@@ -204,11 +202,13 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE& options,
   for (unsigned int i = 0; i < options.R1s.size(); i++)
     readers[i].join();
 
-  cout << "Done reading all shards. Will now aggregate and write to file; this will take a few minutes."<<std::endl;
-  FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length, CB_length);
+  std::cout << "Done reading all shards. Will now aggregate and write to file; "
+            << "this will take a few minutes." << std::endl;
+  FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics,
+                                              umi_length, CB_length);
 }
 
-void writeCountsFile(std::unordered_map<string,int> counts, std::string filename)
+void writeCountsFile(std::unordered_map<std::string, int> counts, std::string filename)
 {
   std::ofstream out(filename, std::ofstream::out);
   std::vector<std::pair<std::string,int>> sorted_counts;
@@ -226,10 +226,15 @@ void PositionWeightMatrix::writeToFile(std::string filename)
 {
   std::ofstream out(filename, std::ofstream::out);
   out << "position\tA\tC\tG\tT\tN\n";
-  for (int i = 0; i < A.size(); i++)
-    out << (i + 1) << "\t" << A[i] << "\t" << C[i] << "\t" << G[i] << "\t" << T[i] << "\t" << N[i] << "\n";
+  for (size_t i = 0; i < A.size(); i++)
+  {
+    out << (i + 1) << "\t" << A[i] << "\t" << C[i] << "\t"
+                           << G[i] << "\t" << T[i] << "\t" << N[i] << "\n";
+  }
 }
-void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards, int umi_length, int CB_length)
+void FastQMetricsShard::
+mergeMetricsShardsToFile(std::string filename_prefix, vector<FastQMetricsShard> shards,
+                         int umi_length, int CB_length)
 {
   FastQMetricsShard total(shards[0].read_structure_);
   for (FastQMetricsShard const& shard : shards)
@@ -243,12 +248,11 @@ void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, ve
 
 int main(int argc, char** argv)
 {
-  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
-  read_options_fastq_metrics(argc, argv, options);
+  InputOptionsFastqReadStructure options = readOptionsFastqMetrics(argc, argv);
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  WHITE_LIST_DATA* white_list_data = read_white_list(options.white_list_file);
+  std::unique_ptr<WhiteListData> white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
-  process_inputs(options, white_list_data);
+  process_inputs(options, white_list_data.get());
   return 0;
 }

@@ -13,13 +13,13 @@
 #include <regex>
 #include <iostream>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 #include <fstream>
 #include <iomanip>
-#include <math.h>
-#include "datatypes.h"
+#include <cmath>
+#include <unordered_set>
 
-using namespace std;
+enum class MetricType { Cell, Gene };
 
 /*
     Methods
@@ -80,8 +80,9 @@ class Metrics
 private:
   // count information
   int n_reads = 0;
-  int noise_reads = 0; //# long polymers, N-sequences; NotImplemented
+  const int noise_reads = 0; //# long polymers, N-sequences; NotImplemented
 
+  // TODO does it need to be sorted?
   //std::unordered_map<std::string, int> _fragment_histogram;
   std::map<std::string, int> _fragment_histogram;
 
@@ -131,13 +132,12 @@ private:
   int fragments_with_single_read_evidence = -1;
   int molecules_with_single_read_evidence = -1;
 
-  std::regex rgx;
-  std::sregex_token_iterator end;
+  // TODO separate these 2 out from the above, all of which gets clear()d
   std::string prev_tag;
   char* record[20];
 
 protected:
-  std::string headers[24] =
+  std::string common_headers[24] =
   {
     "n_reads",
     "noise_reads",
@@ -167,29 +167,21 @@ protected:
 
 
 public:
-  Metrics()
-  {
-    rgx.assign("\t");
-    prev_tag = std::string("");
-  }
   virtual ~Metrics() {}
   //  get the headers
-  virtual std::string getHeader()
-  {
-    return std::string("");
-  };
+  virtual std::string getHeader() = 0;
 
-  void parse_line(std::string& str, ofstream& fmetric_out,
-                  std::set<std::string>& mitochondrial_genes,
-                  METRIC_TYPE metric_type);
+  void parse_line(std::string& str, std::ofstream& fmetric_out,
+                  std::unordered_set<std::string>& mitochondrial_genes,
+                  MetricType metric_type);
 
-  void output_metrics(ofstream& fmetric_out);
-  virtual void output_metrics_extra(ofstream& fmetric_out) {}
-  virtual void parse_extra_fields(const std::string& first_tag,
-                                  const std::string& second_tag,
-                                  const std::string& third_tag,
-                                  char** record) {}
-  virtual void finalize(std::set<std::string>& mitochondrial_genes);
+  void output_metrics(std::ofstream& fmetric_out);
+  virtual void output_metrics_extra(std::ofstream& fmetric_out) = 0;
+  virtual void parse_extra_fields(std::string const& first_tag,
+                                  std::string const& second_tag,
+                                  std::string const& third_tag,
+                                  char** record) = 0;
+  virtual void finalize(std::unordered_set<std::string>& mitochondrial_genes);
   virtual void clear();
 };
 
@@ -223,7 +215,7 @@ private:
   OnlineGaussianSufficientStatistic _cell_barcode_fraction_bases_above_30;
   std::unordered_map<std::string, int> _genes_histogram;
 
-  std::string specific_headers[11] =
+  std::string cell_specific_headers[11] =
   {
     "perfect_cell_barcodes",
     "reads_mapped_intergenic",
@@ -239,14 +231,14 @@ private:
   };
 
 public:
-  std::string getHeader();
-  void output_metrics_extra(ofstream& fmetric_out);
-  void parse_extra_fields(const std::string& first_tag,
-                          const std::string& second_tag,
-                          const std::string& third_tag,
-                          char** record);
+  std::string getHeader() override;
+  void output_metrics_extra(std::ofstream& fmetric_out) override;
+  void parse_extra_fields(std::string const& first_tag,
+                          std::string const& second_tag,
+                          std::string const& third_tag,
+                          char** record) override;
 
-  void finalize(std::set<std::string>& mitochondrial_genes);
+  void finalize(std::unordered_set<std::string>& mitochondrial_genes);
 
   void clear();
 };
@@ -259,7 +251,7 @@ private:
   int number_cells_expressing;
 
   std::unordered_map<std::string, int> _cells_histogram;
-  std::string specific_headers[2] =
+  std::string gene_specific_headers[2] =
   {
     "number_cells_detected_multiple",
     "number_cells_expressing"
@@ -273,14 +265,14 @@ public:
   }
 
 public:
-  std::string getHeader();
-  void output_metrics_extra(ofstream& fmetric_out);
-  void parse_extra_fields(const std::string& first_tag,
-                          const std::string& second_tag,
-                          const std::string& third_tag,
-                          char** record);
+  std::string getHeader() override;
+  void output_metrics_extra(std::ofstream& fmetric_out) override;
+  void parse_extra_fields(std::string const& first_tag,
+                          std::string const& second_tag,
+                          std::string const& third_tag,
+                          char** record) override;
 
-  void finalize(std::set<std::string>& mitochondrial_genes);
+  void finalize(std::unordered_set<std::string>& mitochondrial_genes);
   void clear();
 };
 

@@ -2,7 +2,7 @@
 #define __FASTQ_METRICS_H__
 /**
  *  @file   fastq_metrics.h
- *  @brief  functions for computing metrics
+ *  @brief  computes metrics based on the read structure
  *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
@@ -21,7 +21,7 @@ class PositionWeightMatrix
 public:
   PositionWeightMatrix(int length): A(length), C(length), G(length), T(length), N(length) {}
   void recordChunk(std::string s);
-  PositionWeightMatrix& operator+=(const PositionWeightMatrix& rhs);
+  PositionWeightMatrix& operator+=(PositionWeightMatrix const& rhs);
   void writeToFile(std::string filename);
 
   std::vector<int> A;
@@ -37,11 +37,11 @@ public:
   FastQMetricsShard(std::string read_structure);
   void ingestBarcodeAndUMI(std::string_view raw_seq);
   void processShard(String filenameR1, std::string read_structure,
-                    const WHITE_LIST_DATA* white_list_data);
+                    const WhiteListData* white_list_data);
   static void mergeMetricsShardsToFile(std::string filename_prefix,
                                        std::vector<FastQMetricsShard> shards,
                                        int umi_length, int CB_length);
-  FastQMetricsShard& operator+=(const FastQMetricsShard& rhs);
+  FastQMetricsShard& operator+=(FastQMetricsShard const& rhs);
 
 
 private:
@@ -49,8 +49,8 @@ private:
   int barcode_length_;
   int umi_length_;
   std::vector<std::pair<char, int>> tagged_lengths_;
-  std::unordered_map<string,int> barcode_counts_;
-  std::unordered_map<string,int> umi_counts_;
+  std::unordered_map<std::string, int> barcode_counts_;
+  std::unordered_map<std::string, int> umi_counts_;
   PositionWeightMatrix barcode_;
   PositionWeightMatrix umi_;
 };

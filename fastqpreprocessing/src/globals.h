@@ -17,9 +17,6 @@
 #define THRESHOLD 30.0
 #define NUM_THREADS 10
 #define MAX_THREADS 30
-#define NUM_ALNS_PER_THREAD 1000000
-
-#define DATA_BUFFER_SIZE 1000
 
 extern sem_t semaphore;
 extern std::mutex mtx;

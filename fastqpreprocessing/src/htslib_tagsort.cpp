@@ -5,15 +5,13 @@
  *  @date   2021-08-11
  ***********************************************/
 
+#include "globals.h"
 #include "htslib_tagsort.h"
 
 unsigned int num_thread_deallocations = 0;
 extern sem_t semaphore;
 extern std::mutex mtx;
 extern std::set<unsigned int> busy_buffer, idle_buffer, threads_to_join;
-
-char*  error_sem_wait = "sem_wait: semaphore";
-char*  error_sem_post = "sem_post: semaphore";
 
 #define SEM_PRINT_VAL(X,Y)                               \
   ({                                                     \
@@ -28,13 +26,13 @@ char*  error_sem_post = "sem_post: semaphore";
 #define SEM_WAIT(X)                                      \
  ({                                                      \
      if (sem_wait(&X) == -1)                             \
-         error(error_sem_wait);                          \
+         crashWithPerror("sem_wait: semaphore");                          \
  })
 
 #define SEM_POST(X)                                      \
  ({                                                      \
      if (sem_post(&X) == -1)                             \
-        error(error_sem_wait);                           \
+        crashWithPerror("sem_post: semaphore");                           \
  })
 
 
@@ -86,12 +84,10 @@ inline char* get_Ztag_or_default(bam1_t* aln, const char* tagname, char* default
   return  tag_value;
 }
 
-using namespace std;
-
-void process_alignments(INPUT_OPTIONS_TAGSORT& options, bam1_t** aln, bam_hdr_t* bamHdr, unsigned int buf_no, unsigned int n)
+void process_alignments(InputOptionsTagsort& options, bam1_t** aln, bam_hdr_t* bamHdr, unsigned int buf_no, unsigned int n)
 {
   int threshold = THRESHOLD; //qual score threshold
-  vector<TAGTUPLE>  tuple_records;
+  std::vector<TAGTUPLE>  tuple_records;
   std::unordered_map<std::string, std::string*>  string_map;
   std::string tags[3];
 
@@ -286,21 +282,12 @@ void process_alignments(INPUT_OPTIONS_TAGSORT& options, bam1_t** aln, bam_hdr_t*
   write_out_partial_txt_file(tuple_records, options.temp_folder);
 
   // delete the triplet
-  for (auto it=tuple_records.begin(); it!=tuple_records.end(); it++)
-  {
-    delete get<0>(*it);
-  }
-  tuple_records.clear();
-  freeStlContainer(tuple_records);
+  for (auto it=tuple_records.begin(); it != tuple_records.end(); it++)
+    delete std::get<0>(*it);
 
   //  free the memory for the strings
-  for (auto it=string_map.begin(); it!=string_map.end(); it++)
-  {
+  for (auto it=string_map.begin(); it != string_map.end(); it++)
     delete it->second;
-  }
-
-  string_map.clear();
-  freeStlContainer(string_map);
 
   mtx.lock();
   threads_to_join.insert(buf_no);
@@ -318,14 +305,13 @@ void process_alignments(INPUT_OPTIONS_TAGSORT& options, bam1_t** aln, bam_hdr_t*
  * The input bam file is read chunk by chunk, sorted by the tags and the written
  * out as a text file in the sorted manner.
  *
- * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
+ * @param options: InputOptionsTagsort the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-void create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options)
+void create_sorted_file_splits_htslib(InputOptionsTagsort& options)
 {
-
-  string input_bam = options.bam_input;
-  string tmp_folder = options.temp_folder;
+  std::string input_bam = options.bam_input;
+  std::string tmp_folder = options.temp_folder;
 
   // size of individual chunks to sort in memory as an approx 20 mil alignments makes 1 GB bam
   //open bam file

@@ -1,56 +1,72 @@
 #include "sort_write.h"
 #include <sstream>
+#include <string>
 /**
  *  @file   sort_write.cpp
  *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2021-08-11
  ***********************************************/
-#define STRING_LEN  40
 
-extern sem_t semaphore;
-extern std::vector<string> partial_files;
+extern std::vector<std::string> partial_files;
 extern std::mutex mtx;
 
-inline bool sortbyfirst(const std::pair<TRIPLET*, int>& a,
-                        const std::pair<TRIPLET*, int>& b)
+inline bool sortbyfirst(std::pair<TRIPLET*, int> const& a,
+                        std::pair<TRIPLET*, int> const& b)
 {
-  if ((*get<0>(*a.first)).compare(*get<0>(*b.first)) !=0)
+  using std::get;
+  if ((*get<0>(*a.first)).compare(*get<0>(*b.first)) != 0)
     return ((*get<0>(*a.first)).compare(*get<0>(*b.first)) < 0);
-  if ((*get<1>(*a.first)).compare(*get<1>(*b.first)) !=0)
+  if ((*get<1>(*a.first)).compare(*get<1>(*b.first)) != 0)
     return ((*get<1>(*a.first)).compare(*get<1>(*b.first)) < 0);
   return ((*get<2>(*a.first)).compare(*get<2>(*b.first)) < 0);
 }
 
+// Generates a random alphanumeric string (AZaz09) of a fixed length.
+constexpr int kStringLen = 40;
+std::string randomString()
+{
+  auto randchar = []() -> char
+  {
+    const char charset[] =
+    "0123456789"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz";
+    const size_t max_index = (sizeof(charset) - 1);
+    return charset[ rand() % max_index ];
+  };
+  std::string str(kStringLen, 0);
+  std::generate_n(str.begin(), kStringLen, randchar);
+  return str;
+}
 
-using namespace std;
 /** @copydoc write_out_partial_txt_file */
-void write_out_partial_txt_file(const vector<TAGTUPLE>& tuple_records,
+void write_out_partial_txt_file(std::vector<TAGTUPLE> const& tuple_records,
                                 std::string const& tmp_folder)
 {
-  std::string tempfile = tmp_folder + string("/") + random_string(STRING_LEN) + std::string(".txt");
+  using std::get;
 
-  ofstream output_fp;
+  std::string tempfile = tmp_folder + "/" + randomString() + ".txt";
 
-  output_fp.open(tempfile.c_str());
+  std::ofstream outfile(tempfile);
 
   std::vector<std::pair<TRIPLET*, int>> index_pairs;
   int k  = 0;
 
-  for (auto it=tuple_records.begin(); it!=tuple_records.end(); it++, k++)
+  for (auto it=tuple_records.begin(); it != tuple_records.end(); it++, k++)
     index_pairs.push_back(std::make_pair(get<0>(*it), k));
 
   std::sort(index_pairs.begin(), index_pairs.end(), sortbyfirst);
 
-  stringstream str(stringstream::out|stringstream::binary);
+  std::stringstream str(std::stringstream::out|std::stringstream::binary);
 
-  for (auto it=index_pairs.begin(); it!=index_pairs.end(); it++, k++)
+  for (auto it=index_pairs.begin(); it != index_pairs.end(); it++, k++)
   {
     // TODO?
     // what if you ran out of disk space ???? NEED TO add logic
     if (k%10000==0)
     {
-      output_fp.write(str.str().c_str(), str.str().length());
+      outfile.write(str.str().c_str(), str.str().length());
       str.str("");
       str.clear();
     }
@@ -74,16 +90,10 @@ void write_out_partial_txt_file(const vector<TAGTUPLE>& tuple_records,
         << get<14>(tuple_records[it->second]) /* record[13] */
         << std::endl;
   }
-  output_fp.write(str.str().c_str(), str.str().length());
+  outfile.write(str.str().c_str(), str.str().length());
 
-  str.str("");
-  str.clear();
-
-  output_fp.close();
+  outfile.close();
   mtx.lock();
   partial_files.push_back(tempfile);
   mtx.unlock();
-
-  freeStlContainer(index_pairs);
-  index_pairs.clear();
 }
