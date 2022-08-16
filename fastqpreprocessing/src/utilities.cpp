@@ -11,7 +11,7 @@
 #include <iostream>
 
 /** @copydoc readWhiteList */
-std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_file)
+WhiteListData readWhiteList(std::string const& white_list_file)
 {
   const char ATCG[] = {'A', 'C', 'G', 'T', 'N'};
 
@@ -19,12 +19,12 @@ std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_fil
   if (!file.is_open())
     crash("Couldn't open whitelist file " + white_list_file);
 
-  auto white_list_data = std::make_unique<WHITE_LIST_DATA>();
+  WhiteListData white_list_data;
   int k = 0;
   // read data from file object and put it into string.
   for (std::string tp; getline(file, tp); )
   {
-    white_list_data->barcodes.push_back(tp);
+    white_list_data.barcodes.push_back(tp);
 
     for (unsigned int i=0; i < tp.size(); i++)
     {
@@ -36,7 +36,7 @@ std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_fil
         // what was there with the current.
         // This is done to have the same values for corrected barcodes
         // as in the python implementation.
-        white_list_data->mutations[tp] = k;
+        white_list_data.mutations[tp] = k;
         tp[i] = c;
       }
     }
@@ -45,7 +45,7 @@ std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_fil
     // This is used, instead of the actual index, because when
     // the barcode is seen with -1 then no correction is necessary.
     // Avoids lots of map lookups, as most barcodes are not erroneous.
-    white_list_data->mutations[tp] = -1;
+    white_list_data.mutations[tp] = -1;
     k++;
   }
 
