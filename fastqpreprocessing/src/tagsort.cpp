@@ -240,8 +240,8 @@ void fill_buffer(Context& contx, std::vector<std::string> const& partial_files)
 // From e.g. "A\tB\tC\tD\tE", extract "A\tB\tC"
 std::string extractCompTag(std::string& s)
 {
-  constexpr std::regex rgx("\t");
-  constexpr std::sregex_token_iterator end;
+  const std::regex rgx("\t");
+  const std::sregex_token_iterator end;
   std::sregex_token_iterator iter(s.begin(), s.end(), rgx, -1);
   std::stringstream comp_tag;
   for (auto k = 0; k < 3 && iter != end; ++iter, k++)
@@ -440,7 +440,7 @@ int main(int argc, char** argv)
     a head to compare the values based on the tags used  */
   std::cout << "Merging " << partial_files.size() << " sorted files!"<< std::endl;
 
-  mergeSortedPartialFiles(options);
+  mergeSortedPartialFiles(options, partial_files);
 
   // we no longer need the partial files
   for (unsigned int i=0; i < partial_files.size(); i++)
