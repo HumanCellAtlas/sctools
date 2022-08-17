@@ -94,21 +94,44 @@ inline char* get_Ztag_or_default(bam1_t* aln, const char* tagname, char* default
   return tag_value;
 }
 
-const char kNone[] = "None";
-const char kNoChr[] = "*";
-void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, const bam1_t* aln,
+using TRIPLET = std::tuple<std::string*, std::string*, std::string*>;
+
+using TAGTUPLE = std::tuple<
+    TRIPLET* /*  tuple<std::string *, std::string *, std::string *>*/,
+    std::string /* reference */,
+    std::string /* biotype */,
+    int /* pos */,
+    int /*rev strand   1 for yes, 0 otherwise*/,
+    float /*avg barcode qual score */,
+    float /* frac of barcode qual score >30 */,
+    float /*avg qual seq */,
+    float /*fract of >30 score qual seq*/,
+    int /*NH*/,
+    int /*perfect molecule barcode, 1 is yes, 0 otherwise*/,
+    int /*spliced reads 1 yes, 0 otherwise*/,
+    int /*is duplicate */,
+    int /*perfect cell barcode 1 is yes, 0 otherwise*/,
+    float /* fraction of umi qual score > 30 */
+    >;
+
+void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, bam1_t* aln,
                        InputOptionsTagsort const& options, const bam_hdr_t* bamHdr,
                        std::unordered_map<std::string, std::string*>& string_map)
 {
+  // "consts" that the library doesn't allow to be const.
+  char empty[] = "";
+  char none[] = "None";
+  char nochr[] = "*";
+
   // extract the barcodes corrected and  corrected
-  char* barcode = get_Ztag_or_default(aln, options.barcode_tag.c_str(), kNone);
-  char* barcode_raw = get_Ztag_or_default(aln, "CR", "");
+  char* barcode = get_Ztag_or_default(aln, options.barcode_tag.c_str(), none);
+  char* barcode_raw = get_Ztag_or_default(aln, "CR", empty);
 
   // to be called perfect, the corrected and raw barcodes should match
   int perfect_cell_barcode = (strcmp(barcode, barcode_raw) == 0) ? 1 : 0;
 
   // barcode quality score
-  char* barcode_qual = get_Ztag_or_default(aln, "CY", "");
+  char* barcode_qual = get_Ztag_or_default(aln, "CY", empty);
 
   //average barcode across the query and the fraction of barcodes above threshold
   float sum_barcode_qual = 0;
@@ -126,15 +149,15 @@ void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, const bam1_t* aln,
   float cell_barcode_qual_above_threshold = (float)num_bp_above_threshold / (float)len;
 
   // corrected molecule barcodes (UMIs)
-  char* umi = get_Ztag_or_default(aln, options.umi_tag.c_str(), kNone);
+  char* umi = get_Ztag_or_default(aln, options.umi_tag.c_str(), none);
   // raw molecule barcodes
-  char* umi_raw = get_Ztag_or_default(aln, "UR", "");
+  char* umi_raw = get_Ztag_or_default(aln, "UR", empty);
 
   // to be called perfect, the corrected and raw molecular barcodes should match
   int perfect_molecule_barcode = (strcmp(umi, umi_raw) == 0) ? 1 : 0;
 
   // qual score for molecular barcodes
-  char* umi_qual = get_Ztag_or_default(aln, "UY", "");
+  char* umi_qual = get_Ztag_or_default(aln, "UY", empty);
 
   float sum_umi_qual = 0;
   float num_umi_above_threshold = 0;
@@ -148,12 +171,12 @@ void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, const bam1_t* aln,
   }
   float frac_umi_qual_above_threshold = (float)num_umi_above_threshold / (float)len;
 
-  char* gene_id = get_Ztag_or_default(aln, options.gene_tag.c_str(), kNone);
-  char* location_tag = get_Ztag_or_default(aln, "XF", "");
+  char* gene_id = get_Ztag_or_default(aln, options.gene_tag.c_str(), none);
+  char* location_tag = get_Ztag_or_default(aln, "XF", empty);
 
   int nh_num = get_itag_or_default(aln, "NH", -1);
 
-  char* chr = (aln->core.tid == -1) ? kNoChr : bamHdr->target_name[aln->core.tid];
+  char* chr = (aln->core.tid == -1) ? nochr : bamHdr->target_name[aln->core.tid];
 
   uint32_t pos = aln->core.pos; // position.
   uint32_t isrev = bam_is_rev(aln) ? 1 : 0;   // is reverse stand
@@ -248,26 +271,6 @@ std::string randomString()
   std::generate_n(str.begin(), kStringLen, randchar);
   return str;
 }
-
-using TRIPLET = std::tuple<std::string*, std::string*, std::string*>;
-
-using TAGTUPLE = std::tuple<
-    TRIPLET* /*  tuple<std::string *, std::string *, std::string *>*/,
-    std::string /* reference */,
-    std::string /* biotype */,
-    int /* pos */,
-    int /*rev strand   1 for yes, 0 otherwise*/,
-    float /*avg barcode qual score */,
-    float /* frac of barcode qual score >30 */,
-    float /*avg qual seq */,
-    float /*fract of >30 score qual seq*/,
-    int /*NH*/,
-    int /*perfect molecule barcode, 1 is yes, 0 otherwise*/,
-    int /*spliced reads 1 yes, 0 otherwise*/,
-    int /*is duplicate */,
-    int /*perfect cell barcode 1 is yes, 0 otherwise*/,
-    float /* fraction of umi qual score > 30 */
-    >;
 
 /**
  * @brief This function takes a vector of tuples of the tags, sorts them
