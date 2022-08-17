@@ -59,15 +59,6 @@ struct InputOptionsFastqProcess
 // Structure to hold input options for tagsort
 struct INPUT_OPTIONS_TAGSORT
 {
-  // Initialize some of the values
-  INPUT_OPTIONS_TAGSORT()
-  {
-    bam_input = "";
-    gtf_file = "";
-    temp_folder =  std::string("/tmp/");
-    nthreads = 1;
-    metric_type = "";
-  }
   std::string metric_type;
   bool output_sorted_info = false;
   bool compute_metric = false;
@@ -83,7 +74,7 @@ struct INPUT_OPTIONS_TAGSORT
   std::string sorted_output_file;
 
   unsigned int alignments_per_thread = kDefaultNumAlignsPerThread;
-  unsigned int nthreads;
+  unsigned int nthreads = 1;
   std::string barcode_tag;
   std::string umi_tag;
   std::string gene_tag;
