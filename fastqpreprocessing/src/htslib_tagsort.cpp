@@ -297,7 +297,7 @@ void write_out_partial_txt_file(std::vector<TAGTUPLE> const& tuple_records,
 
   // Sort by triplet, maintaining each triplet's pre-sorted index...
   std::vector<std::pair<TRIPLET*, int>> index_pairs;
-  for (int i = 0; i < tuple_records.size(); i++)
+  for (size_t i = 0; i < tuple_records.size(); i++)
     index_pairs.emplace_back(get<0>(tuple_records[i]), i);
   std::sort(index_pairs.begin(), index_pairs.end(), sortbyfirst);
 
@@ -334,7 +334,7 @@ void write_out_partial_txt_file(std::vector<TAGTUPLE> const& tuple_records,
 
 unsigned int g_num_thread_deallocations = 0;
 
-void process_alignments(InputOptionsTagsort const& options, bam1_t** alns,
+void process_alignments(InputOptionsTagsort& options, bam1_t** alns,
                         bam_hdr_t* bamHdr, unsigned int buf_no, unsigned int n,
                         std::vector<std::string>* partial_files)
 {
