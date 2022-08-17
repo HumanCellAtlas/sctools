@@ -7,6 +7,7 @@
 #include "FastQFile.h"
 #include "FastQStatus.h"
 #include "fastq_metrics.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <cassert>
