@@ -444,7 +444,7 @@ int main(int argc, char** argv)
 
   /* now merge the sorted files to create one giant sorted file by using
     a head to compare the values based on the tags used  */
-  std::cout << "Merging " << partial_files.size() << " sorted files!"<< std::endl;
+  std::cout << "Merging " <<  partial_files.size() << " sorted files!"<< std::endl;
 
   mergeSortedPartialFiles(options, partial_files);
 

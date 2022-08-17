@@ -147,7 +147,7 @@ void FastQMetricsShard::processShard(String filenameR1, std::string read_structu
 
 PositionWeightMatrix& PositionWeightMatrix::operator+=(const PositionWeightMatrix& rhs)
 {
-  for (int i = 0; i < A.size(); i++)
+  for (int i=0; i < A.size(); i++)
   {
     A[i] += rhs.A[i];
     C[i] += rhs.C[i];

@@ -50,7 +50,7 @@ void printFileInfo(std::vector<string> const& fastqs,
   }
 }
 
-int64_t getNumBlocks(std::vector<string> const& I1s,
+int64_t get_num_blocks(std::vector<string> const& I1s,
                      std::vector<string> const& R1s,
                      std::vector<string> const& R2s, double bam_size)
 {
@@ -71,14 +71,14 @@ int64_t getNumBlocks(std::vector<string> const& I1s,
   return std::ceil((tot_size / GiB) / bam_size);
 }
 
-int64_t getNumBlocks(InputOptionsFastqProcess const& options)
+int64_t get_num_blocks(InputOptionsFastqProcess const& options)
 {
-  return getNumBlocks(options.I1s, options.R1s, options.R2s, options.bam_size);
+  return get_num_blocks(options.I1s, options.R1s, options.R2s, options.bam_size);
 }
 
-int64_t getNumBlocks(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options)
+int64_t get_num_blocks(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options)
 {
-  return getNumBlocks(options.I1s, options.R1s, options.R2s, options.bam_size);
+  return get_num_blocks(options.I1s, options.R1s, options.R2s, options.bam_size);
 }
 
 /** @copydoc readOptionsTagsort */

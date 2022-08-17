@@ -14,6 +14,9 @@
 
 #include <cstdint>
 
+/// number of samrecords per buffer in each reader
+constexpr int kSamRecordBufferSize = 100000;
+
 #include "FastQFile.h"
 #include "FastQStatus.h"
 #include "BaseAsciiMap.h"
@@ -70,9 +73,6 @@ struct SAM_RECORD_BINS
   /// the thread (reader) that is currently wanting to write
   int32_t active_thread_num;
 };
-
-/// number of samrecords per buffer in each reader
-constexpr int kSamRecordBufferSize = 100000;
 
 /// array of semaphores for readers
 sem_t* g_semaphores = 0;
@@ -141,7 +141,7 @@ void process_inputs(InputOptionsFastqProcess const& options,
                     const WHITE_LIST_DATA* white_list_data)
 {
   // number of files based on the input size
-  int num_files = getNumBlocks(options);
+  int num_files = get_num_blocks(options);
   // create the data for the threads
   SAM_RECORD_BINS* samrecord_data =
     create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);

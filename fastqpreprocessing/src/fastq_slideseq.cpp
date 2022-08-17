@@ -11,6 +11,9 @@
 
 #include <cstdint>
 
+/// number of samrecords per buffer in each reader
+constexpr int kSamRecordBufferSize = 100000;
+
 #include "input_options.h"
 #include "utilities.h"
 
@@ -69,9 +72,6 @@ struct SAM_RECORD_BINS
 };
 
 
-/// number of samrecords per buffer in each reader
-constexpr int kSamRecordBufferSize = 100000;
-
 /// array of semaphores for readers
 sem_t* g_semaphores = 0;
 
@@ -120,11 +120,11 @@ void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data);
 void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data);
 
 /** @copydoc process_inputs */
-void process_inputs(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options,
+void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE& options,
                     const WHITE_LIST_DATA* white_list_data)
 {
   // number of files based on the input size
-  int num_files = getNumBlocks(options);
+  int num_files = get_num_blocks(options);
   // create the data for the threads
   SAM_RECORD_BINS* samrecord_data =
     create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
@@ -140,10 +140,10 @@ void process_inputs(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options,
 
   // execute the bam file writers threads
   std::vector<std::thread> writers;
-  if (options.output_format=="BAM")
+  if (options.output_format == "BAM")
     for (int i = 0; i < num_files; i++)
       writers.emplace_back(bam_writers, i, samrecord_data);
-  else if (options.output_format=="FASTQ")
+  else if (options.output_format == "FASTQ")
     for (int i = 0; i < num_files; i++)
       writers.emplace_back(fastq_writers, i, samrecord_data);
   else
@@ -310,7 +310,6 @@ void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
   samOut.Close();
 }
 
-// TODO actually string_view
 std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_structure)
 {
   std::vector<std::pair<char, int>> ret;
