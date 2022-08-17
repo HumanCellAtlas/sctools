@@ -11,7 +11,6 @@
 #include <htslib/sam.h>
 #include "input_options.h"
 #include "utilities.h"
-#include "globals.h"
 
 
 /**

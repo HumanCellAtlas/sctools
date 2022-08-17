@@ -10,8 +10,8 @@
 #include <regex>
 #include <getopt.h>
 #include <cassert>
-
-#include "globals.h"
+#include <iostream>
+#include <cmath>
 
 namespace fs = std::experimental::filesystem;
 
@@ -67,7 +67,7 @@ int64_t getNumBlocks(std::vector<std::string> const& I1s,
   }
 
   const int GiB = 1024*1024*1024;
-  return ceil((tot_size / GiB) / bam_size);
+  return std::ceil((tot_size / GiB) / bam_size);
 }
 
 int64_t getNumBlocks(InputOptionsFastqProcess const& options)

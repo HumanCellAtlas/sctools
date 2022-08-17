@@ -7,7 +7,6 @@
 
 constexpr int kThreshold = 30; // qual score threshold
 
-#include "globals.h"
 #include "htslib_tagsort.h"
 
 #include <tuple>

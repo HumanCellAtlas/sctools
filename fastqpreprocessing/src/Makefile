@@ -18,7 +18,7 @@ _TARGET1_OBJ = fastqprocess.o
 TARGET1_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET1_OBJ))
 
 TARGET2 = TagSort
-_TARGET2_OBJ = tagsort.o htslib_tagsort.o globals.o metricgatherer.o
+_TARGET2_OBJ = tagsort.o htslib_tagsort.o metricgatherer.o
 TARGET2_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET2_OBJ))
 
 TARGET3 = fastq_slideseq
