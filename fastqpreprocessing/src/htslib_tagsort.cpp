@@ -9,6 +9,7 @@ constexpr int kThreshold = 30; // qual score threshold
 
 #include "htslib_tagsort.h"
 
+#include <algorithm>
 #include <tuple>
 #include <cstdint>
 #include <string>
@@ -115,7 +116,7 @@ using TAGTUPLE = std::tuple<
     >;
 
 void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, bam1_t* aln,
-                       InputOptionsTagsort const& options, const bam_hdr_t* bamHdr,
+                       InputOptionsTagsort& options, const bam_hdr_t* bamHdr,
                        std::unordered_map<std::string, std::string*>& string_map)
 {
   // "consts" that the library doesn't allow to be const.
@@ -495,8 +496,8 @@ std::vector<std::string> create_sorted_file_splits_htslib(InputOptionsTagsort& o
   hts_close(fp_in);
 
   std::cout << "Deallocate threads " << g_num_thread_deallocations << std::endl;
-  std::cout << std::endl << "Read " << i << " records" << std::endl;
-  std::cout << "Read " << num_alignments << " records as batches" << std::endl;
+  std::cout << "Read " << num_alignments << " records in batches of "
+            << options.alignments_per_thread << std::endl;
 
   return partial_files;
 }  // function
