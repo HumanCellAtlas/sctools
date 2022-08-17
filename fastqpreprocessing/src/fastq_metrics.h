@@ -2,7 +2,7 @@
 #define __FASTQ_METRICS_H__
 /**
  *  @file   fastq_metrics.h
- *  @brief  computes metrics based on the read structure
+ *  @brief  functions for computing metrics
  *  @author Farzaneh Khajouei and Fred Douglas
  *  @date   2022-05-25
  ***********************************************/
@@ -21,7 +21,7 @@ class PositionWeightMatrix
 public:
   PositionWeightMatrix(int length): A(length), C(length), G(length), T(length), N(length) {}
   void recordChunk(std::string s);
-  PositionWeightMatrix& operator+=(PositionWeightMatrix const& rhs);
+  PositionWeightMatrix& operator+=(const PositionWeightMatrix& rhs);
   void writeToFile(std::string filename);
 
   std::vector<int> A;
@@ -41,7 +41,7 @@ public:
   static void mergeMetricsShardsToFile(std::string filename_prefix,
                                        std::vector<FastQMetricsShard> shards,
                                        int umi_length, int CB_length);
-  FastQMetricsShard& operator+=(FastQMetricsShard const& rhs);
+  FastQMetricsShard& operator+=(const FastQMetricsShard& rhs);
 
 
 private:
