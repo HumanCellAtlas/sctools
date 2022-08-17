@@ -114,6 +114,157 @@ SAM_RECORD_BINS* create_samrecord_holders(int16_t nthreads, const std::string sa
   return samrecord_data;
 }
 
+void process_file(int tindex, std::string filenameI1, String filenameR1,
+                  String filenameR2,  unsigned int barcode_length,
+                  unsigned int umi_length,
+                  const WHITE_LIST_DATA* white_list_data,
+                  SAM_RECORD_BINS* samrecord_data);
+void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data);
+void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data);
+
+/**
+ * @brief Processes the input fastq files
+ *
+ * @detail
+ *  This function creates a set of readers (as many as there are files),
+ * a set of writers to write the individual bam files, a set of
+ * semaphores for readers to signal to writers when buffer of records
+ * are ready, and another set of semaphores for writers to signal
+ * readers then the buffer has been emptied out and, therefore, reader
+ * can go ahead and fill with more records.
+ *
+ * @params options user input options
+ * @params white_list_data data-structure to store barcode correction
+ *         map and vector of correct barcodes
+*/
+void process_inputs(InputOptionsFastqProcess const& options,
+                    const WHITE_LIST_DATA* white_list_data)
+{
+  // number of files based on the input size
+  int num_files = getNumBlocks(options);
+  // create the data for the threads
+  SAM_RECORD_BINS* samrecord_data =
+    create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
+
+  g_semaphores_workers = new sem_t[num_files];
+  for (int i = 0; i < num_files; i++)
+    sem_init((g_semaphores_workers + i), 0, 0);
+
+  // create the bam file writers semaphores
+  g_semaphores = new sem_t[num_files];
+  for (int i = 0; i < num_files; i++)
+    sem_init((g_semaphores + i), 0, 0);
+
+  // execute the bam file writers threads
+  std::vector<std::thread> writers;
+  if (options.output_format=="BAM")
+    for (int i = 0; i < num_files; i++)
+      writers.emplace_back(bam_writers, i, samrecord_data);
+  else if (options.output_format=="FASTQ")
+    for (int i = 0; i < num_files; i++)
+      writers.emplace_back(fastq_writers, i, samrecord_data);
+  else
+    crash("ERROR: Output-format must be either FASTQ or BAM");
+
+  // execute the fastq readers threads
+  std::vector<std::thread> readers;
+  for (unsigned int i = 0; i < options.R1s.size(); i++)
+  {
+    assert(options.I1s.empty() || options.I1s.size() == options.R1s.size());
+    // if there is no I1 file then send an empty file name
+    std::string I1 = options.I1s.empty() ? "" : options.I1s[i];
+
+    readers.emplace_back(process_file, i, I1, options.R1s[i].c_str(),
+                         options.R2s[i].c_str(), options.barcode_length,
+                         options.umi_length, white_list_data, samrecord_data);
+  }
+
+  // every reader thread joins.
+  for (auto& reader : readers)
+    reader.join();
+
+  // set the stop flag for the writers
+  samrecord_data->stop = true;
+
+  // ask the writers to make one more loop in the while loop
+  for (int j = 0; j < samrecord_data->num_files; j++)
+    if (sem_post(&g_semaphores[j]) == -1)
+      crashWithPerror("sem_post: g_semaphores");
+
+  // wait for the writers to stop after they have seen the stop flag
+  for (auto& writer : writers)
+    writer.join();
+
+  // destroy the g_semaphores
+  for (int i = 0; i < samrecord_data->num_files; i++)
+    sem_destroy(&g_semaphores[i]);
+
+  // destroy the g_semaphores for g_semaphores_workers
+  for (int i = 0; i < samrecord_data->num_files; i++)
+    sem_destroy(&g_semaphores_workers[i]);
+
+  // delete the records
+  delete [] samrecord_data->num_records;
+}
+
+void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
+{
+  std::string r1_output_fname = "fastq_R1_" + std::to_string(windex) + ".fastq.gz";
+  ogzstream r1_out(r1_output_fname.c_str());
+  if (!r1_out)
+    crash("ERROR: Failed to open R1 fastq file " + r1_output_fname + " for writing");
+
+  std::string r2_output_fname = "fastq_R2_" + std::to_string(windex) + ".fastq.gz";
+  ogzstream r2_out(r2_output_fname.c_str());
+  if (!r2_out)
+    crash("ERROR: Failed to open R2 fastq file " + r2_output_fname + " for writing");
+
+  // keep writing forever, until there is a flag to stop
+  while (true)
+  {
+    // wait until some data is ready from a reader thread
+    if (sem_wait(&g_semaphores[windex]) == -1)
+      crashWithPerror("sem_wait:g_semaphores");
+
+    // write out the record buffers for the reader thread "active_thread_num"
+    // that signalled that buffer is ready to be written
+    SamRecord* samRecord = samrecord_data->samrecords[samrecord_data->active_thread_num];
+
+    // go through the index of the samrecords that are stored for the current
+    // writer, i.e., "windex" or the corresponding BAM file
+    for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex])
+    {
+      //       samOut.WriteRecord(samHeader, samRecord[index]);
+      r1_out << "@" << samRecord[index].getReadName() << std::endl
+             << samRecord[index].getString("CR").c_str() << samRecord[index].getString("UR") << std::endl
+             << "+" << std::endl
+             << samRecord[index].getString("CY") << samRecord[index].getString("UY") << std::endl;
+    }
+
+    for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex])
+    {
+      //       samOut.WriteRecord(samHeader, samRecord[index]);
+      r2_out << "@" << samRecord[index].getReadName() << std::endl
+             << samRecord[index].getSequence() << std::endl
+             << "+" << std::endl
+             << samRecord[index].getQuality() << std::endl;
+    }
+
+    // lets the reads thread know that I am done writing the
+    // buffer that are destined to be my file
+    if (sem_post(&g_semaphores_workers[windex]) == -1)
+      crashWithPerror("sem_post: g_semaphores_workers");
+
+    // time to stop variable is valid
+    if (samrecord_data->stop)
+      break;
+  }
+
+  // close the fastq files
+  r1_out.close();
+  r2_out.close();
+}
+
 /**
  * @brief Function for the writer thread
  *
@@ -175,75 +326,6 @@ void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 
   // close the bamfile
   samOut.Close();
-}
-
-/**
- * @brief Function for the writer thread
- *
- * @detail
- *  Dependeing on the number of output bam files there are as many
- * writer thread as there are output bam files. Each writer thread
- * writers into only one bam file
- *
- * @param  windex  index of the writer thread
- * @param samrecord_bins  bins for samrecords from the reader threads
-*/
-void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
-{
-  std::string r1_output_fname = "fastq_R1_" + std::to_string(windex) + ".fastq.gz";
-  ogzstream r1_out(r1_output_fname.c_str());
-  if (!r1_out)
-    crash("ERROR: Failed to open R1 fastq file " + r1_output_fname + " for writing");
-
-  std::string r2_output_fname = "fastq_R2_" + std::to_string(windex) + ".fastq.gz";
-  ogzstream r2_out(r2_output_fname.c_str());
-  if (!r2_out)
-    crash("ERROR: Failed to open R2 fastq file " + r2_output_fname + " for writing");
-
-  // keep writing forever, until there is a flag to stop
-  while (true)
-  {
-    // wait until some data is ready from a reader thread
-    if (sem_wait(&g_semaphores[windex]) == -1)
-      crashWithPerror("sem_wait:g_semaphores");
-
-    // write out the record buffers for the reader thread "active_thread_num"
-    // that signalled that buffer is ready to be written
-    SamRecord* samRecord = samrecord_data->samrecords[samrecord_data->active_thread_num];
-
-    // go through the index of the samrecords that are stored for the current
-    // writer, i.e., "windex" or the corresponding BAM file
-    for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex])
-    {
-      //       samOut.WriteRecord(samHeader, samRecord[index]);
-      r1_out << "@" << samRecord[index].getReadName() << std::endl
-             << samRecord[index].getString("CR").c_str() << samRecord[index].getString("UR") << std::endl
-             << "+" << std::endl
-             << samRecord[index].getString("CY") << samRecord[index].getString("UY") << std::endl;
-    }
-
-    for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex])
-    {
-      //       samOut.WriteRecord(samHeader, samRecord[index]);
-      r2_out << "@" << samRecord[index].getReadName() << std::endl
-             << samRecord[index].getSequence() << std::endl
-             << "+" << std::endl
-             << samRecord[index].getQuality() << std::endl;
-    }
-
-    // lets the reads thread know that I am done writing the
-    // buffer that are destined to be my file
-    if (sem_post(&g_semaphores_workers[windex]) == -1)
-      crashWithPerror("sem_post: g_semaphores_workers");
-
-    // time to stop variable is valid
-    if (samrecord_data->stop)
-      break;
-  }
-
-  // close the fastq files
-  r1_out.close();
-  r2_out.close();
 }
 
 /**
@@ -552,92 +634,6 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
          ":%d\nuncorrected:%lf\n",
          i, n_barcode_correct, n_barcode_corrected, n_barcode_errors,
          n_barcode_errors/static_cast<double>(i) *100);
-}
-
-
-/**
- * @brief Processes the input fastq files
- *
- * @detail
- *  This function creates a set of readers (as many as there are files),
- * a set of writers to write the individual bam files, a set of
- * semaphores for readers to signal to writers when buffer of records
- * are ready, and another set of semaphores for writers to signal
- * readers then the buffer has been emptied out and, therefore, reader
- * can go ahead and fill with more records.
- *
- * @params options user input options
- * @params white_list_data data-structure to store barcode correction
- *         map and vector of correct barcodes
-*/
-void process_inputs(InputOptionsFastqProcess const& options,
-                    const WHITE_LIST_DATA* white_list_data)
-{
-  // number of files based on the input size
-  int num_files = getNumBlocks(options);
-  // create the data for the threads
-  SAM_RECORD_BINS* samrecord_data =
-    create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
-
-  g_semaphores_workers = new sem_t[num_files];
-  for (int i = 0; i < num_files; i++)
-    sem_init((g_semaphores_workers + i), 0, 0);
-
-  // create the bam file writers semaphores
-  g_semaphores = new sem_t[num_files];
-  for (int i = 0; i < num_files; i++)
-    sem_init((g_semaphores + i), 0, 0);
-
-  // execute the bam file writers threads
-  std::vector<std::thread> writers;
-  if (options.output_format=="BAM")
-    for (int i = 0; i < num_files; i++)
-      writers.emplace_back(bam_writers, i, samrecord_data);
-  else if (options.output_format=="FASTQ")
-    for (int i = 0; i < num_files; i++)
-      writers.emplace_back(fastq_writers, i, samrecord_data);
-  else
-    crash("ERROR: Output-format must be either FASTQ or BAM");
-
-  // execute the fastq readers threads
-  std::vector<std::thread> readers;
-  for (unsigned int i = 0; i < options.R1s.size(); i++)
-  {
-    assert(options.I1s.empty() || options.I1s.size() == options.R1s.size());
-    // if there is no I1 file then send an empty file name
-    std::string I1 = options.I1s.empty() ? "" : options.I1s[i];
-
-    readers.emplace_back(process_file, i, I1, options.R1s[i].c_str(),
-                         options.R2s[i].c_str(), options.barcode_length,
-                         options.umi_length, white_list_data, samrecord_data);
-  }
-
-  // every reader thread joins.
-  for (auto& reader : readers)
-    reader.join();
-
-  // set the stop flag for the writers
-  samrecord_data->stop = true;
-
-  // ask the writers to make one more loop in the while loop
-  for (int j = 0; j < samrecord_data->num_files; j++)
-    if (sem_post(&g_semaphores[j]) == -1)
-      crashWithPerror("sem_post: g_semaphores");
-
-  // wait for the writers to stop after they have seen the stop flag
-  for (auto& writer : writers)
-    writer.join();
-
-  // destroy the g_semaphores
-  for (int i = 0; i < samrecord_data->num_files; i++)
-    sem_destroy(&g_semaphores[i]);
-
-  // destroy the g_semaphores for g_semaphores_workers
-  for (int i = 0; i < samrecord_data->num_files; i++)
-    sem_destroy(&g_semaphores_workers[i]);
-
-  // delete the records
-  delete [] samrecord_data->num_records;
 }
 
 
