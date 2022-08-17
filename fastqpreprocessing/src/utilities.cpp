@@ -8,6 +8,7 @@
 #include "utilities.h"
 
 #include <fstream>
+#include <iostream>
 
 /** @copydoc readWhiteList */
 std::unique_ptr<WhiteListData> readWhiteList(std::string const& white_list_file)
