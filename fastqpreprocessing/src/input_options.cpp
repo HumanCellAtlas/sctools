@@ -256,9 +256,9 @@ InputOptionsTagsort readOptionsTagsort(int argc, char** argv)
   if (options.alignments_per_thread < 1000)
     crash("ERROR: The number of alignments per thread must be at least 1000");
 
-  // The number of threads must be between 1 and MAX_THREADS
-  if (options.nthreads > MAX_THREADS || options.nthreads < 1)
-    crash("ERROR: The number of threads must be between 1 and " + std::to_string(MAX_THREADS));
+  // The number of threads must be between 1 and kMaxTagsortThreads
+  if (options.nthreads > kMaxTagsortThreads || options.nthreads < 1)
+    crash("ERROR: The number of threads must be between 1 and " + std::to_string(kMaxTagsortThreads));
 
   return options;
 }

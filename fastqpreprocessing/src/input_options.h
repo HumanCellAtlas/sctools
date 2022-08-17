@@ -12,7 +12,8 @@
 #include <string>
 #include <vector>
 
-const unsigned int kDefaultNumAlignsPerThread = 1000000;
+constexpr unsigned int kMaxTagsortThreads = 30;
+constexpr unsigned int kDefaultNumAlignsPerThread = 1000000;
 
 struct InputOptionsFastqReadStructure
 {

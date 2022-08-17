@@ -95,7 +95,7 @@ void Metrics::output_metrics(std::ofstream& fmetric_out)
 }
 
 
-unsigned int offset = 3;
+constexpr unsigned int kOffset = 3;
 void Metrics::parse_line(std::string& str, std::ofstream& fmetric_out,
                          std::unordered_set<std::string>& mitochondrial_genes,
                          MetricType metric_type)
@@ -158,21 +158,21 @@ void Metrics::parse_line(std::string& str, std::ofstream& fmetric_out,
     _molecule_histogram[tags] = 0;
   _molecule_histogram[tags] += 1;
 
-  _molecule_barcode_fraction_bases_above_30.update(std::stof(record[offset + 13]));
-  perfect_molecule_barcodes += std::stoi(record[offset + 9]);
+  _molecule_barcode_fraction_bases_above_30.update(std::stof(record[kOffset + 13]));
+  perfect_molecule_barcodes += std::stoi(record[kOffset + 9]);
 
-  _genomic_reads_fraction_bases_quality_above_30.update(std::stof(record[offset + 7]));
-  _genomic_read_quality.update(std::stof(record[offset + 6]));
+  _genomic_reads_fraction_bases_quality_above_30.update(std::stof(record[kOffset + 7]));
+  _genomic_read_quality.update(std::stof(record[kOffset + 6]));
 
   // the remaining portions deal with aligned reads, so if the read is not mapped, we are
   // done with it
-  if (std::string(record[offset + 0]).compare("*")==0)
+  if (std::string(record[kOffset + 0]).compare("*")==0)
     return;
 
   // get components that define a unique sequence fragment and increment the histogram
-  std::string position_str = record[offset + 2];
-  std::string strand = std::stoi(std::string(record[offset + 3]))==1 ? "true" : "false";
-  std::string reference = record[offset + 0];
+  std::string position_str = record[kOffset + 2];
+  std::string strand = std::stoi(std::string(record[kOffset + 3]))==1 ? "true" : "false";
+  std::string reference = record[kOffset + 0];
 
   std::string _ref_pos_str_tags = reference + std::string("\t") +
                                   position_str + std::string("\t") +
@@ -184,7 +184,7 @@ void Metrics::parse_line(std::string& str, std::ofstream& fmetric_out,
     _fragment_histogram[ref_pos_str_tags] = 0;
   _fragment_histogram[ref_pos_str_tags] += 1;
 
-  std::string alignment_location = std::string(record[offset + 1]);
+  std::string alignment_location = std::string(record[kOffset + 1]);
   if (alignment_location == "CODING")
     reads_mapped_exonic += 1;
   else if (alignment_location == "INTRONIC")
@@ -194,17 +194,17 @@ void Metrics::parse_line(std::string& str, std::ofstream& fmetric_out,
 
   // in futher check if read maps outside window (when we add a  gene model)
   // and  create distances from terminate side (needs gene model) uniqueness
-  int number_mappings = std::stoi(std::string(record[offset + 8]));
+  int number_mappings = std::stoi(std::string(record[kOffset + 8]));
 
   if (number_mappings==1)
     reads_mapped_uniquely += 1;
   else
     reads_mapped_multiple += 1;  // without multi-mapping, this number is zero!
 
-  duplicate_reads += std::stoi(std::string(record[offset + 11]));
+  duplicate_reads += std::stoi(std::string(record[kOffset + 11]));
 
   // cigar N field (3) indicates a read is spliced if the value is non-zero
-  spliced_reads += std::stoi(std::string(record[offset + 10]));
+  spliced_reads += std::stoi(std::string(record[kOffset + 10]));
 
   prev_tag = current_tag;
 }
@@ -276,10 +276,10 @@ void CellMetrics::parse_extra_fields(std::string const& first_tag,
                                      std::string const& third_tag,
                                      char** record)
 {
-  _cell_barcode_fraction_bases_above_30.update(std::stof(record[offset + 5]));
-  perfect_cell_barcodes += std::stoi(record[offset + 12]);
+  _cell_barcode_fraction_bases_above_30.update(std::stof(record[kOffset + 5]));
+  perfect_cell_barcodes += std::stoi(record[kOffset + 12]);
 
-  std::string record_str(record[offset + 1]);
+  std::string record_str(record[kOffset + 1]);
   if (!record_str.empty()) // TODO can the empty check be skipped, or is there a non-empty non-unmapped case?
   {
     if (record_str == "INTERGENIC")

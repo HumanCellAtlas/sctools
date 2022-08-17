@@ -8,22 +8,17 @@
  *  @date   2021-08-11
  ***********************************************/
 
-#include <math.h>
-#include <cstdint>
-#include <vector>
+#include <memory>
 #include <string>
+#include <vector>
 #include <unordered_map>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <experimental/filesystem>
 
 // structure for correcting the barcodes
 struct WhiteListData
 {
   // an unordered map from whitelist barcodes and 1-mutations
   // to the index of the correct barcode
-  std::unordered_map <std::string, int64_t> mutations;
+  std::unordered_map<std::string, int64_t> mutations;
   // vector of whitelist barcodes
   std::vector<std::string> barcodes;
 };
