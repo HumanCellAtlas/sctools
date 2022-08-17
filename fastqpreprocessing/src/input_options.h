@@ -15,7 +15,7 @@
 constexpr unsigned int kMaxTagsortThreads = 30;
 constexpr unsigned int kDefaultNumAlignsPerThread = 1000000;
 
-struct InputOptionsFastqReadStructure
+struct INPUT_OPTIONS_FASTQ_READ_STRUCTURE
 {
   // I1, R1 and R2 files name
   std::vector<std::string> I1s, R1s, R2s;
@@ -57,10 +57,10 @@ struct InputOptionsFastqProcess
 
 
 // Structure to hold input options for tagsort
-struct InputOptionsTagsort
+struct INPUT_OPTIONS_TAGSORT
 {
   // Initialize some of the values
-  InputOptionsTagsort()
+  INPUT_OPTIONS_TAGSORT()
   {
     bam_input = "";
     gtf_file = "";
@@ -94,13 +94,13 @@ struct InputOptionsTagsort
 
 InputOptionsFastqProcess readOptionsFastqProcess(int argc, char** argv);
 
-InputOptionsTagsort readOptionsTagsort(int argc, char** argv);
+INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv);
 
-InputOptionsFastqReadStructure readOptionsFastqSlideseq(int argc, char** argv);
+INPUT_OPTIONS_FASTQ_READ_STRUCTURE readOptionsFastqSlideseq(int argc, char** argv);
 
-InputOptionsFastqReadStructure readOptionsFastqMetrics(int argc, char** argv);
+INPUT_OPTIONS_FASTQ_READ_STRUCTURE readOptionsFastqMetrics(int argc, char** argv);
 
 int64_t getNumBlocks(InputOptionsFastqProcess const& options);
-int64_t getNumBlocks(InputOptionsFastqReadStructure const& options);
+int64_t getNumBlocks(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options);
 
 #endif // __SCTOOLS_FASTQPREPROCESSING_INPUT_OPTIONS_H_

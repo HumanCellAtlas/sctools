@@ -14,8 +14,9 @@
 #include <cmath>
 
 namespace fs = std::experimental::filesystem;
+using std::string;
 
-int64_t filesize(std::string const& filename)
+int64_t filesize(string const& filename)
 {
   FILE* f = fopen(filename.c_str(), "rb");
 
@@ -26,8 +27,8 @@ int64_t filesize(std::string const& filename)
   return size;
 }
 
-void printFileInfo(std::vector<std::string> const& fastqs,
-                   std::string const& type)
+void printFileInfo(std::vector<string> const& fastqs,
+                   string const& type)
 {
   if (fastqs.size())
   {
@@ -49,9 +50,9 @@ void printFileInfo(std::vector<std::string> const& fastqs,
   }
 }
 
-int64_t getNumBlocks(std::vector<std::string> const& I1s,
-                     std::vector<std::string> const& R1s,
-                     std::vector<std::string> const& R2s, double bam_size)
+int64_t getNumBlocks(std::vector<string> const& I1s,
+                     std::vector<string> const& R1s,
+                     std::vector<string> const& R2s, double bam_size)
 {
   assert(R1s.size() == R2s.size());
   double tot_size = 0;
@@ -75,15 +76,15 @@ int64_t getNumBlocks(InputOptionsFastqProcess const& options)
   return getNumBlocks(options.I1s, options.R1s, options.R2s, options.bam_size);
 }
 
-int64_t getNumBlocks(InputOptionsFastqReadStructure const& options)
+int64_t getNumBlocks(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options)
 {
   return getNumBlocks(options.I1s, options.R1s, options.R2s, options.bam_size);
 }
 
 /** @copydoc readOptionsTagsort */
-InputOptionsTagsort readOptionsTagsort(int argc, char** argv)
+INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
 {
-  InputOptionsTagsort options;
+  INPUT_OPTIONS_TAGSORT options;
   int c;
   int i;
 
@@ -154,19 +155,19 @@ InputOptionsTagsort readOptionsTagsort(int argc, char** argv)
       printf("\n");
       break;
     case 'b':
-      options.bam_input = std::string(optarg);
+      options.bam_input = string(optarg);
       break;
     case 'a':
-      options.gtf_file = std::string(optarg);
+      options.gtf_file = string(optarg);
       break;
     case 't':
-      options.temp_folder = std::string(optarg);
+      options.temp_folder = string(optarg);
       break;
     case 'o':
-      options.sorted_output_file = std::string(optarg);
+      options.sorted_output_file = string(optarg);
       break;
     case 'M':
-      options.metric_output_file = std::string(optarg);
+      options.metric_output_file = string(optarg);
       break;
     case 'p':
       options.alignments_per_thread = atoi(optarg);
@@ -175,22 +176,22 @@ InputOptionsTagsort readOptionsTagsort(int argc, char** argv)
       options.nthreads = atoi(optarg);
       break;
     case 'C':
-      options.barcode_tag = std::string(optarg);
+      options.barcode_tag = string(optarg);
       curr_size = options.tag_order.size();
-      options.tag_order[std::string(optarg)] = curr_size;
+      options.tag_order[string(optarg)] = curr_size;
       break;
     case 'U':
-      options.umi_tag = std::string(optarg);
+      options.umi_tag = string(optarg);
       curr_size = options.tag_order.size();
-      options.tag_order[std::string(optarg)] = curr_size;
+      options.tag_order[string(optarg)] = curr_size;
       break;
     case 'G':
-      options.gene_tag = std::string(optarg);
+      options.gene_tag = string(optarg);
       curr_size = options.tag_order.size();
-      options.tag_order[std::string(optarg)] = curr_size;
+      options.tag_order[string(optarg)] = curr_size;
       break;
     case 'K':
-      options.metric_type = std::string(optarg);
+      options.metric_type = string(optarg);
       break;
     case '?':
     case 'h':
@@ -339,22 +340,22 @@ InputOptionsFastqProcess readOptionsFastqProcess(int argc, char** argv)
       options.bam_size = atof(optarg);
       break;
     case 's':
-      options.sample_id = std::string(optarg);
+      options.sample_id = string(optarg);
       break;
     case 'I':
-      options.I1s.push_back(std::string(optarg));
+      options.I1s.push_back(string(optarg));
       break;
     case 'R':
-      options.R1s.push_back(std::string(optarg));
+      options.R1s.push_back(string(optarg));
       break;
     case 'r':
-      options.R2s.push_back(std::string(optarg));
+      options.R2s.push_back(string(optarg));
       break;
     case 'w':
-      options.white_list_file = std::string(optarg);
+      options.white_list_file = string(optarg);
       break;
     case 'F':
-      options.output_format = std::string(optarg);
+      options.output_format = string(optarg);
       break;
     case '?':
     case 'h':
@@ -405,19 +406,19 @@ InputOptionsFastqProcess readOptionsFastqProcess(int argc, char** argv)
   if (verbose_flag)
   {
     if (!options.I1s.empty())
-      printFileInfo(options.I1s, std::string("I1"));
+      printFileInfo(options.I1s, string("I1"));
     if (!options.R1s.empty())
-      printFileInfo(options.R1s, std::string("R1"));
+      printFileInfo(options.R1s, string("R1"));
     if (!options.R2s.empty())
-      printFileInfo(options.R2s, std::string("R2"));
+      printFileInfo(options.R2s, string("R2"));
   }
 
   return options;
 }
 
-InputOptionsFastqReadStructure readOptionsFastqSlideseq(int argc, char** argv)
+INPUT_OPTIONS_FASTQ_READ_STRUCTURE readOptionsFastqSlideseq(int argc, char** argv)
 {
-  InputOptionsFastqReadStructure options;
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
   int c;
   int i;
   bool verbose_flag = false;
@@ -480,25 +481,25 @@ InputOptionsFastqReadStructure readOptionsFastqSlideseq(int argc, char** argv)
       options.bam_size = atof(optarg);
       break;
     case 'S':
-      options.read_structure = std::string(optarg);
+      options.read_structure = string(optarg);
       break;
     case 's':
-      options.sample_id = std::string(optarg);
+      options.sample_id = string(optarg);
       break;
     case 'I':
-      options.I1s.push_back(std::string(optarg));
+      options.I1s.push_back(string(optarg));
       break;
     case 'R':
-      options.R1s.push_back(std::string(optarg));
+      options.R1s.push_back(string(optarg));
       break;
     case 'r':
-      options.R2s.push_back(std::string(optarg));
+      options.R2s.push_back(string(optarg));
       break;
     case 'w':
-      options.white_list_file = std::string(optarg);
+      options.white_list_file = string(optarg);
       break;
     case 'F':
-      options.output_format = std::string(optarg);
+      options.output_format = string(optarg);
       break;
     case '?':
     case 'h':
@@ -546,18 +547,18 @@ InputOptionsFastqReadStructure readOptionsFastqSlideseq(int argc, char** argv)
   if (verbose_flag)
   {
     if (!options.R1s.empty())
-      printFileInfo(options.R1s, std::string("R1"));
+      printFileInfo(options.R1s, string("R1"));
     if (!options.R2s.empty())
-      printFileInfo(options.R2s, std::string("R2"));
+      printFileInfo(options.R2s, string("R2"));
   }
 
   return options;
 }
 
 
-InputOptionsFastqReadStructure readOptionsFastqMetrics(int argc, char** argv)
+INPUT_OPTIONS_FASTQ_READ_STRUCTURE readOptionsFastqMetrics(int argc, char** argv)
 {
-  InputOptionsFastqReadStructure options;
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
   int c;
   int i;
   bool verbose_flag = false;
@@ -610,16 +611,16 @@ InputOptionsFastqReadStructure readOptionsFastqMetrics(int argc, char** argv)
       printf("\n");
       break;
     case 'S':
-      options.read_structure = std::string(optarg);
+      options.read_structure = string(optarg);
       break;
     case 's':
-      options.sample_id = std::string(optarg);
+      options.sample_id = string(optarg);
       break;
     case 'R':
-      options.R1s.push_back(std::string(optarg));
+      options.R1s.push_back(string(optarg));
       break;
     case 'w':
-      options.white_list_file = std::string(optarg);
+      options.white_list_file = string(optarg);
       break;
     case '?':
     case 'h':
@@ -650,7 +651,7 @@ InputOptionsFastqReadStructure readOptionsFastqMetrics(int argc, char** argv)
     crash("ERROR: Must provide a sample id or name");
 
   if (verbose_flag && !options.R1s.empty())
-    printFileInfo(options.R1s, std::string("R1"));
+    printFileInfo(options.R1s, string("R1"));
 
   return options;
 }

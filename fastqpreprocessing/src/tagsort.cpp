@@ -93,7 +93,7 @@ inline std::string rtrim(std::string& s)
   return s;
 }
 
-unsigned int split_buffer_to_fields(std::string const& str, char* line, char** fields, char delim)
+unsigned int split_buffer_to_fields(const std::string& str, char* line, char** fields, char delim)
 {
   // copy the string to a buffer to split by tab
   str.copy(line, str.size(), 0);
@@ -115,7 +115,13 @@ unsigned int split_buffer_to_fields(std::string const& str, char* line, char** f
 }
 
 
-std::unordered_set<std::string> get_mitochondrial_gene_names(std::string const& gtf_filename)
+/*
+ * @brief retuns the set of mitochondrial gene names
+ *
+ * @param gtf file name, unzipped
+ * @return std::set<std::sting>
+*/
+std::unordered_set<std::string> get_mitochondrial_gene_names(const std::string& gtf_filename)
 {
   char field_buffer[1000];
   char* fields[20];
@@ -253,12 +259,12 @@ std::string extractCompTag(std::string& s)
   return comp_tag.str();
 }
 
-void mergeSortedPartialFiles(InputOptionsTagsort const& options,
+void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
                              std::vector<std::string> const& partial_files)
 {
-  std::string const& sorted_output_file = options.sorted_output_file;
-  std::string const& metric_type  = options.metric_type;
-  std::string const& metric_output_file = options.metric_output_file;
+  const std::string& sorted_output_file = options.sorted_output_file;
+  const std::string& metric_type  = options.metric_type;
+  const std::string& metric_output_file = options.metric_output_file;
 
   std::unordered_set<std::string> mitochondrial_genes;
   if (!options.gtf_file.empty())
@@ -421,7 +427,7 @@ void mergeSortedPartialFiles(InputOptionsTagsort const& options,
 /* Flag set by ‘--verbose’. */
 int main(int argc, char** argv)
 {
-  InputOptionsTagsort options = readOptionsTagsort(argc, argv);
+  INPUT_OPTIONS_TAGSORT options = readOptionsTagsort(argc, argv);
 
   std::cout << "bam input " << options.bam_input << std::endl;
   std::cout << "temp folder " << options.temp_folder << std::endl;

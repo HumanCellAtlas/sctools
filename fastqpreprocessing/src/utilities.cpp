@@ -11,7 +11,7 @@
 #include <iostream>
 
 /** @copydoc readWhiteList */
-std::unique_ptr<WhiteListData> readWhiteList(std::string const& white_list_file)
+std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_file)
 {
   const char ATCG[] = {'A', 'C', 'G', 'T', 'N'};
 
@@ -19,7 +19,7 @@ std::unique_ptr<WhiteListData> readWhiteList(std::string const& white_list_file)
   if (!file.is_open())
     crash("Couldn't open whitelist file " + white_list_file);
 
-  auto white_list_data = std::make_unique<WhiteListData>();
+  auto white_list_data = std::make_unique<WHITE_LIST_DATA>();
   int k = 0;
   // read data from file object and put it into string.
   for (std::string tp; getline(file, tp); )

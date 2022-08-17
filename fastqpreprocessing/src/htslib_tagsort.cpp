@@ -73,7 +73,7 @@ inline int get_itag_or_default(bam1_t* aln, const char* tagname, int default_val
   else
     tag_value = bam_aux2i(p);
 
-  return tag_value;
+  return  tag_value;
 }
 
 /*
@@ -92,7 +92,7 @@ inline char* get_Ztag_or_default(bam1_t* aln, const char* tagname, char* default
     if (strcmp(tag_value, "-") == 0)
       tag_value = default_value;
   }
-  return tag_value;
+  return  tag_value;
 }
 
 using TRIPLET = std::tuple<std::string*, std::string*, std::string*>;
@@ -116,7 +116,7 @@ using TAGTUPLE = std::tuple<
     >;
 
 void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, bam1_t* aln,
-                       InputOptionsTagsort& options, const bam_hdr_t* bamHdr,
+                       INPUT_OPTIONS_TAGSORT& options, const bam_hdr_t* bamHdr,
                        std::unordered_map<std::string, std::string*>& string_map)
 {
   // "consts" that the library doesn't allow to be const.
@@ -334,7 +334,7 @@ void write_out_partial_txt_file(std::vector<TAGTUPLE> const& tuple_records,
 
 unsigned int g_num_thread_deallocations = 0;
 
-void process_alignments(InputOptionsTagsort& options, bam1_t** alns,
+void process_alignments(INPUT_OPTIONS_TAGSORT& options, bam1_t** alns,
                         bam_hdr_t* bamHdr, unsigned int buf_no, unsigned int n,
                         std::vector<std::string>* partial_files)
 {
@@ -371,10 +371,10 @@ void process_alignments(InputOptionsTagsort& options, bam1_t** alns,
  * The input bam file is read chunk by chunk, sorted by the tags and the written
  * out as a text file in the sorted manner.
  *
- * @param options: InputOptionsTagsort the inputs to the program
+ * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-std::vector<std::string> create_sorted_file_splits_htslib(InputOptionsTagsort& options)
+std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options)
 {
   // size of individual chunks to sort in memory as an approx 20 mil alignments makes 1 GB bam
   //open bam file
@@ -400,7 +400,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(InputOptionsTagsort& o
   std::cout << "Running htslib" << std::endl;
 
   unsigned int batch = 0;
-  long int num_alignments = 0;
+  long int num_alignments =0;
   std::string tags[3];
 
   std::thread thread_id[kMaxTagsortThreads];

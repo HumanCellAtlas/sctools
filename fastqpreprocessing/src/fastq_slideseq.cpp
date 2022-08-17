@@ -1,6 +1,6 @@
 /**
  *  @file   fastq_slideseq.cpp
- *  @brief  re-arranging reads based on the read structure
+ *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
@@ -36,7 +36,7 @@
 
 // TODO DEDUP
 /// Samrecord bins to be accessed by all threads
-struct SamRecordBins
+struct SAM_RECORD_BINS
 {
   /// array or array of samrecords
   /// one array for each reader samrecords[r].
@@ -79,11 +79,11 @@ sem_t* g_semaphores = 0;
 sem_t* g_semaphores_workers = 0;
 
 /** @copydoc create_record_holders */
-SamRecordBins* create_samrecord_holders(
+SAM_RECORD_BINS* create_samrecord_holders(
     int16_t nthreads, const std::string sample_id, int16_t num_files)
 {
   // samrecord data to hold buffer for the reader
-  SamRecordBins* samrecord_data = new SamRecordBins;
+  SAM_RECORD_BINS* samrecord_data = new SAM_RECORD_BINS;
   if ((samrecord_data->samrecords = new SamRecord *[nthreads]) == 0)
     crash("Failed to allocate memory for the samRecords pointer arrays");
 
@@ -123,7 +123,7 @@ SamRecordBins* create_samrecord_holders(
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void bam_writers(int windex, SamRecordBins* samrecord_data)
+void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
   std::string bam_out_fname = "subfile_" + std::to_string(windex) + ".bam";
   SamFile samOut;
@@ -185,7 +185,7 @@ void bam_writers(int windex, SamRecordBins* samrecord_data)
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void fastq_writers(int windex, SamRecordBins* samrecord_data)
+void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
   std::string r1_output_fname = "fastq_R1_" + std::to_string(windex) + ".fastq.gz";
   ogzstream r1_out(r1_output_fname.c_str());
@@ -247,10 +247,10 @@ void fastq_writers(int windex, SamRecordBins* samrecord_data)
 std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_structure)
 {
   std::vector<std::pair<char, int>> ret;
-  size_t next_ind = 0;
+  int next_ind = 0;
   while (next_ind < read_structure.size())
   {
-    size_t type_ind = read_structure.find_first_not_of("0123456789", next_ind);
+    int type_ind = read_structure.find_first_not_of("0123456789", next_ind);
     assert(type_ind != std::string::npos);
     char type = read_structure[type_ind];
     int len = std::stoi(read_structure.substr(next_ind, type_ind - next_ind));
@@ -273,7 +273,7 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_str
 */
 void fillSamRecordWithReadStructure(SamRecord* samRecord, FastQFile& fastQFileI1,
                                     FastQFile& fastQFileR1, FastQFile& fastQFileR2,
-                                    std::string const& read_structure,
+                                    std::string read_structure,
                                     bool has_I1_file_list)
 {
   // check the sequence names matching
@@ -331,7 +331,6 @@ void fillSamRecordWithReadStructure(SamRecord* samRecord, FastQFile& fastQFileI1
     samRecord->addTag("SY", 'Z', indexSeqQual.c_str());
   }
 }
-
 /**
    @brief getBukcetIndex computes the index for the bucket (of bam file)
  *    for a barcode and also add the correct barcode to the SamRecord
@@ -346,8 +345,8 @@ void fillSamRecordWithReadStructure(SamRecord* samRecord, FastQFile& fastQFileI1
  *
  * @return the bucket number where the current SamRecord should go to
 */
-int32_t getBucketIndex(std::string const& barcode, SamRecord* samRecord,
-                       const WhiteListData* white_list_data, SamRecordBins* samrecord_data,
+int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
+                       const WHITE_LIST_DATA* white_list_data, SAM_RECORD_BINS* samrecord_data,
                        int* n_barcode_corrected, int* n_barcode_correct, int* n_barcode_errors)
 {
 
@@ -370,7 +369,8 @@ int32_t getBucketIndex(std::string const& barcode, SamRecord* samRecord,
     {
       // it is a 1-mutation of some whitelist barcode so get the
       // barcode by indexing into the vector of whitelist barcodes
-      correct_barcode = white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
+      correct_barcode =
+          white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
       *n_barcode_corrected += 1;
     }
     // is used for computing the file index
@@ -401,7 +401,7 @@ std::mutex g_block_mutex;
  * @param samrecord_data  the samrecord data
  * @param tindex the index of the thread
 */
-void submit_block_tobe_written(SamRecordBins* samrecord_data, int tindex)
+void submit_block_tobe_written(SAM_RECORD_BINS* samrecord_data, int tindex)
 {
   g_block_mutex.lock();
 
@@ -433,8 +433,8 @@ void submit_block_tobe_written(SamRecordBins* samrecord_data, int tindex)
 
 void process_file(int tindex, std::string filenameI1, String filenameR1,
                   String filenameR2,  String read_structure,
-                  const WhiteListData* white_list_data,
-                  SamRecordBins* samrecord_data)
+                  const WHITE_LIST_DATA* white_list_data,
+                  SAM_RECORD_BINS* samrecord_data)
 {
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileI1(4, 4);
@@ -564,13 +564,13 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
 }
 
 /** @copydoc process_inputs */
-void process_inputs(InputOptionsFastqReadStructure const& options,
-                    const WhiteListData* white_list_data)
+void process_inputs(INPUT_OPTIONS_FASTQ_READ_STRUCTURE const& options,
+                    const WHITE_LIST_DATA* white_list_data)
 {
   // number of files based on the input size
   int num_files = getNumBlocks(options);
   // create the data for the threads
-  SamRecordBins* samrecord_data =
+  SAM_RECORD_BINS* samrecord_data =
     create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
 
   g_semaphores_workers = new sem_t[num_files];
@@ -637,10 +637,10 @@ void process_inputs(InputOptionsFastqReadStructure const& options,
 /* Flag set by ‘--verbose’. */
 int main(int argc, char** argv)
 {
-  InputOptionsFastqReadStructure options = readOptionsFastqSlideseq(argc, argv);
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqSlideseq(argc, argv);
 
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  std::unique_ptr<WhiteListData> white_list_data = readWhiteList(options.white_list_file);
+  std::unique_ptr<WHITE_LIST_DATA> white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
   process_inputs(options, white_list_data.get());

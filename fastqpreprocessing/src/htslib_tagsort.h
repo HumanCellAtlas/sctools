@@ -21,9 +21,9 @@
  * The input bam file is read chunk by chunk, sorted by the tags and the written
  * out as a text file in the sorted manner.
  *
- * @param options: InputOptionsTagsort the inputs to the program
+ * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-std::vector<std::string> create_sorted_file_splits_htslib(InputOptionsTagsort& options);
+std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options);
 
 #endif

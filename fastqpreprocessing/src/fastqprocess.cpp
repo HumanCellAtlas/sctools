@@ -38,7 +38,7 @@
 
 // TODO DEDUP
 /// Samrecord bins to be accessed by all threads
-struct SamRecordBins
+struct SAM_RECORD_BINS
 {
   /// array or array of samrecords
   /// one array for each reader samrecords[r].
@@ -81,11 +81,11 @@ sem_t* g_semaphores = 0;
 sem_t* g_semaphores_workers = 0;
 
 /** @copydoc create_record_holders */
-SamRecordBins* create_samrecord_holders(int16_t nthreads, const std::string sample_id,
+SAM_RECORD_BINS* create_samrecord_holders(int16_t nthreads, const std::string sample_id,
                                           int16_t num_files)
 {
   // samrecord data to hold buffer for the reader
-  SamRecordBins* samrecord_data = new SamRecordBins;
+  SAM_RECORD_BINS* samrecord_data = new SAM_RECORD_BINS;
   if ((samrecord_data->samrecords = new SamRecord *[nthreads]) == 0)
     crash("Failed to allocate memory for the samRecords pointer arrays");
 
@@ -125,7 +125,7 @@ SamRecordBins* create_samrecord_holders(int16_t nthreads, const std::string samp
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void bam_writers(int windex, SamRecordBins* samrecord_data)
+void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
   std::string bam_out_fname = "subfile_" + std::to_string(windex) + ".bam";
   SamFile samOut;
@@ -156,7 +156,8 @@ void bam_writers(int windex, SamRecordBins* samrecord_data)
 
     // write out the record buffers for the reader thread "active_thread_num"
     // that signalled that buffer is ready to be written
-    SamRecord* samRecord = samrecord_data->samrecords[samrecord_data->active_thread_num];
+    SamRecord* samRecord  =
+      samrecord_data->samrecords[samrecord_data->active_thread_num];
     // go through the index of the samrecords that are stored for the current
     // writer, i.e., "windex" or the corresponding BAM file
     for (auto index : samrecord_data->file_index[samrecord_data->active_thread_num][windex])
@@ -187,7 +188,7 @@ void bam_writers(int windex, SamRecordBins* samrecord_data)
  * @param  windex  index of the writer thread
  * @param samrecord_bins  bins for samrecords from the reader threads
 */
-void fastq_writers(int windex, SamRecordBins* samrecord_data)
+void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
   std::string r1_output_fname = "fastq_R1_" + std::to_string(windex) + ".fastq.gz";
   ogzstream r1_out(r1_output_fname.c_str());
@@ -302,8 +303,6 @@ void fillSamRecord(SamRecord* samRecord, FastQFile& fastQFileI1,
     samRecord->addTag("SY", 'Z', indexSeqQual.c_str());
   }
 }
-
-
 /**
    @brief getBukcetIndex computes the index for the bucket (of bam file)
  *    for a barcode and also add the correct barcode to the SamRecord
@@ -318,8 +317,8 @@ void fillSamRecord(SamRecord* samRecord, FastQFile& fastQFileI1,
  *
  * @return the bucket number where the current SamRecord should go to
 */
-int32_t getBucketIndex(std::string const& barcode, SamRecord* samRecord,
-                       const WhiteListData* white_list_data, SamRecordBins* samrecord_data,
+int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
+                       const WHITE_LIST_DATA* white_list_data, SAM_RECORD_BINS* samrecord_data,
                        int* n_barcode_corrected, int* n_barcode_correct, int* n_barcode_errors)
 {
 
@@ -342,7 +341,8 @@ int32_t getBucketIndex(std::string const& barcode, SamRecord* samRecord,
     {
       // it is a 1-mutation of some whitelist barcode so get the
       // barcode by indexing into the vector of whitelist barcodes
-      correct_barcode = white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
+      correct_barcode =
+        white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
       *n_barcode_corrected += 1;
     }
     // is used for computing the file index
@@ -373,7 +373,7 @@ std::mutex g_block_mutex;
  * @param samrecord_data  the samrecord data
  * @param tindex the index of the thread
 */
-void submit_block_tobe_written(SamRecordBins* samrecord_data, int tindex)
+void submit_block_tobe_written(SAM_RECORD_BINS* samrecord_data, int tindex)
 {
   g_block_mutex.lock();
 
@@ -423,8 +423,8 @@ void submit_block_tobe_written(SamRecordBins* samrecord_data, int tindex)
 void process_file(int tindex, std::string filenameI1, String filenameR1,
                   String filenameR2,  unsigned int barcode_length,
                   unsigned int umi_length,
-                  const WhiteListData* white_list_data,
-                  SamRecordBins* samrecord_data)
+                  const WHITE_LIST_DATA* white_list_data,
+                  SAM_RECORD_BINS* samrecord_data)
 {
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileI1(4, 4);
@@ -471,6 +471,7 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
   int n_barcode_correct = 0;
   int r = 0;
   printf("Opening the thread in %d\n", tindex);
+
 
   while (fastQFileR1.keepReadingFile())
   {
@@ -570,12 +571,12 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
  *         map and vector of correct barcodes
 */
 void process_inputs(InputOptionsFastqProcess const& options,
-                    const WhiteListData* white_list_data)
+                    const WHITE_LIST_DATA* white_list_data)
 {
   // number of files based on the input size
   int num_files = getNumBlocks(options);
   // create the data for the threads
-  SamRecordBins* samrecord_data =
+  SAM_RECORD_BINS* samrecord_data =
     create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
 
   g_semaphores_workers = new sem_t[num_files];
@@ -646,7 +647,7 @@ int main(int argc, char** argv)
   InputOptionsFastqProcess options = readOptionsFastqProcess(argc, argv);
 
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  std::unique_ptr<WhiteListData> white_list_data = readWhiteList(options.white_list_file);
+  std::unique_ptr<WHITE_LIST_DATA> white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
   process_inputs(options, white_list_data.get());

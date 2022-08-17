@@ -14,7 +14,7 @@
 #include <unordered_map>
 
 // structure for correcting the barcodes
-struct WhiteListData
+struct WHITE_LIST_DATA
 {
   // an unordered map from whitelist barcodes and 1-mutations
   // to the index of the correct barcode
@@ -38,7 +38,7 @@ struct WhiteListData
  * @return a stricture containing the barcode/1-mutation barcode to index
  *         of the correct barcode
 */
-std::unique_ptr<WhiteListData> readWhiteList(std::string const& white_list_file);
+std::unique_ptr<WHITE_LIST_DATA> readWhiteList(std::string const& white_list_file);
 
 /**
  * @brief Print system error and exit

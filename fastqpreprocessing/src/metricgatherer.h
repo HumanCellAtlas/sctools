@@ -8,15 +8,14 @@
  ***********************************************/
 
 #include <unordered_map>
-#include <map>
 #include <string>
 #include <regex>
 #include <iostream>
 #include <vector>
-#include <cassert>
+#include <assert.h>
 #include <fstream>
 #include <iomanip>
-#include <cmath>
+#include <math.h>
 #include <unordered_set>
 
 enum class MetricType { Cell, Gene };
@@ -82,11 +81,7 @@ private:
   int n_reads = 0;
   const int noise_reads = 0; //# long polymers, N-sequences; NotImplemented
 
-  // TODO does it need to be sorted?
-  //std::unordered_map<std::string, int> _fragment_histogram;
-  std::map<std::string, int> _fragment_histogram;
-
-  //self._molecule_histogram: Counter[str] = Counter()
+  std::unordered_map<std::string, int> _fragment_histogram;
   std::unordered_map<std::string, int> _molecule_histogram;
 
   // molecule information
@@ -177,9 +172,9 @@ public:
 
   void output_metrics(std::ofstream& fmetric_out);
   virtual void output_metrics_extra(std::ofstream& fmetric_out) = 0;
-  virtual void parse_extra_fields(std::string const& first_tag,
-                                  std::string const& second_tag,
-                                  std::string const& third_tag,
+  virtual void parse_extra_fields(const std::string& first_tag,
+                                  const std::string& second_tag,
+                                  const std::string& third_tag,
                                   char** record) = 0;
   virtual void finalize(std::unordered_set<std::string>& mitochondrial_genes);
   virtual void clear();
@@ -233,9 +228,9 @@ private:
 public:
   std::string getHeader() override;
   void output_metrics_extra(std::ofstream& fmetric_out) override;
-  void parse_extra_fields(std::string const& first_tag,
-                          std::string const& second_tag,
-                          std::string const& third_tag,
+  void parse_extra_fields(const std::string& first_tag,
+                          const std::string& second_tag,
+                          const std::string& third_tag,
                           char** record) override;
 
   void finalize(std::unordered_set<std::string>& mitochondrial_genes);

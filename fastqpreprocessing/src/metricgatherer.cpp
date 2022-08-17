@@ -271,9 +271,9 @@ std::string CellMetrics::getHeader()
 }
 
 // Parses a record to extract gene-specific information
-void CellMetrics::parse_extra_fields(std::string const& first_tag,
-                                     std::string const& second_tag,
-                                     std::string const& third_tag,
+void CellMetrics::parse_extra_fields(const std::string& first_tag,
+                                     const std::string& second_tag,
+                                     const std::string& third_tag,
                                      char** record)
 {
   _cell_barcode_fraction_bases_above_30.update(std::stof(record[kOffset + 5]));
@@ -383,9 +383,9 @@ std::string GeneMetrics::getHeader()
   return s;
 }
 
-void GeneMetrics::parse_extra_fields(std::string const& first_tag,
-                                     std::string const& second_tag,
-                                     std::string const& third_tag,
+void GeneMetrics::parse_extra_fields(const std::string& first_tag,
+                                     const std::string& second_tag,
+                                     const std::string& third_tag,
                                      char** record)
 {
   // updating the cell histogram with tags
