@@ -7,6 +7,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.o
 
 # Distribution / packaging
 .Python
@@ -103,4 +104,7 @@ ENV/
 
 # do not check in the executable and bam file
 fastqpreprocessing/src/fastqprocess
+fastqpreprocessing/src/TagSort
+fastqpreprocessing/src/obj/
+fastqpreprocessing/bin/
 src/sctools/test/data/bam_with_tags_test.bam
