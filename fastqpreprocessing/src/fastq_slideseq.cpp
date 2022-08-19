@@ -1,12 +1,9 @@
 /**
- *  @file   fastqprocess.cpp
+ *  @file   fastq_slideseq.cpp
  *  @brief  functions for file processing
  *  @author Kishori Konwar
  *  @date   2020-08-27
  ***********************************************/
-
-#include "fastq_slideseq.h"
-#include "utilities.h"
 
 #include <gzstream.h>
 #include <iostream>
@@ -14,205 +11,203 @@
 
 #include <cstdint>
 
-/// maximum file length
-#define MAX_FILE_LENGTH 500
-
 /// number of samrecords per buffer in each reader
-#define SAMRECORD_BUFFER_SIZE 100000
+constexpr int kSamRecordBufferSize = 100000;
 
-/// mutex
-std::mutex mtx;
+#include "input_options.h"
+#include "utilities.h"
+
+#include <FastQFile.h>
+#include "FastQStatus.h"
+#include "BaseAsciiMap.h"
+#include "SamFile.h"
+#include "SamValidation.h"
+
+#include <semaphore.h>
+#include <thread>
+#include <string>
+#include <unordered_map>
+#include <iostream>
+#include <fstream>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <vector>
+#include <functional>
+#include <mutex>
+
+// TODO DEDUP
+/// Samrecord bins to be accessed by all threads
+struct SAM_RECORD_BINS
+{
+  /// array or array of samrecords
+  /// one array for each reader samrecords[r].
+  /// Note that every samrecord[r][i] for 0 <= i < num_records[r]
+  /// is destined to be written to one specfic output bam file.
+  /// These index of the bam file is one of the vectors "file_index[r][b]",
+  /// where b is one of the bam files index
+  SamRecord** samrecords;
+
+  /// number of records in individual reader threads that
+  /// can be written, i.e., num_records[r] stores the number of
+  /// such records in samrecrods[r]
+  int32_t* num_records;
+
+  /// An array of arrays of vector, one array "file_index[r]" for reader thread r.
+  /// The value vector in file_index[r][i] stores the indices of the samrecords[r]
+  /// where the record in samrecords[r][i], for 0 <= i < num_records[r]
+  /// should be written. This information is used by the writer threads.
+  std::vector<int32_t>** file_index;
+
+  /// sample name
+  std::string sample_id;
+
+  /// number of output bam files, and one writer thread per bam file
+  int16_t num_files;
+  /// flag to stop the writer
+  bool stop;
+  /// the thread (reader) that is currently wanting to write
+  int32_t active_thread_num;
+};
+
 
 /// array of semaphores for readers
-sem_t* semaphores = 0;
+sem_t* g_semaphores = 0;
 
-/// array of semaphores for rwriters
-sem_t* semaphores_workers = 0;
+/// array of semaphores for writers
+sem_t* g_semaphores_workers = 0;
 
 /** @copydoc create_record_holders */
-SAM_RECORD_BINS* create_samrecord_holders(int16_t nthreads, int32_t block_size,
-                                          const std::string sample_id,
-                                          int16_t num_files)
+SAM_RECORD_BINS* create_samrecord_holders(
+    int16_t nthreads, const std::string sample_id, int16_t num_files)
 {
   // samrecord data to hold buffer for the reader
   SAM_RECORD_BINS* samrecord_data = new SAM_RECORD_BINS;
   if ((samrecord_data->samrecords = new SamRecord *[nthreads]) == 0)
-  {
-    std::cerr << "Failed to allocate memory for the "
-              "samRecords pointer arrays" << std::endl;
-    return 0;
-  }
+    crash("Failed to allocate memory for the samRecords pointer arrays");
 
   // one samrecord per reader thread to re-use repeatedly while writing
   for (int i = 0; i < nthreads; i++)
-  {
-    if ((samrecord_data->samrecords[i] = new SamRecord[block_size]) == 0)
-    {
-      std::cerr << "Failed to allocate memory for the "
-                "samRecords" << std::endl;
-      return 0;
-    }
-  }
+    if ((samrecord_data->samrecords[i] = new SamRecord[kSamRecordBufferSize]) == 0)
+      crash("Failed to allocate memory for the samRecords");
 
   // for each reader thread keep the number of records to write out
   if ((samrecord_data->num_records = new int[nthreads]) == 0)
-  {
-    std::cerr << "Failed to allocate memory for the num "
-              "records array" << std::endl;
-    return 0;
-  }
+    crash("Failed to allocate memory for the num records array");
 
   // for each thread  we allocate an array of indices (to final output files)
-  if ((samrecord_data->file_index = new vector<int>* [nthreads]) == 0)
-  {
-    std::cerr << "Failed to allocate memory for the pointer for "
-              "array of vectors" << std::endl;
-    return 0;
-  }
+  if ((samrecord_data->file_index = new std::vector<int>* [nthreads]) == 0)
+    crash("Failed to allocate memory for the pointer for array of vectors");
 
   // for each read thread allocate the index vector
   for (int i = 0; i < nthreads; i++)
-  {
-    if ((samrecord_data->file_index[i] = new vector<int>[num_files]) == 0)
-    {
-      std::cerr << "Failed to allocate memory for the vectors for "
-                "index of file" << std::endl;
-      return 0;
-    }
-  }
+    if ((samrecord_data->file_index[i] = new std::vector<int>[num_files]) == 0)
+      crash("Failed to allocate memory for the vectors for index of file");
 
   // set the remaining data
-  samrecord_data->block_size = block_size;
   samrecord_data->sample_id = sample_id;
   samrecord_data->num_files = num_files;
   samrecord_data->stop = false;
   return samrecord_data;
 }
 
+void process_file(int tindex, std::string filenameI1, String filenameR1,
+                  String filenameR2,  String read_structure,
+                  const WHITE_LIST_DATA* white_list_data,
+                  SAM_RECORD_BINS* samrecord_data);
+void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data);
+void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data);
+
 /** @copydoc process_inputs */
 void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE& options,
                     const WHITE_LIST_DATA* white_list_data)
 {
-  int block_size = SAMRECORD_BUFFER_SIZE;
-
   // number of files based on the input size
   int num_files = get_num_blocks(options);
   // create the data for the threads
   SAM_RECORD_BINS* samrecord_data =
-    create_samrecord_holders(options.R1s.size(), block_size,
-                             options.sample_id, num_files);
+    create_samrecord_holders(options.R1s.size(), options.sample_id, num_files);
 
-  semaphores_workers = new sem_t[num_files];
+  g_semaphores_workers = new sem_t[num_files];
   for (int i = 0; i < num_files; i++)
-    sem_init((semaphores_workers + i), 0, 0);
+    sem_init((g_semaphores_workers + i), 0, 0);
 
   // create the bam file writers semaphores
-  semaphores = new sem_t[num_files];
+  g_semaphores = new sem_t[num_files];
   for (int i = 0; i < num_files; i++)
-    sem_init((semaphores + i), 0, 0);
+    sem_init((g_semaphores + i), 0, 0);
 
   // execute the bam file writers threads
-  std::thread* writers = new std::thread[num_files];
-  for (int i = 0; i < num_files; i++)
-  {
-    if (options.output_format=="BAM")
-      writers[i] = std::thread(bam_writers, i, samrecord_data);
-    else if (options.output_format=="FASTQ")
-      writers[i] = std::thread(fastq_writers, i, samrecord_data);
-    else
-    {
-      std::cout << "ERROR: Output-format must be either FASTQ or BAM\n";
-      std::cerr << "ERROR: Output-format must be either FASTQ or BAM\n";
-      exit(1);
-    }
-  }
+  std::vector<std::thread> writers;
+  if (options.output_format == "BAM")
+    for (int i = 0; i < num_files; i++)
+      writers.emplace_back(bam_writers, i, samrecord_data);
+  else if (options.output_format == "FASTQ")
+    for (int i = 0; i < num_files; i++)
+      writers.emplace_back(fastq_writers, i, samrecord_data);
+  else
+    crash("ERROR: Output-format must be either FASTQ or BAM");
 
   // execute the fastq readers threads
-  std::thread* readers = new std::thread[options.R1s.size()];
+  std::vector<std::thread> readers;
   for (unsigned int i = 0; i < options.R1s.size(); i++)
   {
-    std::string I1;
-    if (options.I1s.size() > 0)
-      I1 = std::string(options.I1s[i].c_str());
-    else
-      I1 = std::string("");
+    assert(options.I1s.empty() || options.I1s.size() == options.R1s.size());
     // if there is no I1 file then send an empty file name
+    std::string I1 = options.I1s.empty() ? "" : options.I1s[i];
 
-    readers[i] = std::thread(process_file, i, I1.c_str(),
-                             options.R1s[i].c_str(), options.R2s[i].c_str(),
-                             options.read_structure.c_str(),
-                             white_list_data, samrecord_data);
+    readers.emplace_back(process_file, i, I1.c_str(), options.R1s[i].c_str(),
+                         options.R2s[i].c_str(), options.read_structure.c_str(),
+                         white_list_data, samrecord_data);
   }
 
   // every reader thread joins.
-  for (unsigned int i = 0; i < options.R1s.size(); i++)
-    readers[i].join();
+  for (auto& reader : readers)
+    reader.join();
 
   // set the stop flag for the writers
   samrecord_data->stop = true;
 
   // ask the writers to make one more loop in the while loop
   for (int j = 0; j < samrecord_data->num_files; j++)
-    if (sem_post(&semaphores[j]) == -1)
-      error("sem_post: semaphores");
+    if (sem_post(&g_semaphores[j]) == -1)
+      crashWithPerror("sem_post: g_semaphores");
 
   // wait for the writers to stop after they have seen the stop flag
-  for (int i = 0; i < samrecord_data->num_files; i++)
-    writers[i].join();
+  for (auto& writer : writers)
+    writer.join();
 
-  // destroy the semaphores
+  // destroy the g_semaphores
   for (int i = 0; i < samrecord_data->num_files; i++)
-    sem_destroy(&semaphores[i]);
+    sem_destroy(&g_semaphores[i]);
 
-  // destroy the semaphores for semaphores_workers
+  // destroy the g_semaphores for g_semaphores_workers
   for (int i = 0; i < samrecord_data->num_files; i++)
-    sem_destroy(&semaphores_workers[i]);
+    sem_destroy(&g_semaphores_workers[i]);
 
   // delete the records
   delete [] samrecord_data->num_records;
-
-  // delete reader and writer threads
-  delete [] readers;
-  delete [] writers;
 }
 
-/** @copydoc bam_writers */
 void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
-  std::string outputfile;
-  char buf[MAX_FILE_LENGTH];
+  std::string r1_output_fname = "fastq_R1_" + std::to_string(windex) + ".fastq.gz";
+  ogzstream r1_out(r1_output_fname.c_str());
+  if (!r1_out)
+    crash("ERROR: Failed to open R1 fastq file " + r1_output_fname + " for writing");
 
-  // open to write the outputfile
-  // name of the output R1 fastq file
-  sprintf(buf, "fastq_R1_%d.fastq.gz", windex);
-  outputfile = buf;
-  //ofstream r1_out(outputfile.c_str(), ios::out);
-  ogzstream r1_out(outputfile.c_str());
-  //if (!r1_out.is_open()) {
-  if (!r1_out.good())
-  {
-    error_message("ERROR: Failed open R1 fastq file\n");
-    exit(1);
-  }
-
-  // name of the output R1 fastq file
-  sprintf(buf, "fastq_R2_%d.fastq.gz", windex);
-  outputfile = buf;
-  //ofstream r2_out(outputfile.c_str(), ios::out);
-  ogzstream r2_out(outputfile.c_str());
-  //if (!r2_out.is_open()) {
-  if (!r2_out.good())
-  {
-    error_message("ERROR: Failed open R2 fastq file\n");
-    exit(1);
-  }
+  std::string r2_output_fname = "fastq_R2_" + std::to_string(windex) + ".fastq.gz";
+  ogzstream r2_out(r2_output_fname.c_str());
+  if (!r2_out)
+    crash("ERROR: Failed to open R2 fastq file " + r2_output_fname + " for writing");
 
   // keep writing forever, until there is a flag to stop
   while (true)
   {
     // wait until some data is ready from a reader thread
-    if (sem_wait(&semaphores[windex]) == -1)
-      error("sem_wait:semaphores");
+    if (sem_wait(&g_semaphores[windex]) == -1)
+      crashWithPerror("sem_wait:g_semaphores");
 
     // write out the record buffers for the reader thread "active_thread_num"
     // that signalled that buffer is ready to be written
@@ -240,8 +235,8 @@ void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 
     // lets the reads thread know that I am done writing the
     // buffer that are destined to be my file
-    if (sem_post(&semaphores_workers[windex]) == -1)
-      error("sem_post: semaphores_workers");
+    if (sem_post(&g_semaphores_workers[windex]) == -1)
+      crashWithPerror("sem_post: g_semaphores_workers");
 
     // time to stop variable is valid
     if (samrecord_data->stop)
@@ -253,20 +248,22 @@ void fastq_writers(int windex, SAM_RECORD_BINS* samrecord_data)
   r2_out.close();
 }
 
-
-/** @copydoc bam_writers */
+/**
+ * @brief Function for the writer thread
+ *
+ * @detail
+ *  Dependeing on the number of output bam files there are as many
+ * writer thread as there are output bam files. Each writer thread
+ * writers into only one bam file
+ *
+ * @param  windex  index of the writer thread
+ * @param samrecord_bins  bins for samrecords from the reader threads
+*/
 void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 {
+  std::string bam_out_fname = "subfile_" + std::to_string(windex) + ".bam";
   SamFile samOut;
-  std::string outputfile;
-
-  // name of the output file
-  char buf[MAX_FILE_LENGTH];
-  sprintf(buf, "subfile_%d.bam", windex);
-  outputfile = buf;
-
-  // open to write the outputfile
-  samOut.OpenForWrite(outputfile.c_str());
+  samOut.OpenForWrite(bam_out_fname.c_str());
 
   // Write the sam header.
   SamFileHeader samHeader;
@@ -288,8 +285,8 @@ void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
   while (true)
   {
     // wait until some data is ready from a reader thread
-    if (sem_wait(&semaphores[windex]) == -1)
-      error("sem_wait:semaphores");
+    if (sem_wait(&g_semaphores[windex]) == -1)
+      crashWithPerror("sem_wait:g_semaphores");
 
     // write out the record buffers for the reader thread "active_thread_num"
     // that signalled that buffer is ready to be written
@@ -301,8 +298,8 @@ void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
 
     // lets the reads thread know that I am done writing the
     // buffer that are destined to be my file
-    if (sem_post(&semaphores_workers[windex]) == -1)
-      error("sem_post: semaphores_workers");
+    if (sem_post(&g_semaphores_workers[windex]) == -1)
+      crashWithPerror("sem_post: g_semaphores_workers");
 
     // time to stop variable is valid
     if (samrecord_data->stop)
@@ -313,7 +310,7 @@ void bam_writers(int windex, SAM_RECORD_BINS* samrecord_data)
   samOut.Close();
 }
 
-std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
+std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_structure)
 {
   std::vector<std::pair<char, int>> ret;
   int next_ind = 0;
@@ -460,6 +457,8 @@ int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
   return bucket;
 }
 
+std::mutex g_block_mutex;
+
 /**
  * @brief submit_block_tobe_written this function is for a reader to send
  *    signal to the writer to empty the current list of SamRecords that are
@@ -470,7 +469,7 @@ int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
 */
 void submit_block_tobe_written(SAM_RECORD_BINS* samrecord_data, int tindex)
 {
-  mtx.lock();
+  g_block_mutex.lock();
 
   // it sets itself as the active thread who wants the
   // readers to clear the data
@@ -479,13 +478,13 @@ void submit_block_tobe_written(SAM_RECORD_BINS* samrecord_data, int tindex)
   // send a signal to every writer thread, i.e., write out data
   // data to any file where the samheader should be written to
   for (int32_t j = 0; j < samrecord_data->num_files; j++)
-    if (sem_post(&semaphores[j]) == -1)
-      error("sem_post: semaphores");
+    if (sem_post(&g_semaphores[j]) == -1)
+      crashWithPerror("sem_post: g_semaphores");
 
   // there is where I wait while the writers are writing
   for (int32_t j = 0; j < samrecord_data->num_files; j++)
-    if (sem_wait(&semaphores_workers[j]) == -1)
-      error("sem_wait: semaphores_workers");
+    if (sem_wait(&g_semaphores_workers[j]) == -1)
+      crashWithPerror("sem_wait: g_semaphores_workers");
 
   // they are done writing
   for (int j = 0; j < samrecord_data->num_files; j++)
@@ -495,7 +494,7 @@ void submit_block_tobe_written(SAM_RECORD_BINS* samrecord_data, int tindex)
   samrecord_data->num_records[tindex] = 0;
 
   // release the mutex, so that other readers might want to write
-  mtx.unlock();
+  g_block_mutex.unlock();
 }
 
 void process_file(int tindex, std::string filenameI1, String filenameR1,
@@ -540,7 +539,6 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
 
   // point to the array of records already allocated for this reader
   SamRecord* samRecord  = samrecord_data->samrecords[tindex];
-  int block_size = samrecord_data->block_size;
 
   // Keep reading the file until there are no more fastq sequences to process.
   int i = 0;
@@ -593,7 +591,7 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
       // write a block of samrecords
       r = r + 1;
 
-      // Once block_size amount of samrecord is read, or there
+      // Once kSamRecordBufferSize samrecords are read, or there
       // is no more sequence to be read from the file then it is time to
       // signal the writer threads to clear the buffer to the bam files
       // only one reader should be successfull in doing so.
@@ -602,7 +600,7 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
       // seen then continue reading the FASTQ files and keep creating the
       // sam records in its buffer. This is the same behavior across all
       // reader threads
-      if (r == block_size || !fastQFileR1.keepReadingFile())
+      if (r == kSamRecordBufferSize || !fastQFileR1.keepReadingFile())
       {
         submit_block_tobe_written(samrecord_data, tindex);
 
@@ -634,15 +632,13 @@ void process_file(int tindex, std::string filenameI1, String filenameR1,
 /* Flag set by ‘--verbose’. */
 int main(int argc, char** argv)
 {
-  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
-
-  read_options_fastq_slideseq(argc, argv, options);
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqSlideseq(argc, argv);
 
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  WHITE_LIST_DATA* white_list_data = read_white_list(options.white_list_file);
+  std::unique_ptr<WHITE_LIST_DATA> white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
-  process_inputs(options, white_list_data);
+  process_inputs(options, white_list_data.get());
   return 0;
 }
 

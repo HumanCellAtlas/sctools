@@ -7,10 +7,12 @@
 #include "FastQFile.h"
 #include "FastQStatus.h"
 #include "fastq_metrics.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <cassert>
 
+using std::string;
 
 std::vector<std::pair<char, int>> parseReadStructure(std::string read_structure)
 {
@@ -118,12 +120,9 @@ void FastQMetricsShard::processShard(String filenameR1, std::string read_structu
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileR1(4, 4);
   // open the R1 file
-  if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) !=
-      FastQStatus::FASTQ_SUCCESS)
-  {
-    std::cerr << "Failed to open file: " <<  filenameR1;
-    abort();
-  }
+  if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) != FastQStatus::FASTQ_SUCCESS)
+    crash("Failed to open R1 file");
+
   // Keep reading the file until there are no more fastq sequences to process.
   int n_lines_read = 0;
   while (fastQFileR1.keepReadingFile())
@@ -204,7 +203,8 @@ void process_inputs(const INPUT_OPTIONS_FASTQ_READ_STRUCTURE& options,
   for (unsigned int i = 0; i < options.R1s.size(); i++)
     readers[i].join();
 
-  cout << "Done reading all shards. Will now aggregate and write to file; this will take a few minutes."<<std::endl;
+  std::cout << "Done reading all shards. Will now aggregate and write to file; "
+            << "this will take a few minutes." << std::endl;
   FastQMetricsShard::mergeMetricsShardsToFile(options.sample_id, fastqMetrics, umi_length, CB_length);
 }
 
@@ -243,12 +243,11 @@ void FastQMetricsShard::mergeMetricsShardsToFile(std::string filename_prefix, ve
 
 int main(int argc, char** argv)
 {
-  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options;
-  read_options_fastq_metrics(argc, argv, options);
+  INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqMetrics(argc, argv);
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  WHITE_LIST_DATA* white_list_data = read_white_list(options.white_list_file);
+  std::unique_ptr<WHITE_LIST_DATA> white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
-  process_inputs(options, white_list_data);
+  process_inputs(options, white_list_data.get());
   return 0;
 }

@@ -49,8 +49,8 @@ private:
   int barcode_length_;
   int umi_length_;
   std::vector<std::pair<char, int>> tagged_lengths_;
-  std::unordered_map<string,int> barcode_counts_;
-  std::unordered_map<string,int> umi_counts_;
+  std::unordered_map<std::string, int> barcode_counts_;
+  std::unordered_map<std::string, int> umi_counts_;
   PositionWeightMatrix barcode_;
   PositionWeightMatrix umi_;
 };
