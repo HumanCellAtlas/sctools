@@ -6,6 +6,7 @@
  ***********************************************/
 
 #include "fastq_common.h"
+#include "input_options.h"
 
 unsigned int g_barcode_length;
 unsigned int g_umi_length;
@@ -34,7 +35,7 @@ std::string barcodeGetter(SamRecord* samRecord, FastQFile* fastQFileI1,
                           FastQFile* fastQFileR1, FastQFile* fastQFileR2,
                           bool has_I1_file_list)
 {
-  return std::string(fastQFileR1.myRawSequence.c_str()).substr(0, g_barcode_length);
+  return std::string(fastQFileR1->myRawSequence.c_str()).substr(0, g_barcode_length);
 }
 
 int main(int argc, char** argv)
@@ -45,13 +46,6 @@ int main(int argc, char** argv)
 
   g_barcode_length = options.barcode_length;
   g_umi_length = options.umi_length;
-
-  void mainCommon(
-    std::string white_list_file, int num_writer_threads, std::string output_format,
-    std::vector<std::string> I1s, std::vector<std::string> R1s, std::vector<std::string> R2s,
-    std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
-    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
-
 
   mainCommon(options.white_list_file, num_writer_threads, options.output_format,
              options.I1s, options.R1s, options.R2s,
