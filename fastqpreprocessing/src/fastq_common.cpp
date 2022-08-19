@@ -51,7 +51,7 @@ class WriteQueue
 public:
   PendingWrite dequeueWrite()
   {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !queue_.empty(); });
     auto pair = queue_.front();
     queue_.pop();
@@ -91,14 +91,16 @@ class SamRecordArena
 public:
   SamRecordArena()
   {
-    samrecords_memory_.resize(kSamRecordBufferSize);
+    samrecords_memory_.reserve(kSamRecordBufferSize);
+    for (int i = 0; i < kSamRecordBufferSize; i++)
+      samrecords_memory_.emplace_back();
     for (int i = samrecords_memory_.size() - 1; i >= 0; i--)
       available_samrecords_.push(&samrecords_memory_[i]);
   }
 
   SamRecord* acquireSamRecordMemory()
   {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !available_samrecords_.empty(); });
     SamRecord* sam = available_samrecords_.top();
     available_samrecords_.pop();
@@ -186,7 +188,7 @@ void bamWriterThread(int write_thread_index, std::string sample_id)
     if (source_reader_index == -1)
       break;
 
-    samOut.WriteRecord(samHeader, sam);
+    samOut.WriteRecord(samHeader, *sam);
     g_read_arenas[source_reader_index].releaseSamRecordMemory(sam);
   }
 
@@ -332,7 +334,7 @@ void fastQFileReaderThread(
       SamRecord* samrec = g_read_arenas[reader_thread_index].acquireSamRecordMemory();
 
       // prepare the samrecord with the sequence, barcode, UMI, and their quality sequences
-      sam_record_filler(samrec, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list);
+      sam_record_filler(samrec, &fastQFileI1, &fastQFileR1, &fastQFileR2, has_I1_file_list);
       std::string barcode = barcode_getter(samrec, &fastQFileI1, &fastQFileR1, &fastQFileR2, has_I1_file_list);
 
       // bucket barcode is used to pick the target bam file
