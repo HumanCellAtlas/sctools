@@ -19,7 +19,7 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_str
 
 std::vector<std::pair<char, int>> g_parsed_read_structure;
 
-void fillSamRecordWithReadStructure(SamRecord* samRecord, FastQFile* fastQFileI1,
+void fillSamRecordWithReadStructure(SamRecord* sam, FastQFile* fastQFileI1,
                                     FastQFile* fastQFileR1, FastQFile* fastQFileR2,
                                     bool has_I1_file_list)
 {
@@ -47,15 +47,15 @@ void fillSamRecordWithReadStructure(SamRecord* samRecord, FastQFile* fastQFileI1
     }
     cur_ind += length;
   }
-  fillSamRecordCommon(samRecord, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list,
+  fillSamRecordCommon(sam, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list,
                       barcode_seq, barcode_quality, umi_seq, umi_quality);
 }
 
-std::string slideseqBarcodeGetter(SamRecord* samRecord, FastQFile* fastQFileI1,
+std::string slideseqBarcodeGetter(SamRecord* sam, FastQFile* fastQFileI1,
                                   FastQFile* fastQFileR1, FastQFile* fastQFileR2,
                                   bool has_I1_file_list)
 {
-  return std::string(samrec->getString("CR").c_str());
+  return std::string(sam->getString("CR").c_str());
 }
 
 int main(int argc, char** argv)
