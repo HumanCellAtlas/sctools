@@ -80,10 +80,10 @@ std::vector<WriteQueue> g_write_queues;
 // to just delete this class, and have the WriteQueue accept unique_ptr<SamRecord>
 // (with the addition of some reasonable bound on how much WriteQueue can have
 // outstanding; maybe kSamRecordBufferSize items).
-class SamRecordArenas
+class SamRecordArena
 {
 public:
-  explicit SamRecordArenas(int num_samrecords_capacity)
+  explicit SamRecordArena(int num_samrecords_capacity)
     : samrecords_memory_(num_samrecords_capacity)
   {
     for (int i = samrecords_memory_.size() - 1; i >= 0; i--)
@@ -113,7 +113,7 @@ private:
   std::stack<SamRecord*> available_samrecords_;
 };
 
-std::vector<SamRecordArenas> g_read_arenas;
+std::vector<SamRecordArena> g_read_arenas;
 
 
 
