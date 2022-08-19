@@ -1,10 +1,3 @@
-/**
- *  @file   fastq_slideseq.cpp
- *  @brief  functions for file processing
- *  @author Kishori Konwar
- *  @date   2020-08-27
- ***********************************************/
-
 #include <gzstream.h>
 #include <iostream>
 #include <fstream>
@@ -217,23 +210,12 @@ void fillSamRecordCommon(SamRecord* samRecord, FastQFile* fastQFileI1,
   }
 }
 
-/**
-   @brief getBukcetIndex computes the index for the bucket (of bam file)
- *    for a barcode and also add the correct barcode to the SamRecord
- *
- * @param barcode the barcode for which a bucket is computed
- * @param samRecord  the partially filled samrecord to add the corrected barcode
- * @param white_list_data the white list data for barcode correction
- * @param n_barcode_corrected a variable keeping track of the number of barcodes corrected
- * @param n_barcode_correct a the number of barcodes so far are already correct
- * @param n_barcode_errros keeping track of the number of barcodes that are incorrectible
- *
- * @return the bucket number where the current SamRecord should go to
-*/
-int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
-                       const WHITE_LIST_DATA* white_list_data,
-                       int* n_barcode_corrected, int* n_barcode_correct, int* n_barcode_errors,
-                       int num_writer_threads)
+// Computes the whitelist-corrected barcode and adds it to sam_record.
+// Returns the index of the bamfile bucket / writer thread where sam_record
+// should be sent.
+int32_t correctBarcodeToWhitelist(
+    const std::string& barcode, SamRecord* sam_record, const WHITE_LIST_DATA* white_list_data,
+    int* n_barcode_corrected, int* n_barcode_correct, int* n_barcode_errors, int num_writer_threads)
 {
   std::string correct_barcode;
   // bucket barcode is used to pick the target bam file
@@ -243,9 +225,10 @@ int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
   // sequences into one particular. Incorregible barcodes are simply
   // added withouth the CB tag
   std::string bucket_barcode;
-  if (white_list_data->mutations.find(barcode) != white_list_data->mutations.end())
+  if (auto it = white_list_data->mutations.find(barcode) ; it != white_list_data->mutations.end())
   {
-    if (white_list_data->mutations.at(barcode) == -1) // -1 means raw barcode is correct
+    int64_t mutation_index = it->second;
+    if (mutation_index == -1) // -1 means raw barcode is correct
     {
       correct_barcode = barcode;
       *n_barcode_correct += 1;
@@ -254,14 +237,14 @@ int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
     {
       // it is a 1-mutation of some whitelist barcode so get the
       // barcode by indexing into the vector of whitelist barcodes
-      correct_barcode = white_list_data->barcodes.at(white_list_data->mutations.at(barcode));
+      correct_barcode = white_list_data->barcodes[mutation_index];
       *n_barcode_corrected += 1;
     }
     // is used for computing the file index
     bucket_barcode = correct_barcode;
 
     // corrected barcode should be added to the samrecord
-    samRecord->addTag("CB", 'Z', correct_barcode.c_str());
+    sam_record->addTag("CB", 'Z', correct_barcode.c_str());
   }
   else     // not possible to correct the raw barcode
   {
@@ -269,7 +252,7 @@ int32_t getBucketIndex(const std::string& barcode, SamRecord* samRecord,
     bucket_barcode = barcode;
   }
   // destination bam file index computed based on the bucket_barcode
-  return std::hash<std::string> {}(bucket_barcode.c_str()) % num_writer_threads;
+  return std::hash<std::string> {}(bucket_barcode) % num_writer_threads;
 }
 
 // Returns true if successfully read a sequence.
@@ -346,9 +329,9 @@ void fastQFileReaderThread(
       // so that no bam is oversized to putting all such barcode less
       // sequences into one particular. Incorregible barcodes are simply
       // added withouth the CB tag
-      int32_t bam_bucket = getBucketIndex(barcode, samrec, white_list_data,
-                                          &n_barcode_corrected, &n_barcode_correct,
-                                          &n_barcode_errors, g_write_queues.size());
+      int32_t bam_bucket = correctBarcodeToWhitelist(
+          barcode, samrec, white_list_data, &n_barcode_corrected, &n_barcode_correct,
+          &n_barcode_errors, g_write_queues.size());
 
       g_write_queues[bam_bucket].enqueueWrite(samrec, reader_thread_index);
 
