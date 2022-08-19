@@ -245,7 +245,7 @@ int main(int argc, char** argv)
 {
   INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqMetrics(argc, argv);
   std::cout << "reading whitelist file " << options.white_list_file << "...";
-  std::unique_ptr<WhiteListData> white_list_data = readWhiteList(options.white_list_file);
+  WhiteListData white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
   process_inputs(options, white_list_data.get());
