@@ -1,7 +1,6 @@
 #include <gzstream.h>
 #include <iostream>
 #include <fstream>
-
 #include <cstdint>
 
 // number of samrecords per buffer in each reader
@@ -21,9 +20,10 @@ constexpr int kSamRecordBufferSize = 10000;
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <condition_variable>
+#include <queue>
+#include <cstdio>
+#include <cstdlib>
 #include <getopt.h>
 #include <vector>
 #include <functional>
@@ -51,7 +51,7 @@ class WriteQueue
 public:
   PendingWrite dequeueWrite()
   {
-    const lock_guard<mutex> lock(mutex_);
+    const std::lock_guard<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !queue_.empty(); });
     auto pair = queue_.front();
     queue_.pop();
@@ -89,16 +89,16 @@ std::vector<WriteQueue> g_write_queues;
 class SamRecordArena
 {
 public:
-  explicit SamRecordArena(int num_samrecords_capacity)
-    : samrecords_memory_(num_samrecords_capacity)
+  SamRecordArena()
   {
+    samrecords_memory_.resize(kSamRecordBufferSize);
     for (int i = samrecords_memory_.size() - 1; i >= 0; i--)
       available_samrecords_.push(&samrecords_memory_[i]);
   }
 
   SamRecord* acquireSamRecordMemory()
   {
-    const lock_guard<mutex> lock(mutex_);
+    const std::lock_guard<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !available_samrecords_.empty(); });
     SamRecord* sam = available_samrecords_.top();
     available_samrecords_.pop();
@@ -125,10 +125,10 @@ std::vector<SamRecordArena> g_read_arenas;
 
 void writeFastqRecord(ogzstream& r1_out, ogzstream& r2_out, SamRecord* sam)
 {
-  r1_out << "@" << sam.getReadName() << "\n" << sam.getString("CR").c_str()
-         << sam.getString("UR") << "\n+\n" << sam.getString("CY") << sam.getString("UY") << "\n";
-  r2_out << "@" << sam.getReadName() << "\n" << sam.getSequence() << "\n+\n"
-         << sam.getQuality() << "\n";
+  r1_out << "@" << sam->getReadName() << "\n" << sam->getString("CR").c_str()
+         << sam->getString("UR") << "\n+\n" << sam->getString("CY") << sam->getString("UY") << "\n";
+  r2_out << "@" << sam->getReadName() << "\n" << sam->getSequence() << "\n+\n"
+         << sam->getQuality() << "\n";
 }
 
 void fastqWriterThread(int write_thread_index)
@@ -145,7 +145,7 @@ void fastqWriterThread(int write_thread_index)
 
   while (true)
   {
-    auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
+    auto [sam, source_reader_index] = g_write_queues[write_thread_index].dequeueWrite();
     if (source_reader_index == -1)
       break;
 
@@ -158,7 +158,7 @@ void fastqWriterThread(int write_thread_index)
   r2_out.close();
 }
 
-void bamWriterThread(int write_thread_index)
+void bamWriterThread(int write_thread_index, std::string sample_id)
 {
   std::string bam_out_fname = "subfile_" + std::to_string(write_thread_index) + ".bam";
   SamFile samOut;
@@ -174,7 +174,7 @@ void bamWriterThread(int write_thread_index)
   // add the RG group tags
   SamHeaderRG* headerRG = new SamHeaderRG;
   headerRG->setTag("ID", "A");
-  headerRG->setTag("SM", samrecord_bins->sample_id.c_str());   // TODO get from options.sample_id
+  headerRG->setTag("SM", sample_id.c_str());
   samHeader.addRG(headerRG);
 
   // add the header to the output bam
@@ -182,7 +182,7 @@ void bamWriterThread(int write_thread_index)
 
   while (true)
   {
-    auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
+    auto [sam, source_reader_index] = g_write_queues[write_thread_index].dequeueWrite();
     if (source_reader_index == -1)
       break;
 
@@ -299,7 +299,7 @@ void fastQFileReaderThread(
     if (fastQFileI1.openFile(String(filenameI1.c_str()), BaseAsciiMap::UNKNOWN) !=
         FastQStatus::FASTQ_SUCCESS)
     {
-      crash("Failed to open file: " + filenameI1);
+      crash(std::string("Failed to open file: ") + filenameI1);
     }
   }
   else
@@ -308,12 +308,12 @@ void fastQFileReaderThread(
   if (fastQFileR1.openFile(filenameR1, BaseAsciiMap::UNKNOWN) !=
       FastQStatus::FASTQ_SUCCESS)
   {
-    crash("Failed to open file: " + filenameR1.c_str());
+    crash(std::string("Failed to open file: ") + filenameR1.c_str());
   }
   if (fastQFileR2.openFile(filenameR2, BaseAsciiMap::UNKNOWN) !=
       FastQStatus::FASTQ_SUCCESS)
   {
-    crash("Failed to open file: " + filenameR2.c_str());
+    crash(std::string("Failed to open file: ") + filenameR2.c_str());
   }
 
   // Keep reading the file until there are no more fastq sequences to process.
@@ -321,7 +321,6 @@ void fastQFileReaderThread(
   int n_barcode_errors = 0;
   int n_barcode_corrected = 0;
   int n_barcode_correct = 0;
-  int r = 0;
   printf("Opening the thread in %d\n", reader_thread_index);
 
   while (fastQFileR1.keepReadingFile())
@@ -334,7 +333,7 @@ void fastQFileReaderThread(
 
       // prepare the samrecord with the sequence, barcode, UMI, and their quality sequences
       sam_record_filler(samrec, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list);
-      std::string barcode = barcode_getter(samrec, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list);
+      std::string barcode = barcode_getter(samrec, &fastQFileI1, &fastQFileR1, &fastQFileR2, has_I1_file_list);
 
       // bucket barcode is used to pick the target bam file
       // This is done because in the case of incorrigible barcodes
@@ -346,7 +345,7 @@ void fastQFileReaderThread(
           barcode, samrec, white_list_data, &n_barcode_corrected, &n_barcode_correct,
           &n_barcode_errors, g_write_queues.size());
 
-      g_write_queues[bam_bucket].enqueueWrite(samrec, reader_thread_index);
+      g_write_queues[bam_bucket].enqueueWrite(std::make_pair(samrec, reader_thread_index));
 
       if (total_reads % 10000000 == 0)
       {
@@ -389,10 +388,10 @@ void mainCommon(
   std::vector<std::thread> writers;
   if (output_format == "BAM")
     for (int i = 0; i < num_writer_threads; i++)
-      writers.emplace_back(bamWriterThread, i, samrecord_bins);
+      writers.emplace_back(bamWriterThread, i, options.sample_id);
   else if (output_format == "FASTQ")
     for (int i = 0; i < num_writer_threads; i++)
-      writers.emplace_back(fastqWriterThread, i, samrecord_bins);
+      writers.emplace_back(fastqWriterThread, i);
   else
     crash("ERROR: Output-format must be either FASTQ or BAM");
 
@@ -405,7 +404,7 @@ void mainCommon(
     // if there is no I1 file then send an empty file name
     std::string I1 = I1s.empty() ? "" : I1s[i];
 
-    g_read_arenas.emplace_back(kSamRecordBufferSize);
+    g_read_arenas.emplace_back();
     readers.emplace_back(fastQFileReaderThread, i, I1.c_str(), R1s[i].c_str(),
                          R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter);
   }
