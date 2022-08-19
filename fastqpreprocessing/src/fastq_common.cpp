@@ -46,6 +46,7 @@ constexpr size_t kSamRecordBufferSize = 10000;
 // of the g_read_arenas that pointer should be released to after the write.
 using PendingWrite = std::pair<SamRecord*, int>;
 
+constexpr int kWriteQueueShutdown = -1;
 class WriteQueue
 {
 public:
@@ -64,10 +65,10 @@ public:
     mutex_.unlock();
     cv_.notify_one();
   }
-  void shutdown()
+  void enqueueShutdownSignal()
   {
     mutex_.lock();
-    queue_.push(std::make_pair(nullptr, -1));
+    queue_.push(std::make_pair(nullptr, kWriteQueueShutdown));
     mutex_.unlock();
     cv_.notify_one();
   }
@@ -148,7 +149,7 @@ void fastqWriterThread(int write_thread_index)
   while (true)
   {
     auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
-    if (source_reader_index == -1)
+    if (source_reader_index == kWriteQueueShutdown)
       break;
 
     writeFastqRecord(r1_out, r2_out, sam);
@@ -185,7 +186,7 @@ void bamWriterThread(int write_thread_index, std::string sample_id)
   while (true)
   {
     auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
-    if (source_reader_index == -1)
+    if (source_reader_index == kWriteQueueShutdown)
       break;
 
     samOut.WriteRecord(samHeader, *sam);
@@ -418,7 +419,7 @@ void mainCommon(
   // Now that there's nothing left to read, we can safely append a shutdown
   // signal to all the write queues.
   for (auto& write_queue : g_write_queues)
-    write_queue.shutdown();
+    write_queue->enqueueShutdownSignal();
 
   for (auto& writer : writers)
     writer.join();
