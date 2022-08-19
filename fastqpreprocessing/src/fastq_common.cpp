@@ -91,9 +91,11 @@ class SamRecordArena
 public:
   SamRecordArena()
   {
-    samrecords_memory_.resize(kSamRecordBufferSize);
+    for (int i = 0; i < kSamRecordBufferSize; i++)
+      samrecords_memory_.push_back(std::make_unique<SamRecord>());
+
     for (int i = samrecords_memory_.size() - 1; i >= 0; i--)
-      available_samrecords_.push(&samrecords_memory_[i]);
+      available_samrecords_.push(samrecords_memory_[i].get());
   }
 
   SamRecord* acquireSamRecordMemory()
@@ -112,7 +114,7 @@ public:
     cv_.notify_one();
   }
 private:
-  std::vector<SamRecord> samrecords_memory_;
+  std::vector<std::unique_ptr<SamRecord>> samrecords_memory_;
   std::mutex mutex_;
   std::condition_variable cv_;
   // Reusing most-recently-used memory first ought to be more cache friendly.
