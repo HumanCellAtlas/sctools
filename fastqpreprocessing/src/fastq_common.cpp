@@ -30,6 +30,18 @@ constexpr int kSamRecordBufferSize = 10000;
 #include <mutex>
 #include <stack>
 
+// Overview of multithreading:
+// * There are reader threads and writer threads. (Writers are either fastq or
+//   bam, depending on how the program was run).
+// * Each {reader, writer} has its own {input, output} file.
+// * Each reader has an entry in g_read_arenas, and each writer has an entry in
+//   g_write_queues.
+// * Readers load each chunk of their processed results into SamRecord pointers
+//   loaned out by their arena. They put the pointer in the correct write queue.
+// * When a write queue finishes writing a SamRecord to the file, it notifies
+//   the record pointer's arena that the record's memory is no longer in use.
+//   The arena can then give that pointer to its reader for a new read.
+
 // A pointer to a valid SamRecord waiting to be written to disk, and the index
 // of the g_read_arenas that pointer should be released to after the write.
 using PendingWrite = std::pair<SamRecord*, int>;
@@ -67,12 +79,13 @@ private:
 
 std::vector<WriteQueue> g_write_queues;
 
-// TODO I wrote this class to stay close to the performance characteristics of the
-// original code, but I suspect the large buffers might not be necessary, and in
-// fact might slow things down due to being less cache friendly. It might be good
-// to just delete this class, and have the WriteQueue accept unique_ptr<SamRecord>
-// (with the addition of some reasonable bound on how much WriteQueue can have
-// outstanding; maybe kSamRecordBufferSize items).
+// I wrote this class to stay close to the performance characteristics of the
+// original code, but I suspect the large buffers might not be necessary.
+// If it doesn't slow things down noticeably, it would be cleaner to just delete
+// this class, and have the WriteQueue accept unique_ptr<SamRecord> (with the
+// addition of some reasonable bound on how much WriteQueue can have
+// outstanding; maybe kSamRecordBufferSize items), and let them be directly
+// destroyed after writing rather than be reused with this arena approach.
 class SamRecordArena
 {
 public:
