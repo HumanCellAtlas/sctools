@@ -11,8 +11,8 @@
 
 #include <cstdint>
 
-/// number of samrecords per buffer in each reader
-constexpr int kSamRecordBufferSize = 100000;
+// number of samrecords per buffer in each reader
+constexpr int kSamRecordBufferSize = 10000;
 
 #include "input_options.h"
 #include "utilities.h"
@@ -35,11 +35,16 @@ constexpr int kSamRecordBufferSize = 100000;
 #include <vector>
 #include <functional>
 #include <mutex>
+#include <stack>
+
+// A pointer to a valid SamRecord waiting to be written to disk, and the index
+// of the g_read_arenas that pointer should be released to after the write.
+using PendingWrite = std::pair<SamRecord*, int>;
 
 class WriteQueue
 {
 public:
-  std::pair<SamRecord*, int> dequeueWrite()
+  PendingWrite dequeueWrite()
   {
     const lock_guard<mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !queue_.empty(); });
@@ -47,7 +52,7 @@ public:
     queue_.pop();
     return pair;
   }
-  void enqueueWrite(std::pair<SamRecord*, int> write)
+  void enqueueWrite(PendingWrite write)
   {
     mutex_.lock();
     queue_.push(write);
@@ -64,11 +69,17 @@ public:
 private:
   std::mutex mutex_;
   std::condition_variable cv_;
-  std::queue<std::pair<SamRecord*, int>> queue_;
+  std::queue<PendingWrite> queue_;
 };
 
 std::vector<WriteQueue> g_write_queues;
 
+// TODO I wrote this class to stay close to the performance characteristics of the
+// original code, but I suspect the large buffers might not be necessary, and in
+// fact might slow things down due to being less cache friendly. It might be good
+// to just delete this class, and have the WriteQueue accept unique_ptr<SamRecord>
+// (with the addition of some reasonable bound on how much WriteQueue can have
+// outstanding; maybe kSamRecordBufferSize items).
 class SamRecordArenas
 {
 public:
@@ -83,7 +94,7 @@ public:
   {
     const lock_guard<mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !available_samrecords_.empty(); });
-    SamRecord* sam = available_samrecords_.front();
+    SamRecord* sam = available_samrecords_.top();
     available_samrecords_.pop();
     return sam;
   }
@@ -98,7 +109,8 @@ private:
   std::vector<SamRecord> samrecords_memory_;
   std::mutex mutex_;
   std::condition_variable cv_;
-  std::queue<SamRecord*> available_samrecords_;
+  // Reusing most-recently-used memory first ought to be more cache friendly.
+  std::stack<SamRecord*> available_samrecords_;
 };
 
 std::vector<SamRecordArenas> g_read_arenas;
@@ -107,14 +119,10 @@ std::vector<SamRecordArenas> g_read_arenas;
 
 void writeFastqRecord(ogzstream& r1_out, ogzstream& r2_out, SamRecord* sam)
 {
-  r1_out << "@" << samRecord[index].getReadName() << "\n"
-         << samRecord[index].getString("CR").c_str() << samRecord[index].getString("UR")
-         << "\n+\n"
-         << samRecord[index].getString("CY") << samRecord[index].getString("UY") << "\n";
-  r2_out << "@" << samRecord[index].getReadName() << "\n"
-         << samRecord[index].getSequence()
-         << "\n+\n"
-         << samRecord[index].getQuality() << std::endl;
+  r1_out << "@" << sam.getReadName() << "\n" << sam.getString("CR").c_str()
+         << sam.getString("UR") << "\n+\n" << sam.getString("CY") << sam.getString("UY") << "\n";
+  r2_out << "@" << sam.getReadName() << "\n" << sam.getSequence() << "\n+\n"
+         << sam.getQuality() << "\n";
 }
 
 void fastqWriterThread(int write_thread_index)
