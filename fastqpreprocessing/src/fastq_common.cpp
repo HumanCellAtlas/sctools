@@ -77,7 +77,7 @@ private:
   std::queue<PendingWrite> queue_;
 };
 
-std::vector<WriteQueue> g_write_queues;
+std::vector<std::unique_ptr<WriteQueue>> g_write_queues;
 
 // I wrote this class to stay close to the performance characteristics of the
 // original code, but I suspect the large buffers might not be necessary.
@@ -119,7 +119,7 @@ private:
   std::stack<SamRecord*> available_samrecords_;
 };
 
-std::vector<SamRecordArena> g_read_arenas;
+std::vector<std::unique_ptr<SamRecordArena>> g_read_arenas;
 
 
 
@@ -145,12 +145,12 @@ void fastqWriterThread(int write_thread_index)
 
   while (true)
   {
-    auto [sam, source_reader_index] = g_write_queues[write_thread_index].dequeueWrite();
+    auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
     if (source_reader_index == -1)
       break;
 
     writeFastqRecord(r1_out, r2_out, sam);
-    g_read_arenas[source_reader_index].releaseSamRecordMemory(sam);
+    g_read_arenas[source_reader_index]->releaseSamRecordMemory(sam);
   }
 
   // close the fastq files
@@ -182,12 +182,12 @@ void bamWriterThread(int write_thread_index, std::string sample_id)
 
   while (true)
   {
-    auto [sam, source_reader_index] = g_write_queues[write_thread_index].dequeueWrite();
+    auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
     if (source_reader_index == -1)
       break;
 
     samOut.WriteRecord(samHeader, *sam);
-    g_read_arenas[source_reader_index].releaseSamRecordMemory(sam);
+    g_read_arenas[source_reader_index]->releaseSamRecordMemory(sam);
   }
 
   // close the bamfile
@@ -329,7 +329,7 @@ void fastQFileReaderThread(
     {
       total_reads++;
 
-      SamRecord* samrec = g_read_arenas[reader_thread_index].acquireSamRecordMemory();
+      SamRecord* samrec = g_read_arenas[reader_thread_index]->acquireSamRecordMemory();
 
       // prepare the samrecord with the sequence, barcode, UMI, and their quality sequences
       sam_record_filler(samrec, &fastQFileI1, &fastQFileR1, &fastQFileR2, has_I1_file_list);
@@ -345,7 +345,7 @@ void fastQFileReaderThread(
           barcode, samrec, white_list_data, &n_barcode_corrected, &n_barcode_correct,
           &n_barcode_errors, g_write_queues.size());
 
-      g_write_queues[bam_bucket].enqueueWrite(std::make_pair(samrec, reader_thread_index));
+      g_write_queues[bam_bucket]->enqueueWrite(std::make_pair(samrec, reader_thread_index));
 
       if (total_reads % 10000000 == 0)
       {
@@ -383,7 +383,7 @@ void mainCommon(
 
 
   for (int i = 0; i < num_writer_threads; i++)
-    g_write_queues.emplace_back();
+    g_write_queues.push_back(std::make_unique<WriteQueue>());
 
   // execute the bam file writers threads
   std::vector<std::thread> writers;
@@ -405,7 +405,7 @@ void mainCommon(
     // if there is no I1 file then send an empty file name
     std::string I1 = I1s.empty() ? "" : I1s[i];
 
-    g_read_arenas.emplace_back();
+    g_read_arenas.push_back(std::make_unique<SamRecordArena>());
     readers.emplace_back(fastQFileReaderThread, i, I1.c_str(), R1s[i].c_str(),
                          R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter);
   }
