@@ -4,7 +4,7 @@
 #include <cstdint>
 
 // number of samrecords per buffer in each reader
-constexpr int kSamRecordBufferSize = 10000;
+constexpr size_t kSamRecordBufferSize = 10000;
 
 #include "input_options.h"
 #include "utilities.h"
@@ -51,7 +51,7 @@ class WriteQueue
 public:
   PendingWrite dequeueWrite()
   {
-    const std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !queue_.empty(); });
     auto pair = queue_.front();
     queue_.pop();
@@ -91,16 +91,14 @@ class SamRecordArena
 public:
   SamRecordArena()
   {
-    samrecords_memory_.reserve(kSamRecordBufferSize);
-    for (int i = 0; i < kSamRecordBufferSize; i++)
-      samrecords_memory_.emplace_back();
+    samrecords_memory_.resize(kSamRecordBufferSize);
     for (int i = samrecords_memory_.size() - 1; i >= 0; i--)
       available_samrecords_.push(&samrecords_memory_[i]);
   }
 
   SamRecord* acquireSamRecordMemory()
   {
-    const std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [&] { return !available_samrecords_.empty(); });
     SamRecord* sam = available_samrecords_.top();
     available_samrecords_.pop();
@@ -374,6 +372,7 @@ void fastQFileReaderThread(
 void mainCommon(
     std::string white_list_file, int num_writer_threads, std::string output_format,
     std::vector<std::string> I1s, std::vector<std::string> R1s, std::vector<std::string> R2s,
+    std::string sample_id,
     std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
     std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
 {
@@ -390,7 +389,7 @@ void mainCommon(
   std::vector<std::thread> writers;
   if (output_format == "BAM")
     for (int i = 0; i < num_writer_threads; i++)
-      writers.emplace_back(bamWriterThread, i, options.sample_id);
+      writers.emplace_back(bamWriterThread, i, sample_id);
   else if (output_format == "FASTQ")
     for (int i = 0; i < num_writer_threads; i++)
       writers.emplace_back(fastqWriterThread, i);

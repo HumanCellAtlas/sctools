@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   g_umi_length = options.umi_length;
 
   mainCommon(options.white_list_file, num_writer_threads, options.output_format,
-             options.I1s, options.R1s, options.R2s,
+             options.I1s, options.R1s, options.R2s, options.sample_id,
              fillSamRecord, barcodeGetter);
   return 0;
 }

@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   g_parsed_read_structure = parseReadStructure(options.read_structure);
 
   mainCommon(options.white_list_file, num_writer_threads, options.output_format,
-             options.I1s, options.R1s, options.R2s,
+             options.I1s, options.R1s, options.R2s, options.sample_id,
              fillSamRecordWithReadStructure, slideseqBarcodeGetter);
   return 0;
 }
