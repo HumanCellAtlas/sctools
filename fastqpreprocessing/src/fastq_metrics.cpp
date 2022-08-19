@@ -248,6 +248,6 @@ int main(int argc, char** argv)
   WhiteListData white_list_data = readWhiteList(options.white_list_file);
   std::cout << "done" << std::endl;
 
-  process_inputs(options, white_list_data.get());
+  process_inputs(options, &white_list_data);
   return 0;
 }
