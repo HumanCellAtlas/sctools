@@ -19,9 +19,10 @@ constexpr int kThreshold = 30; // qual score threshold
 #include <thread>
 #include <mutex>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unordered_map>
 #include <memory>
 #include <set>
@@ -334,9 +335,9 @@ public:
   // Returns a pointer to the alignment ptr array, and number of alignment ptrs in the array.
   std::pair<bam1_t**, unsigned int> readAlignments(int thread_index)
   {
-    const lock_guard<std::mutex> lock(g_mtx);
+    const std::lock_guard<std::mutex> lock(g_mtx);
     unsigned int cur_num_read = 0;
-    while (cur_num_read < options.alignments_per_batch)
+    while (cur_num_read < options_.alignments_per_batch)
     {
       if (sam_read1(sam_file_ptr_, bam_hdr_, aln_arr_[thread_index][cur_num_read]) == 0)
         cur_num_read++;
@@ -351,7 +352,7 @@ public:
 
   void addToPartialFilenames(std::vector<std::string> names)
   {
-    const lock_guard<std::mutex> lock(g_mtx);
+    const std::lock_guard<std::mutex> lock(g_mtx);
     for (std::string name : names)
       partial_filenames_.push_back(name);
   }
@@ -393,7 +394,8 @@ private:
 
 void readProcessWriteAlignmentsLoopThread(int my_thread_index,
                                           AlignmentReader* alignment_reader,
-                                          TagOrder tag_order)
+                                          TagOrder tag_order,
+                                          INPUT_OPTIONS_TAGSORT options)
 {
   std::vector<std::string> my_partial_filenames;
   bam_hdr_t* bam_hdr = alignment_reader->bam_hdr();
@@ -417,8 +419,9 @@ void readProcessWriteAlignmentsLoopThread(int my_thread_index,
   alignment_reader->addToPartialFilenames(my_partial_filenames);
 }
 
-TagOrder getTagOrder(INPUT_OPTIONS_TAGSORT const& options)
+TagOrder getTagOrder(INPUT_OPTIONS_TAGSORT options)
 {
+  assert(options.size() == 3);
   // the order of the three tags are define by the order of the supplied input arguments
   // tag.order [tag_name] -> order map
   if (options.tag_order[options.barcode_tag] == 0 &&
@@ -465,7 +468,7 @@ TagOrder getTagOrder(INPUT_OPTIONS_TAGSORT const& options)
  * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options)
+std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT options)
 {
   std::cout << "Running htslib" << std::endl;
   AlignmentReader alignment_reader(options);
@@ -476,7 +479,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT&
   for (int i = 0; i < options.nthreads; i++)
   {
     worker_threads.emplace_back(readProcessWriteAlignmentsLoopThread,
-                                i, &alignment_reader, tag_order);
+                                i, &alignment_reader, tag_order, options);
   }
   for (auto& worker_thread : worker_threads)
     worker_thread.join();
