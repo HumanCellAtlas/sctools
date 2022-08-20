@@ -256,7 +256,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
   for (auto [tag, index] : options.tag_order)
   {
     if (index < 0 || index > 2)
-      crash("Invalid tag index " + index + "; must be 0 1 or 2");
+      crash("Invalid tag index " + std::to_string(index) + "; must be 0 1 or 2");
     else
       seen_tag_index[index] = true;
   }
