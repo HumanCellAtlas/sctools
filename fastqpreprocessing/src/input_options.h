@@ -81,6 +81,8 @@ struct INPUT_OPTIONS_TAGSORT
 
   // order of the tags to sort by
   std::unordered_map<std::string, unsigned int> tag_order;
+
+  std::string mitochondrial_gene_names_filename;
 };
 
 InputOptionsFastqProcess readOptionsFastqProcess(int argc, char** argv);
