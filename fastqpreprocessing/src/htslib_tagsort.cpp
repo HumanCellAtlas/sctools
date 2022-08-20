@@ -401,16 +401,13 @@ void partialSortWorkerThread(int my_thread_index, AlignmentReader* alignment_rea
   {
     std::vector<TAGTUPLE> tuple_records;
 
-    // Read...
     auto [aln_ptr_array, alns_length] = alignment_reader->readAlignments(my_thread_index);
     if (alns_length == 0)
       break;
 
-    // ...process...
     for (unsigned int i = 0; i < alns_length; i++)
       parseOneAlignment(&tuple_records, aln_ptr_array[i], options, bam_hdr, tag_order);
 
-    // ...write.
     my_partial_filenames.push_back(
         sortAndWriteToPartialTxtFile(tuple_records, options.temp_folder));
   }
