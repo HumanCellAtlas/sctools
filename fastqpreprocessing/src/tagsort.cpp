@@ -117,7 +117,10 @@ public:
 
     std::ifstream input_file(mitochondrial_gene_names_filename);
     if (!input_file)
-      crash("ERROR failed to open the mitochondrial gene names file named: " + gtf_filename);
+    {
+      crash("ERROR failed to open the mitochondrial gene names file named: " +
+            mitochondrial_gene_names_filename);
+    }
     for (std::string line; std::getline(input_file, line);)
     {
       if (line.empty() || line[0] == '#') // skip comment lines
@@ -178,7 +181,7 @@ std::unordered_set<std::string> get_mitochondrial_gene_names(
 
       // the second element in the pair is the value string
       std::string& key = key_and_val[0];
-      std::string& value = removeQuotes(key_and_val[1]);
+      std::string value = removeQuotes(key_and_val[1]);
 
       if (key == "gene_id")
         gene_id = value;
@@ -188,7 +191,7 @@ std::unordered_set<std::string> get_mitochondrial_gene_names(
     if (gene_name.empty())
     {
       crash("Malformed GTF file detected. Record is of type gene but does not "
-            "have a gene_name in line:\n") + line);
+            "have a gene_name in line:\n" + line);
     }
 
     if (gene_selector.interestedInGeneName(gene_name))
@@ -269,8 +272,8 @@ std::string extractCompTag(std::string& s)
 }
 
 // returns number of alignments processed
-void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
-                             std::vector<std::string> const& partial_files)
+int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
+                            std::vector<std::string> const& partial_files)
 {
   const std::string& sorted_output_file = options.sorted_output_file;
   const std::string& metric_type  = options.metric_type;
