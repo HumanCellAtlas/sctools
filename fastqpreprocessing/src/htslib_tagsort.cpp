@@ -259,8 +259,8 @@ std::string randomString()
  * @param tuple_records: vector<TAGTUPLE> &, reference to a vector of TAGTUPLES
  * @return a string for the random file name
 */
-std::string write_out_partial_txt_file(std::vector<TAGTUPLE> const& tuple_records,
-                                       std::string const& tmp_folder)
+std::string sortAndWriteToPartialTxtFile(std::vector<TAGTUPLE> const& tuple_records,
+                                         std::string const& tmp_folder)
 {
   using std::get;
 
@@ -392,10 +392,8 @@ private:
   std::vector<std::string> partial_filenames_;
 };
 
-void readProcessWriteAlignmentsLoopThread(int my_thread_index,
-                                          AlignmentReader* alignment_reader,
-                                          TagOrder tag_order,
-                                          INPUT_OPTIONS_TAGSORT options)
+void partialSortWorkerThread(int my_thread_index, AlignmentReader* alignment_reader,
+                             TagOrder tag_order, INPUT_OPTIONS_TAGSORT options)
 {
   std::vector<std::string> my_partial_filenames;
   bam_hdr_t* bam_hdr = alignment_reader->bam_hdr();
@@ -414,7 +412,7 @@ void readProcessWriteAlignmentsLoopThread(int my_thread_index,
 
     // ...write.
     my_partial_filenames.push_back(
-        write_out_partial_txt_file(tuple_records, options.temp_folder));
+        sortAndWriteToPartialTxtFile(tuple_records, options.temp_folder));
   }
   alignment_reader->addToPartialFilenames(my_partial_filenames);
 }
@@ -478,7 +476,7 @@ std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT 
   std::vector<std::thread> worker_threads;
   for (int i = 0; i < options.nthreads; i++)
   {
-    worker_threads.emplace_back(readProcessWriteAlignmentsLoopThread,
+    worker_threads.emplace_back(partialSortWorkerThread,
                                 i, &alignment_reader, tag_order, options);
   }
   for (auto& worker_thread : worker_threads)
