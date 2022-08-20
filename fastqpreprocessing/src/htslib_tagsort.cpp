@@ -335,7 +335,7 @@ public:
   // Returns a pointer to the alignment ptr array, and number of alignment ptrs in the array.
   std::pair<bam1_t**, unsigned int> readAlignments(int thread_index)
   {
-    const std::lock_guard<std::mutex> lock(g_mtx);
+    const std::lock_guard<std::mutex> lock(mutex_);
     unsigned int cur_num_read = 0;
     while (cur_num_read < options_.alignments_per_batch)
     {
@@ -352,7 +352,7 @@ public:
 
   void addToPartialFilenames(std::vector<std::string> names)
   {
-    const std::lock_guard<std::mutex> lock(g_mtx);
+    const std::lock_guard<std::mutex> lock(mutex_);
     for (std::string name : names)
       partial_filenames_.push_back(name);
   }
@@ -421,7 +421,7 @@ void readProcessWriteAlignmentsLoopThread(int my_thread_index,
 
 TagOrder getTagOrder(INPUT_OPTIONS_TAGSORT options)
 {
-  assert(options.size() == 3);
+  assert(options.tag_order.size() == 3);
   // the order of the three tags are define by the order of the supplied input arguments
   // tag.order [tag_name] -> order map
   if (options.tag_order[options.barcode_tag] == 0 &&
