@@ -433,7 +433,7 @@ int main(int argc, char** argv)
   std::cout << "temp folder " << options.temp_folder << std::endl;
   std::cout << "sorted output file " <<  options.sorted_output_file << std::endl;
   std::cout << "metric output file " <<  options.metric_output_file << std::endl;
-  std::cout << "temp folder " << options.alignments_per_thread << std::endl;
+  std::cout << "temp folder " << options.alignments_per_batch << std::endl;
   std::cout << "tags:" << std::endl;
 
   for (auto const& [tag, tag_order_num] : options.tag_order)

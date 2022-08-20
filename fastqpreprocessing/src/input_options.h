@@ -73,7 +73,9 @@ struct INPUT_OPTIONS_TAGSORT
   // sorted tsv output file
   std::string sorted_output_file;
 
-  unsigned int alignments_per_thread = kDefaultNumAlignsPerThread;
+  // Size (in number of alignments) of individual chunks to sort in a batch and
+  // write to a partial file. Approximately 20 million alignments makes 1 GB bam file.
+  unsigned int alignments_per_batch = kDefaultNumAlignsPerThread;
   unsigned int nthreads = 1;
   std::string barcode_tag;
   std::string umi_tag;
