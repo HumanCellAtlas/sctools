@@ -77,8 +77,6 @@ struct Context
 
 using QUEUETUPLE = std::tuple<std::string, int, int>;
 
-int g_filling_counter = 0;
-
 inline std::string ltrim(std::string& s)
 {
   auto it = find_if_not(s.begin(), s.end(), [](int c) { return isspace(c); });
@@ -86,107 +84,118 @@ inline std::string ltrim(std::string& s)
   return s;
 }
 
-inline std::string rtrim(std::string& s)
+// remove the " (quotes) from the beginning and end of the string
+// (TODO and the middle; hopefully nobody is trying to use escaped quotes).
+std::string removeQuotes(std::string& s)
 {
-  auto it = find_if_not(s.rbegin(), s.rend(), [](int c) { return isspace(c); }).base();
-  s.erase(it, s.end());
+  s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c)
+  {
+    return c=='\"';
+  }), s.end());
   return s;
 }
 
-unsigned int split_buffer_to_fields(const std::string& str, char* line, char** fields, char delim)
+std::vector<std::string> splitStringToFields(std::string const& str, char delim)
 {
-  // copy the string to a buffer to split by tab
-  str.copy(line, str.size(), 0);
-  line[str.size()]='\0';
-  char* c = line;
-
-  unsigned int k = 0;
-  fields[k] = c;
-  while (*c!='\0')
-  {
-    if (*c == delim)
-    {
-      *c='\0';
-      fields[++k] = c + 1;
-    }
-    c++;
-  }
-  return k + 1;
+  std::stringstream splitter(str);
+  std::vector<std::string> ret;
+  for (std::string field; std::getline(splitter, field, delim); )
+    ret.push_back(field);
+  return ret;
 }
 
-
-/*
- * @brief retuns the set of mitochondrial gene names
- *
- * @param gtf file name, unzipped
- * @return std::set<std::sting>
-*/
-std::unordered_set<std::string> get_mitochondrial_gene_names(const std::string& gtf_filename)
+class MitochondrialGeneSelector
 {
-  char field_buffer[1000];
-  char* fields[20];
+public:
+  MitochondrialGeneSelector(std::string const& mitochondrial_gene_names_filename)
+  {
+    if (mitochondrial_gene_names_filename.empty())
+    {
+      default_old_behavior_ = true;
+      return;
+    }
 
-  char attrib_buffer[1000];
-  char* attribs[20];
+    std::ifstream input_file(mitochondrial_gene_names_filename);
+    if (!input_file)
+    {
+      crash("ERROR failed to open the mitochondrial gene names file named: " +
+            mitochondrial_gene_names_filename);
+    }
+    for (std::string line; std::getline(input_file, line);)
+    {
+      if (line.empty() || line[0] == '#') // skip comment lines
+        continue;
+      mito_genes_.insert(line);
+    }
+  }
 
-  char keyval_buffer[1000];
-  char* keyvals[20];
+  bool interestedInGeneName(std::string const& gene_name)
+  {
+    if (default_old_behavior_)
+      return std::regex_search(gene_name, std::regex("^mt-", std::regex_constants::icase));
+    else
+      return mito_genes_.find(gene_name) != mito_genes_.end();
+  }
 
+private:
+  bool default_old_behavior_ = false;
+  std::unordered_set<std::string> mito_genes_;
+};
+
+// TODO function is named "get gene names", and there is something in there called
+//      "gene name", but it instead returns a set of "gene id"s. correct?
+//
+// The file at gtf_filename should be unzipped.
+std::unordered_set<std::string> get_mitochondrial_gene_names(
+    std::string const& gtf_filename, std::string const& mitochondrial_gene_names_filename)
+{
   std::unordered_set<std::string> mitochondrial_gene_ids;
+
+  MitochondrialGeneSelector gene_selector(mitochondrial_gene_names_filename);
+
   std::ifstream input_file(gtf_filename);
   if (!input_file)
-    crash("ERROR failed to open the GTF file " + gtf_filename);
+    crash("ERROR failed to open the GTF file named: " + gtf_filename);
 
   for (std::string line; std::getline(input_file, line);)
   {
-    if (line[0] == '#') // skip comment lines
+    if (line.empty() || line[0] == '#') // skip comment lines
       continue;
 
-    int num_fields = split_buffer_to_fields(line, field_buffer, fields, '\t');
-    // must have at least 8 fields
-    assert(num_fields >= 8);
-
-    // skip the line unless it is a gene
-    if (std::string(fields[2]).compare(std::string("gene"))!=0)
+    std::vector<std::string> tabbed_fields = splitStringToFields(line, '\t');
+    assert(tabbed_fields.size() > 8);
+    if (tabbed_fields[2] != "gene") // skip the line unless it is a gene
       continue;
+    // split the semicolon-separated attributes field
+    std::vector<std::string> attribs = splitStringToFields(tabbed_fields[8], ';');
 
-    // split the attributes field separated by ";"
-    int num_attribs = split_buffer_to_fields(std::string(fields[8]), attrib_buffer, attribs, ';');
-
-    std::string gene_name("");
-    std::string gene_id("");
+    std::string gene_name;
+    std::string gene_id;
     // now examine each of the attribute name-value pairs
-    for (int k=0; k < num_attribs; k++)
+    for (std::string attrib : attribs)
     {
-      // splied each attribute name-value pair by the space
-      if (std::string(attribs[k]).size() == 0)
-        continue;
-      std::string attrib = std::move(std::string(attribs[k]));
-      attrib = ltrim(attrib);
-
-      int n = split_buffer_to_fields(attrib, keyval_buffer, keyvals, ' ');
-      if (n!=2)
-        throw std::runtime_error("Expect 2 field but found " + std::to_string(n) + " fields");
+      // each attribute is a space-separated key-value pair
+      std::vector<std::string> key_and_val = splitStringToFields(ltrim(attrib), ' ');
+      if (key_and_val.size() != 2)
+        crash("Expected 2 fields, found " + std::to_string(key_and_val.size()) + " fields");
 
       // the second element in the pair is the value string
-      std::string value = std::string(keyvals[1]);
-      // remove the " (quotes) from the beginning and end of the value string
-      value.erase(std::remove_if(value.begin(), value.end(), [](unsigned char c)
-      {
-        return c=='\"';
-      }), value.end());
+      std::string& key = key_and_val[0];
+      std::string value = removeQuotes(key_and_val[1]);
 
-      if (std::string(keyvals[0]).compare("gene_id")==0)
+      if (key == "gene_id")
         gene_id = value;
-      if (std::string(keyvals[0]).compare("gene_name")==0)
+      if (key == "gene_name")
         gene_name = value;
     }
-    if (gene_name.compare("")==0)
-      throw ("Malformed GTF file detected. Record is of type gene but does not have a gene_name in line" + line);
+    if (gene_name.empty())
+    {
+      crash("Malformed GTF file detected. Record is of type gene but does not "
+            "have a gene_name in line:\n" + line);
+    }
 
-    // TODO TODO TODO this is what the new thing is failing on
-    if (std::regex_search(gene_name, std::regex("^mt-", std::regex_constants::icase)))
-      mitochondrial_gene_ids.insert(gene_id);
+    if (gene_selector.interestedInGeneName(gene_name))
+      mitochondrial_gene_ids.insert(gene_id); // TODO what if gene_id is empty?
   }
   std::cout << "Number of mitochondrial genes found " << mitochondrial_gene_ids.size() << std::endl;
   return mitochondrial_gene_ids;
@@ -197,11 +206,13 @@ std::unordered_set<std::string> get_mitochondrial_gene_names(const std::string& 
  * @brief fills the buffer for the files
  *
  * @param contx is the context of the file
+ * @return int number of alignments processed
 */
-void fill_buffer(Context& contx, std::vector<std::string> const& partial_files)
+int fill_buffer(Context& contx, std::vector<std::string> const& partial_files)
 {
   contx.data[contx.index_].clear();
   int k = 0;
+  int filling_counter = 0;
 
   std::ifstream input_file(partial_files[contx.index_]);
   if (!input_file)
@@ -214,7 +225,7 @@ void fill_buffer(Context& contx, std::vector<std::string> const& partial_files)
   for (std::string line; k < kDataBufferSize && std::getline(input_file, line); k++)
   {
     contx.data[contx.index_].push_back(line);
-    g_filling_counter += 1;
+    filling_counter++;
   }
   assert(contx.data[contx.index_].size() <= kDataBufferSize);
 
@@ -239,6 +250,7 @@ void fill_buffer(Context& contx, std::vector<std::string> const& partial_files)
     std::cout << "\t" << m << " : " << contx.data_size[m] << " : " << contx.ptrs[m] << std::endl;
 #endif
 
+  return filling_counter;
 }
 
 // TODO if after other refactoring this ends up being the only regex use, then
@@ -259,16 +271,21 @@ std::string extractCompTag(std::string& s)
   return comp_tag.str();
 }
 
-void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
-                             std::vector<std::string> const& partial_files)
+// returns number of alignments processed
+int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
+                            std::vector<std::string> const& partial_files)
 {
   const std::string& sorted_output_file = options.sorted_output_file;
   const std::string& metric_type  = options.metric_type;
   const std::string& metric_output_file = options.metric_output_file;
+  int filling_counter = 0;
 
   std::unordered_set<std::string> mitochondrial_genes;
   if (!options.gtf_file.empty())
-    mitochondrial_genes = get_mitochondrial_gene_names(options.gtf_file);
+  {
+    mitochondrial_genes = get_mitochondrial_gene_names(
+        options.gtf_file, options.mitochondrial_gene_names_filename);
+  }
 
   // input the buffer size and partial files
   Context contx(partial_files.size());
@@ -281,11 +298,8 @@ void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
   for (int i=0; i < contx.num_parts_; i++)
   {
     contx.index_ = i;
-    fill_buffer(contx, partial_files);
+    filling_counter += fill_buffer(contx, partial_files);
   }
-
-  std::regex rgx("\t");
-  std::sregex_token_iterator end;
 
   // create the heap from the first batch loaded data
   contx.num_active_files = 0;
@@ -380,7 +394,7 @@ void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
     if (!contx.isempty[i] && contx.ptrs[i] == contx.data_size[i])
     {
       contx.index_ = i;
-      fill_buffer(contx, partial_files);
+      filling_counter += fill_buffer(contx, partial_files);
     }
 
     // make sure it is not empty
@@ -422,12 +436,28 @@ void mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
 
   std::cout << "Written "<< num_alignments << " alignments in total" << std::endl;
   contx.clear();
+  return filling_counter;
+}
+
+void warnIfNo_mitochondrial_gene_names_filename(INPUT_OPTIONS_TAGSORT const& options)
+{
+  if (options.mitochondrial_gene_names_filename.empty())
+  {
+    std::string msg =
+"*** WARNING! You did not specify --mitochondrial_gene_names_filename.\n"
+"Therefore, we fell back to selecting only genes beginning with 'mt-' (case\n"
+"insensitive). Please write a list of all gene names you're interested in into\n"
+"a file, and pass the filename with --mitochondrial_gene_names_filename.";
+    std::cout << msg << std::endl;
+    std::cerr << msg << std::endl;
+  }
 }
 
 /* Flag set by ‘--verbose’. */
 int main(int argc, char** argv)
 {
   INPUT_OPTIONS_TAGSORT options = readOptionsTagsort(argc, argv);
+  warnIfNo_mitochondrial_gene_names_filename(options);
 
   std::cout << "bam input " << options.bam_input << std::endl;
   std::cout << "temp folder " << options.temp_folder << std::endl;
@@ -446,7 +476,7 @@ int main(int argc, char** argv)
     a head to compare the values based on the tags used  */
   std::cout << "Merging " <<  partial_files.size() << " sorted files!"<< std::endl;
 
-  mergeSortedPartialFiles(options, partial_files);
+  int filling_counter = mergeSortedPartialFiles(options, partial_files);
 
   // we no longer need the partial files
   for (unsigned int i=0; i < partial_files.size(); i++)
@@ -454,7 +484,8 @@ int main(int argc, char** argv)
       std::cerr << "Warning: error deleting file " << partial_files[i] << std::endl;
 
   partial_files.clear();
-  std::cout << "Aligments " <<  g_filling_counter << " loaded to buffer " << std::endl;
+  std::cout << "Aligments " << filling_counter << " loaded to buffer " << std::endl;
 
+  warnIfNo_mitochondrial_gene_names_filename(options);
   return 0;
 }

@@ -106,6 +106,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
     {"umi-tag",                    required_argument, 0, 'U'},
     {"gene-tag",                   required_argument, 0, 'G'},
     {"metric-type",                required_argument, 0, 'K'},
+    {"mitochondrial-gene-names-filename", required_argument, 0, 'g'},
     {0, 0, 0, 0}
   };
 
@@ -124,7 +125,8 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
     "barcode-tag the call barcode tag [required]",
     "umi-tag the umi tag [required]: the tsv file output is sorted according the tags in the options barcode-tag, umi-tag or gene-tag",
     "gene-tag the gene tag [required]",
-    "metric type, either \"cell\" or \"gene\" [required]"
+    "metric type, either \"cell\" or \"gene\" [required]",
+    "file listing gene names, one per line, that the program should care about. [required, may omit if you want mouse or human]"
   };
 
 
@@ -192,6 +194,9 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
       break;
     case 'K':
       options.metric_type = string(optarg);
+      break;
+    case 'g':
+      options.mitochondrial_gene_names_filename = string(optarg);
       break;
     case '?':
     case 'h':
