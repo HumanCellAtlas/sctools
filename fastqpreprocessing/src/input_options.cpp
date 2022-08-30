@@ -106,6 +106,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
     {"umi-tag",                    required_argument, 0, 'U'},
     {"gene-tag",                   required_argument, 0, 'G'},
     {"metric-type",                required_argument, 0, 'K'},
+    {"mitochondrial-gene-names-filename", required_argument, 0, 'g'},
     {0, 0, 0, 0}
   };
 
@@ -124,7 +125,8 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
     "barcode-tag the call barcode tag [required]",
     "umi-tag the umi tag [required]: the tsv file output is sorted according the tags in the options barcode-tag, umi-tag or gene-tag",
     "gene-tag the gene tag [required]",
-    "metric type, either \"cell\" or \"gene\" [required]"
+    "metric type, either \"cell\" or \"gene\" [required]",
+    "file listing gene names, one per line, that the program should care about. [required, may omit if you want mouse or human]"
   };
 
 
@@ -170,7 +172,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
       options.metric_output_file = string(optarg);
       break;
     case 'p':
-      options.alignments_per_thread = atoi(optarg);
+      options.alignments_per_batch = atoi(optarg);
       break;
     case 'T':
       options.nthreads = atoi(optarg);
@@ -192,6 +194,9 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
       break;
     case 'K':
       options.metric_type = string(optarg);
+      break;
+    case 'g':
+      options.mitochondrial_gene_names_filename = string(optarg);
       break;
     case '?':
     case 'h':
@@ -252,9 +257,19 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
   // check for three distinct tags, barcode, umi and gene_id tags
   if (options.tag_order.size() != 3)
     crash("ERROR:  Must have three distinct tags");
+  bool seen_tag_index[3] = { false, false, false };
+  for (auto [tag, index] : options.tag_order)
+  {
+    if (index < 0 || index > 2)
+      crash("Invalid tag index " + std::to_string(index) + "; must be 0 1 or 2");
+    else
+      seen_tag_index[index] = true;
+  }
+  if (!(seen_tag_index[0] && seen_tag_index[1] && seen_tag_index[2]))
+    crash("Need tag indices 0 1 and 2");
 
   // The size of a set of aligments for in-memory sorting must be positive
-  if (options.alignments_per_thread < 1000)
+  if (options.alignments_per_batch < 1000)
     crash("ERROR: The number of alignments per thread must be at least 1000");
 
   // The number of threads must be between 1 and kMaxTagsortThreads
