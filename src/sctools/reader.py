@@ -53,17 +53,17 @@ def infer_open(file_: str, mode: str) -> Callable:
         partial
 
     """
-    with open(file_, 'rb') as f:
+    with open(file_, "rb") as f:
         data: bytes = f.read(3)
 
         # gz and bzip treat 'r' = bytes, 'rt' = string
-        if data[:2] == b'\x1f\x8b':  # gzip magic number
+        if data[:2] == b"\x1f\x8b":  # gzip magic number
             inferred_openhook: Callable = gzip.open
-            inferred_mode: str = 'rt' if mode == 'r' else mode
+            inferred_mode: str = "rt" if mode == "r" else mode
 
-        elif data == b'BZh':  # bz2 magic number
+        elif data == b"BZh":  # bz2 magic number
             inferred_openhook: Callable = bz2.open
-            inferred_mode: str = 'rt' if mode == 'r' else mode
+            inferred_mode: str = "rt" if mode == "r" else mode
 
         else:
             inferred_openhook: Callable = open
@@ -89,7 +89,7 @@ class Reader:
 
     """
 
-    def __init__(self, files='-', mode='r', header_comment_char=None):
+    def __init__(self, files="-", mode="r", header_comment_char=None):
         if isinstance(files, str):
             self._files = [files]
         elif isinstance(files, Iterable):  # test items of iterable
@@ -97,16 +97,16 @@ class Reader:
             if all(isinstance(f, str) for f in files):
                 self._files = files
             else:
-                raise TypeError('All passed files must be type str')
+                raise TypeError("All passed files must be type str")
         else:
-            raise TypeError('Files must be a string filename or a list of such names.')
+            raise TypeError("Files must be a string filename or a list of such names.")
 
         # set open mode:
-        if mode not in {'r', 'rb'}:
+        if mode not in {"r", "rb"}:
             raise ValueError("Mode must be one of 'r', 'rb'")
         self._mode = mode
 
-        if isinstance(header_comment_char, str) and mode == 'rb':
+        if isinstance(header_comment_char, str) and mode == "rb":
             self._header_comment_char = header_comment_char.encode()
         else:
             self._header_comment_char = header_comment_char

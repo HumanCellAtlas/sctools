@@ -294,7 +294,7 @@ def get_mitochondrial_gene_names(
                 f"Malformed GTF file detected. Record is of type gene but does not have a "
                 f'"gene_name" field: {record}'
             )
-        if re.match('^mt-', gene_name, re.IGNORECASE):
+        if re.match("^mt-", gene_name, re.IGNORECASE):
             if gene_id not in mitochondrial_gene_ids:
                 mitochondrial_gene_ids.add(gene_id)
 

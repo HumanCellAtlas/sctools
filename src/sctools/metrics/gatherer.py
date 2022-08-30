@@ -73,7 +73,7 @@ class MetricGatherer:
         """the bam file that metrics are generated from"""
         return self._bam_file
 
-    def extract_metrics(self, mode='rb') -> None:
+    def extract_metrics(self, mode="rb") -> None:
         """extract metrics from the provided bam file and write the results to csv.
 
         Parameters
@@ -113,7 +113,7 @@ class GatherCellMetrics(MetricGatherer):
 
     __doc__ += extra_docs
 
-    def extract_metrics(self, mode: str = 'rb') -> None:
+    def extract_metrics(self, mode: str = "rb") -> None:
         """Extract cell metrics from self.bam_file
 
         Parameters
@@ -186,7 +186,7 @@ class GatherGeneMetrics(MetricGatherer):
 
     __doc__ += extra_docs
 
-    def extract_metrics(self, mode: str = 'rb') -> None:
+    def extract_metrics(self, mode: str = "rb") -> None:
         """Extract gene metrics from self.bam_file
 
         Parameters
@@ -208,7 +208,7 @@ class GatherGeneMetrics(MetricGatherer):
                 metric_aggregator = GeneMetrics()
 
                 # in case of multi-genes ignore as in the counting stage
-                if gene_tag and len(gene_tag.split(',')) > 1:
+                if gene_tag and len(gene_tag.split(",")) > 1:
                     continue
 
                 # break up gene ids by cell barcodes

@@ -48,8 +48,8 @@ class MergeMetrics:
 
     def __init__(self, metric_files: Sequence[str], output_file: str):
         self._metric_files = metric_files
-        if not output_file.endswith('.csv.gz'):
-            output_file += '.csv.gz'
+        if not output_file.endswith(".csv.gz"):
+            output_file += ".csv.gz"
         self._output_file = output_file
 
     def execute(self) -> None:
@@ -68,7 +68,7 @@ class MergeCellMetrics(MergeMetrics):
             pd.read_csv(f, index_col=0) for f in self._metric_files
         ]
         concatenated_frame: pd.DataFrame = pd.concat(metric_dataframes, axis=0)
-        concatenated_frame.to_csv(self._output_file, compression='gzip')
+        concatenated_frame.to_csv(self._output_file, compression="gzip")
 
 
 class MergeGeneMetrics(MergeMetrics):
@@ -84,26 +84,26 @@ class MergeGeneMetrics(MergeMetrics):
         """
 
         count_data_to_sum = [
-            'n_reads',
-            'noise_reads',
-            'perfect_molecule_barcodes',
-            'reads_mapped_exonic',
-            'reads_mapped_intronic',
-            'reads_mapped_utr',
-            'reads_mapped_uniquely',
-            'reads_mapped_multiple',
-            'duplicate_reads',
-            'spliced_reads',
-            'antisense_reads',
-            'n_molecules',
-            'n_fragments',
-            'fragments_with_single_read_evidence',
-            'molecules_with_single_read_evidence',
-            'number_cells_detected_multiple',
-            'number_cells_expressing',
+            "n_reads",
+            "noise_reads",
+            "perfect_molecule_barcodes",
+            "reads_mapped_exonic",
+            "reads_mapped_intronic",
+            "reads_mapped_utr",
+            "reads_mapped_uniquely",
+            "reads_mapped_multiple",
+            "duplicate_reads",
+            "spliced_reads",
+            "antisense_reads",
+            "n_molecules",
+            "n_fragments",
+            "fragments_with_single_read_evidence",
+            "molecules_with_single_read_evidence",
+            "number_cells_detected_multiple",
+            "number_cells_expressing",
         ]
 
-        sum_operations = {c: 'sum' for c in count_data_to_sum}
+        sum_operations = {c: "sum" for c in count_data_to_sum}
 
         def weighted_average(data_frame: pd.DataFrame) -> pd.Series:
             """Calculate the average of each metric, weighted by number of reads per chunk
@@ -119,15 +119,15 @@ class MergeGeneMetrics(MergeMetrics):
                 The average of each metric across chunks, weighted by the number of reads per chunk
 
             """
-            weights = data_frame['n_reads'].values
+            weights = data_frame["n_reads"].values
 
             columns_to_average_by_read = [
-                'molecule_barcode_fraction_bases_above_30_mean',
-                'molecule_barcode_fraction_bases_above_30_variance',
-                'genomic_reads_fraction_bases_quality_above_30_mean',
-                'genomic_reads_fraction_bases_quality_above_30_variance',
-                'genomic_read_quality_mean',
-                'genomic_read_quality_variance',
+                "molecule_barcode_fraction_bases_above_30_mean",
+                "molecule_barcode_fraction_bases_above_30_variance",
+                "genomic_reads_fraction_bases_quality_above_30_mean",
+                "genomic_reads_fraction_bases_quality_above_30_variance",
+                "genomic_read_quality_mean",
+                "genomic_read_quality_variance",
             ]
 
             return pd.Series(
@@ -155,12 +155,12 @@ class MergeGeneMetrics(MergeMetrics):
             """
             return pd.DataFrame(
                 data={
-                    'reads_per_molecule': data_frame['n_reads']
-                    / data_frame['n_molecules'],
-                    'fragments_per_molecule': data_frame['n_fragments']
-                    / data_frame['n_molecules'],
-                    'reads_per_fragment': data_frame['n_reads']
-                    / data_frame['n_fragments'],
+                    "reads_per_molecule": data_frame["n_reads"]
+                    / data_frame["n_molecules"],
+                    "fragments_per_molecule": data_frame["n_fragments"]
+                    / data_frame["n_molecules"],
+                    "reads_per_fragment": data_frame["n_reads"]
+                    / data_frame["n_fragments"],
                 }
             )
 
@@ -188,4 +188,4 @@ class MergeGeneMetrics(MergeMetrics):
             nucleus = merged
 
         # write the data
-        nucleus.to_csv(self._output_file, compression='gzip')
+        nucleus.to_csv(self._output_file, compression="gzip")

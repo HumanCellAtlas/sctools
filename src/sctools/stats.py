@@ -46,7 +46,7 @@ def base4_entropy(x, axis=1):
     else:
         x = np.divide(x, np.sum(x, axis=axis))
 
-    with np.errstate(divide='ignore'):
+    with np.errstate(divide="ignore"):
         r = np.log(x) / np.log(4)
 
     # convention: 0 * log(0) = 0, != -INF.
@@ -72,7 +72,7 @@ class OnlineGaussianSufficientStatistic:
 
     """
 
-    __slots__ = ['_count', '_mean', '_mean_squared_error']
+    __slots__ = ["_count", "_mean", "_mean_squared_error"]
 
     def __init__(self):
         self._mean_squared_error: float = 0.0
