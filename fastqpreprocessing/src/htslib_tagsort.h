@@ -24,6 +24,6 @@
  * @param options: INPUT_OPTIONS_TAGSORT the inputs to the program
  * @return a vector containing the file paths of the partial files
 */
-std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT& options);
+std::vector<std::string> create_sorted_file_splits_htslib(INPUT_OPTIONS_TAGSORT options);
 
 #endif
