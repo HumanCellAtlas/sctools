@@ -11,10 +11,10 @@ LDIR =../libStatGen/
 
 LIBS = -lStatGen -lz -lpthread -lstdc++fs -lgzstream
 
-_DEPS = fastqprocess.h utilities.h input_options.h
+_DEPS = fastqprocess.h utilities.h input_options.h fastq_common.h
 
 TARGET1 = fastqprocess
-_TARGET1_OBJ = fastqprocess.o
+_TARGET1_OBJ = fastqprocess.o fastq_common.o
 TARGET1_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET1_OBJ))
 
 TARGET2 = TagSort
@@ -22,7 +22,7 @@ _TARGET2_OBJ = tagsort.o htslib_tagsort.o metricgatherer.o
 TARGET2_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET2_OBJ))
 
 TARGET3 = fastq_slideseq
-_TARGET3_OBJ = fastq_slideseq.o
+_TARGET3_OBJ = fastq_slideseq.o fastq_common.o
 TARGET3_OBJ = $(patsubst %,$(ODIR)/%,$(_TARGET3_OBJ))
 
 TARGET4 = fastq_metrics
