@@ -37,7 +37,7 @@ public:
   FastQMetricsShard(std::string read_structure);
   void ingestBarcodeAndUMI(std::string_view raw_seq);
   void processShard(String filenameR1, std::string read_structure,
-                    const WHITE_LIST_DATA* white_list_data);
+                    const WhiteListData* white_list_data);
   static void mergeMetricsShardsToFile(std::string filename_prefix,
                                        std::vector<FastQMetricsShard> shards,
                                        int umi_length, int CB_length);
