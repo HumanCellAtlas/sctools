@@ -134,7 +134,7 @@ void parseOneAlignment(std::vector<TAGTUPLE>* tuple_records, bam1_t* aln,
     if (qual_score > kThreshold)
       num_bp_above_threshold += 1;
   }
-  int avg_cell_barcode_qual = sum_barcode_qual / (float)len; // TODO truncation intended?
+  float avg_cell_barcode_qual = sum_barcode_qual / (float)len;
   float cell_barcode_qual_above_threshold = (float)num_bp_above_threshold / (float)len;
 
   // corrected molecule barcodes (UMIs)
