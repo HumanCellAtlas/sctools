@@ -22,12 +22,15 @@ TARGET3_OBJ = obj/fastq_slideseq.o
 TARGET4 = bin/fastq_metrics
 TARGET4_OBJ = obj/fastq_metrics.o
 
-install: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
+TARGET5 = bin/samplefastq
+TARGET5_OBJ = obj/samplefastq.o
+
+install: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
 	cp htslib-1.13/*.so.? bin/
 
-all: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
+all: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
 
-COMMON_OBJ = obj/utilities.o obj/input_options.o
+COMMON_OBJ = obj/utilities.o obj/input_options.o obj/fastq_common.o
 
 obj/%.o: src/%.cpp $(_DEPS)
 	$(CC) -c -o $@ $<  -I$(IDIR1) -I$(IDIR2) -I$(IDIR3)
@@ -44,7 +47,10 @@ $(TARGET3): $(COMMON_OBJ) $(TARGET3_OBJ)
 $(TARGET4): $(COMMON_OBJ) $(TARGET4_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
 
+$(TARGET5): $(COMMON_OBJ) $(TARGET5_OBJ)
+	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
+
 .PHONY: clean
 clean:
 	rm -f obj/*.o *~ core $(INCDIR)/*~  *.o *.so *.a
-	rm -rf $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
+	rm -rf $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
