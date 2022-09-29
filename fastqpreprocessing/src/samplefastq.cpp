@@ -1,5 +1,6 @@
 #include "fastq_common.h"
 #include "input_options.h"
+#include <fstream>
 
 std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_structure)
 {
@@ -62,28 +63,28 @@ int main(int argc, char** argv)
   // number of output bam files, and one writer thread per bam file
   int num_writer_threads = get_num_blocks(options);
 
-  std::ofstream outfile_r1(output_filename_r1);
+  std::ofstream outfile_r1("sampled_down.R1");
   if (!outfile_r1)
-    crash("Failed to open output file " + output_filename_r1);
-  std::ofstream outfile_r1(output_filename_r2);
+    crash("Failed to open output file sampled_down.R1");
+  std::ofstream outfile_r2("sampled_down.R2");
   if (!outfile_r2)
-    crash("Failed to open output file " + output_filename_r2);
+    crash("Failed to open output file sampled_down.R2");
 
   g_parsed_read_structure = parseReadStructure(options.read_structure);
   mainCommon(options.white_list_file, /*num_writer_threads=*/1, options.output_format,
              options.I1s, options.R1s, options.R2s, options.sample_id,
              noOpFillSamRecordWithReadStructure, slideseqBarcodeGetter,
-             [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* samrec, int ignored2)
+             [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* sam, int ignored2)
              {
                // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
-               char* barcode = sam->getString("CR").c_str();
-               char* quality_score = sam->getString("CY").c_str()
-               r1_out << "@" << sam->getReadName() << "\n"
+               const char* barcode = sam->getString("CR").c_str();
+               const char* quality_score = sam->getString("CY").c_str();
+               outfile_r1 << "@" << sam->getReadName() << "\n"
                       << std::string_view(barcode, 8) << "CTTCAGCGTTCCCGAGAG" << std::string_view(barcode+8, 6) << sam->getString("UR") <<"T\n"
                       << "+\n"
                       << std::string_view(quality_score, 8)<<"FFFFFFFFFFFFFFFFFF" << std::string_view(quality_score+8, 6) << sam->getString("UY") <<"F"<< "\n";
 
-               r2_out << "@" << sam->getReadName() << "\n"
+               outfile_r2 << "@" << sam->getReadName() << "\n"
                       << sam->getSequence() << "\n"
                       << "+\n"
                       << sam->getQuality() << "\n";
