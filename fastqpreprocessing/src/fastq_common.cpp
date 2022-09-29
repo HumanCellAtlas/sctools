@@ -3,9 +3,9 @@
 #include <fstream>
 #include <cstdint>
 
+#include "fastq_common.h"
 // number of samrecords per buffer in each reader
 constexpr size_t kSamRecordBufferSize = 10000;
-
 #include "input_options.h"
 #include "utilities.h"
 
@@ -272,7 +272,8 @@ void fastQFileReaderThread(
     int reader_thread_index, std::string filenameI1, String filenameR1,
     String filenameR2, const WhiteListData* white_list_data,
     std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
-    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
+    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter,
+    std::function<void(WriteQueue*, SamRecord*, int)> output_handler)
 {
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileI1(4, 4);
@@ -360,7 +361,8 @@ void mainCommon(
     std::vector<std::string> I1s, std::vector<std::string> R1s, std::vector<std::string> R2s,
     std::string sample_id,
     std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
-    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
+    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter,
+    std::function<void(WriteQueue*, SamRecord*, int)> output_handler)
 {
   std::cout << "reading whitelist file " << white_list_file << "...";
   // stores barcode correction map and vector of correct barcodes
@@ -393,7 +395,7 @@ void mainCommon(
 
     g_read_arenas.push_back(std::make_unique<SamRecordArena>());
     readers.emplace_back(fastQFileReaderThread, i, I1.c_str(), R1s[i].c_str(),
-                         R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter);
+                         R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter, output_handler);
   }
 
   for (auto& reader : readers)
@@ -405,5 +407,5 @@ void mainCommon(
     write_queue->enqueueShutdownSignal();
 
   for (auto& writer : writers)
-    writer.join();
+writer.join();
 }

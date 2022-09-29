@@ -20,7 +20,7 @@ using PendingWrite = std::pair<SamRecord*, int>;
 class WriteQueue
 {
 public:
-  constexpr int kShutdown = -1;
+  static constexpr int kShutdown = -1;
   PendingWrite dequeueWrite();
   void enqueueWrite(PendingWrite write);
   void enqueueShutdownSignal();
