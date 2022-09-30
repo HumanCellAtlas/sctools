@@ -58,6 +58,11 @@ std::string slideseqBarcodeGetter(SamRecord* sam, FastQFile* fastQFileI1,
   return std::string(sam->getString("CR").c_str());
 }
 
+void outputHandler(WriteQueue* cur_write_queue, SamRecord* samrec, int reader_thread_index)
+{
+  cur_write_queue->enqueueWrite(std::make_pair(samrec, reader_thread_index));
+}
+
 int main(int argc, char** argv)
 {
   INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqSlideseq(argc, argv);
@@ -68,6 +73,6 @@ int main(int argc, char** argv)
 
   mainCommon(options.white_list_file, num_writer_threads, options.output_format,
              options.I1s, options.R1s, options.R2s, options.sample_id,
-             fillSamRecordWithReadStructure, slideseqBarcodeGetter);
+             fillSamRecordWithReadStructure, slideseqBarcodeGetter, outputHandler);
   return 0;
 }

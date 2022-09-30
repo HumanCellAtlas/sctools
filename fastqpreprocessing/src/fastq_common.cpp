@@ -3,9 +3,9 @@
 #include <fstream>
 #include <cstdint>
 
+#include "fastq_common.h"
 // number of samrecords per buffer in each reader
 constexpr size_t kSamRecordBufferSize = 10000;
-
 #include "input_options.h"
 #include "utilities.h"
 
@@ -20,14 +20,11 @@ constexpr size_t kSamRecordBufferSize = 10000;
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
-#include <condition_variable>
-#include <queue>
 #include <cstdio>
 #include <cstdlib>
 #include <getopt.h>
 #include <vector>
 #include <functional>
-#include <mutex>
 #include <stack>
 
 // Overview of multithreading:
@@ -42,42 +39,28 @@ constexpr size_t kSamRecordBufferSize = 10000;
 //   the record pointer's arena that the record's memory is no longer in use.
 //   The arena can then give that pointer to its reader for a new read.
 
-// A pointer to a valid SamRecord waiting to be written to disk, and the index
-// of the g_read_arenas that pointer should be released to after the write.
-using PendingWrite = std::pair<SamRecord*, int>;
-
-constexpr int kWriteQueueShutdown = -1;
-class WriteQueue
+PendingWrite WriteQueue::dequeueWrite()
 {
-public:
-  PendingWrite dequeueWrite()
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait(lock, [&] { return !queue_.empty(); });
-    auto pair = queue_.front();
-    queue_.pop();
-    return pair;
-  }
-  void enqueueWrite(PendingWrite write)
-  {
-    mutex_.lock();
-    queue_.push(write);
-    mutex_.unlock();
-    cv_.notify_one();
-  }
-  void enqueueShutdownSignal()
-  {
-    mutex_.lock();
-    queue_.push(std::make_pair(nullptr, kWriteQueueShutdown));
-    mutex_.unlock();
-    cv_.notify_one();
-  }
-private:
-  std::mutex mutex_;
-  std::condition_variable cv_;
-  std::queue<PendingWrite> queue_;
-};
-
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [&] { return !queue_.empty(); });
+  auto pair = queue_.front();
+  queue_.pop();
+  return pair;
+}
+void WriteQueue::enqueueWrite(PendingWrite write)
+{
+  mutex_.lock();
+  queue_.push(write);
+  mutex_.unlock();
+  cv_.notify_one();
+}
+void WriteQueue::enqueueShutdownSignal()
+{
+  mutex_.lock();
+  queue_.push(std::make_pair(nullptr, kShutdown));
+  mutex_.unlock();
+  cv_.notify_one();
+}
 std::vector<std::unique_ptr<WriteQueue>> g_write_queues;
 
 // I wrote this class to stay close to the performance characteristics of the
@@ -123,7 +106,10 @@ private:
 };
 
 std::vector<std::unique_ptr<SamRecordArena>> g_read_arenas;
-
+void releaseReaderThreadMemory(int reader_thread_index, SamRecord* samRecord)
+{
+  g_read_arenas[reader_thread_index]->releaseSamRecordMemory(samRecord);
+}
 
 
 void writeFastqRecord(ogzstream& r1_out, ogzstream& r2_out, SamRecord* sam)
@@ -149,7 +135,7 @@ void fastqWriterThread(int write_thread_index)
   while (true)
   {
     auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
-    if (source_reader_index == kWriteQueueShutdown)
+    if (source_reader_index == WriteQueue::kShutdown)
       break;
 
     writeFastqRecord(r1_out, r2_out, sam);
@@ -186,7 +172,7 @@ void bamWriterThread(int write_thread_index, std::string sample_id)
   while (true)
   {
     auto [sam, source_reader_index] = g_write_queues[write_thread_index]->dequeueWrite();
-    if (source_reader_index == kWriteQueueShutdown)
+    if (source_reader_index == WriteQueue::kShutdown)
       break;
 
     samOut.WriteRecord(samHeader, *sam);
@@ -289,7 +275,8 @@ void fastQFileReaderThread(
     int reader_thread_index, std::string filenameI1, String filenameR1,
     String filenameR2, const WhiteListData* white_list_data,
     std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
-    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
+    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter,
+    std::function<void(WriteQueue*, SamRecord*, int)> output_handler)
 {
   /// setting the shortest sequence allowed to be read
   FastQFile fastQFileI1(4, 4);
@@ -348,7 +335,7 @@ void fastQFileReaderThread(
           barcode, samrec, white_list_data, &n_barcode_corrected, &n_barcode_correct,
           &n_barcode_errors, g_write_queues.size());
 
-      g_write_queues[bam_bucket]->enqueueWrite(std::make_pair(samrec, reader_thread_index));
+      output_handler(g_write_queues[bam_bucket].get(), samrec, reader_thread_index);
 
       if (total_reads % 10000000 == 0)
       {
@@ -377,7 +364,8 @@ void mainCommon(
     std::vector<std::string> I1s, std::vector<std::string> R1s, std::vector<std::string> R2s,
     std::string sample_id,
     std::function <void(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> sam_record_filler,
-    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter)
+    std::function <std::string(SamRecord*, FastQFile*, FastQFile*, FastQFile*, bool)> barcode_getter,
+    std::function<void(WriteQueue*, SamRecord*, int)> output_handler)
 {
   std::cout << "reading whitelist file " << white_list_file << "...";
   // stores barcode correction map and vector of correct barcodes
@@ -410,7 +398,7 @@ void mainCommon(
 
     g_read_arenas.push_back(std::make_unique<SamRecordArena>());
     readers.emplace_back(fastQFileReaderThread, i, I1.c_str(), R1s[i].c_str(),
-                         R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter);
+                         R2s[i].c_str(), &white_list_data, sam_record_filler, barcode_getter, output_handler);
   }
 
   for (auto& reader : readers)
@@ -422,5 +410,5 @@ void mainCommon(
     write_queue->enqueueShutdownSignal();
 
   for (auto& writer : writers)
-    writer.join();
+writer.join();
 }
