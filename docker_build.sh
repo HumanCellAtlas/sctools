@@ -9,8 +9,8 @@ DIR=$(cd $(dirname $0) && pwd)
 # Registries and tags
 GCR_URL="us.gcr.io/broad-gotc-prod/sctools"
 
-# Samtools version
-SCTOOLS_VERSION="v0.3.14"
+# sctools version
+SCTOOLS_VERSION="v0.3.15"
 
 # Necessary tools and help text
 TOOLS=(docker gcloud)
