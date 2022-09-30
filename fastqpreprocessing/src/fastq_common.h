@@ -30,6 +30,9 @@ private:
   std::queue<PendingWrite> queue_;
 };
 
+// This is a hack for the sake of samplefastq program.
+void releaseReaderThreadMemory(int reader_thread_index, SamRecord* samRecord);
+
 void fillSamRecordCommon(SamRecord* samRecord, FastQFile* fastQFileI1,
                          FastQFile* fastQFileR1, FastQFile* fastQFileR2,
                          bool has_I1_file_list,

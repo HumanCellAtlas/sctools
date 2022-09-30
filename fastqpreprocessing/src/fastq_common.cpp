@@ -106,7 +106,10 @@ private:
 };
 
 std::vector<std::unique_ptr<SamRecordArena>> g_read_arenas;
-
+void releaseReaderThreadMemory(int reader_thread_index, SamRecord* samRecord)
+{
+  g_read_arenas[reader_thread_index]->releaseSamRecordMemory(samRecord);
+}
 
 
 void writeFastqRecord(ogzstream& r1_out, ogzstream& r2_out, SamRecord* sam)

@@ -57,6 +57,7 @@ void outputHandler(WriteQueue* cur_write_queue, SamRecord* samrec, int reader_th
   cur_write_queue->enqueueWrite(std::make_pair(samrec, reader_thread_index));
 }
 
+
 int main(int argc, char** argv)
 {
   INPUT_OPTIONS_FASTQ_READ_STRUCTURE options = readOptionsFastqSlideseq(argc, argv);
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
   mainCommon(options.white_list_file, /*num_writer_threads=*/1, options.output_format,
              options.I1s, options.R1s, options.R2s, options.sample_id,
              noOpFillSamRecordWithReadStructure, slideseqBarcodeGetter,
-             [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* sam, int ignored2)
+             [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* sam, int reader_thread_index)
              {
                // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
                const char* barcode = sam->getString("CR").c_str();
@@ -88,6 +89,7 @@ int main(int argc, char** argv)
                       << sam->getSequence() << "\n"
                       << "+\n"
                       << sam->getQuality() << "\n";
+	       releaseReaderThreadMemory(reader_thread_index,sam);
              });
   return 0;
 }
