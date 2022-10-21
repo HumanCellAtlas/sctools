@@ -84,19 +84,22 @@ int main(int argc, char** argv)
              fillSamRecordWithReadStructure, slideseqBarcodeGetter,
              [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* sam, int reader_thread_index)
              {
-               // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
-               const char* barcode = sam->getString("CR").c_str();
-               const char* quality_score = sam->getString("CY").c_str();
-               outfile_r1 << "@" << sam->getReadName() << "\n"
-                      << std::string_view(barcode, 8) << "CTTCAGCGTTCCCGAGAG" << std::string_view(barcode+8, 6) << sam->getString("UR") <<"T\n"
-                      << "+\n"
-                      << std::string_view(quality_score, 8)<<"FFFFFFFFFFFFFFFFFF" << std::string_view(quality_score+8, 6) << sam->getString("UY") <<"F"<< "\n";
+               if (sam->getStringTag("CB"))
+               {
+                   // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
+                   const char* barcode = sam->getString("CR").c_str();
+                   const char* quality_score = sam->getString("CY").c_str();
+                   outfile_r1 << "@" << sam->getReadName() << "\n"
+                          << std::string_view(barcode, 8) << "CTTCAGCGTTCCCGAGAG" << std::string_view(barcode+8, 6) << sam->getString("UR") <<"T\n"
+                          << "+\n"
+                          << std::string_view(quality_score, 8)<<"FFFFFFFFFFFFFFFFFF" << std::string_view(quality_score+8, 6) << sam->getString("UY") <<"F"<< "\n";
 
-               outfile_r2 << "@" << sam->getReadName() << "\n"
-                      << sam->getSequence() << "\n"
-                      << "+\n"
-                      << sam->getQuality() << "\n";
-	       releaseReaderThreadMemory(reader_thread_index,sam);
+                   outfile_r2 << "@" << sam->getReadName() << "\n"
+                          << sam->getSequence() << "\n"
+                          << "+\n"
+                          << sam->getQuality() << "\n";
+                   releaseReaderThreadMemory(reader_thread_index,sam);
+               }
              });
   return 0;
 }
