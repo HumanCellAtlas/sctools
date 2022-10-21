@@ -98,8 +98,8 @@ int main(int argc, char** argv)
                           << sam->getSequence() << "\n"
                           << "+\n"
                           << sam->getQuality() << "\n";
-                   releaseReaderThreadMemory(reader_thread_index,sam);
                }
+               releaseReaderThreadMemory(reader_thread_index,sam);
              });
   return 0;
 }
