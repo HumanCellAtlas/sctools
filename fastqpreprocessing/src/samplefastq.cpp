@@ -20,22 +20,16 @@ std::vector<std::pair<char, int>> parseReadStructure(std::string const& read_str
 
 std::vector<std::pair<char, int>> g_parsed_read_structure;
 
-void noOpFillSamRecordWithReadStructure(SamRecord* sam, FastQFile* fastQFileI1,
+void fillSamRecordWithReadStructure(SamRecord* sam, FastQFile* fastQFileI1,
                                     FastQFile* fastQFileR1, FastQFile* fastQFileR2,
                                     bool has_I1_file_list)
 {
-
-}
-
-std::string slideseqBarcodeGetter(SamRecord* sam, FastQFile* fastQFileI1,
-                                  FastQFile* fastQFileR1, FastQFile* fastQFileR2,
-                                  bool has_I1_file_list)
-{
   // check the sequence names matching
   std::string a = std::string(fastQFileR1->myRawSequence.c_str());
-  // extract the raw barcode 8C18X6C9M1X
+  std::string b = std::string(fastQFileR1->myQualityString.c_str());
+  // extract the raw barcode and UMI 8C18X6C9M1X and raw barcode and UMI quality string
 
-  std::string barcode_seq;
+  std::string barcode_seq, barcode_quality, umi_seq, umi_quality;
   int cur_ind = 0;
   for (auto [tag, length] : g_parsed_read_structure)
   {
@@ -43,13 +37,26 @@ std::string slideseqBarcodeGetter(SamRecord* sam, FastQFile* fastQFileI1,
     {
     case 'C':
       barcode_seq += a.substr(cur_ind, length);
+      barcode_quality += b.substr(cur_ind, length);
+      break;
+    case 'M':
+      umi_seq += a.substr(cur_ind, length);
+      umi_quality += b.substr(cur_ind, length);
       break;
     default:
       break;
     }
     cur_ind += length;
   }
-  return barcode_seq;
+  fillSamRecordCommon(sam, fastQFileI1, fastQFileR1, fastQFileR2, has_I1_file_list,
+                      barcode_seq, barcode_quality, umi_seq, umi_quality);
+}
+
+std::string slideseqBarcodeGetter(SamRecord* sam, FastQFile* fastQFileI1,
+                                  FastQFile* fastQFileR1, FastQFile* fastQFileR2,
+                                  bool has_I1_file_list)
+{
+  return std::string(sam->getString("CR").c_str());
 }
 
 void outputHandler(WriteQueue* cur_write_queue, SamRecord* samrec, int reader_thread_index)
@@ -74,22 +81,25 @@ int main(int argc, char** argv)
   g_parsed_read_structure = parseReadStructure(options.read_structure);
   mainCommon(options.white_list_file, /*num_writer_threads=*/1, options.output_format,
              options.I1s, options.R1s, options.R2s, options.sample_id,
-             noOpFillSamRecordWithReadStructure, slideseqBarcodeGetter,
+             fillSamRecordWithReadStructure, slideseqBarcodeGetter,
              [&outfile_r1, &outfile_r2](WriteQueue* ignored1, SamRecord* sam, int reader_thread_index)
              {
-               // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
-               const char* barcode = sam->getString("CR").c_str();
-               const char* quality_score = sam->getString("CY").c_str();
-               outfile_r1 << "@" << sam->getReadName() << "\n"
-                      << std::string_view(barcode, 8) << "CTTCAGCGTTCCCGAGAG" << std::string_view(barcode+8, 6) << sam->getString("UR") <<"T\n"
-                      << "+\n"
-                      << std::string_view(quality_score, 8)<<"FFFFFFFFFFFFFFFFFF" << std::string_view(quality_score+8, 6) << sam->getString("UY") <<"F"<< "\n";
+               if (sam->getStringTag("CB"))
+               {
+                   // Assumed read structure of 8C18X6C9M1X with a fixed spacer sequence
+                   const char* barcode = sam->getString("CR").c_str();
+                   const char* quality_score = sam->getString("CY").c_str();
+                   outfile_r1 << "@" << sam->getReadName() << "\n"
+                          << std::string_view(barcode, 8) << "CTTCAGCGTTCCCGAGAG" << std::string_view(barcode+8, 6) << sam->getString("UR") <<"T\n"
+                          << "+\n"
+                          << std::string_view(quality_score, 8)<<"FFFFFFFFFFFFFFFFFF" << std::string_view(quality_score+8, 6) << sam->getString("UY") <<"F"<< "\n";
 
-               outfile_r2 << "@" << sam->getReadName() << "\n"
-                      << sam->getSequence() << "\n"
-                      << "+\n"
-                      << sam->getQuality() << "\n";
-	       releaseReaderThreadMemory(reader_thread_index,sam);
+                   outfile_r2 << "@" << sam->getReadName() << "\n"
+                          << sam->getSequence() << "\n"
+                          << "+\n"
+                          << sam->getQuality() << "\n";
+               }
+               releaseReaderThreadMemory(reader_thread_index,sam);
              });
   return 0;
 }
