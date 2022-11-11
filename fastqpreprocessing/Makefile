@@ -8,49 +8,49 @@ CFLAGS = -I$(IDIR1) -LlibStatGen  -Lgzstream
 
 LIBS = -LlibStatGen -lStatGen -lz -lpthread -lstdc++fs -Lgzstream -lgzstream
 
-_DEPS = src/utilities.h src/input_options.h src/fastq_common.h
+_DEPS = src/utilities.h src/input_options.h src/fastq_common.h src/mitochondrial_gene_selector.h
 
-TARGET1 = bin/fastqprocess
-TARGET1_OBJ = obj/fastqprocess.o
+TARGET_FQPROCESS = bin/fastqprocess
+TARGET_FQPROCESS_OBJ = obj/fastqprocess.o
 
-TARGET2 = bin/TagSort
-TARGET2_OBJ = obj/tagsort.o obj/htslib_tagsort.o obj/metricgatherer.o
+TARGET_TAGSORT = bin/TagSort
+TARGET_TAGSORT_OBJ = obj/tagsort.o obj/htslib_tagsort.o obj/metricgatherer.o obj/mitochondrial_gene_selector.o
 
-TARGET3 = bin/fastq_slideseq
-TARGET3_OBJ = obj/fastq_slideseq.o
+TARGET_FQSLIDESEQ = bin/fastq_slideseq
+TARGET_FQSLIDESEQ_OBJ = obj/fastq_slideseq.o
 
-TARGET4 = bin/fastq_metrics
-TARGET4_OBJ = obj/fastq_metrics.o
+TARGET_FQMETRICS = bin/fastq_metrics
+TARGET_FQMETRICS_OBJ = obj/fastq_metrics.o
 
-TARGET5 = bin/samplefastq
-TARGET5_OBJ = obj/samplefastq.o
+TARGET_SAMPLEFQ = bin/samplefastq
+TARGET_SAMPLEFQ_OBJ = obj/samplefastq.o
 
-install: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
+install: $(TARGET_FQPROCESS) $(TARGET_TAGSORT) $(TARGET_FQSLIDESEQ) $(TARGET_FQMETRICS) $(TARGET_SAMPLEFQ)
 	cp htslib-1.13/*.so.? bin/
 
-all: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
+all: $(TARGET_FQPROCESS) $(TARGET_TAGSORT) $(TARGET_FQSLIDESEQ) $(TARGET_FQMETRICS) $(TARGET_SAMPLEFQ)
 
 COMMON_OBJ = obj/utilities.o obj/input_options.o obj/fastq_common.o
 
 obj/%.o: src/%.cpp $(_DEPS)
 	$(CC) -c -o $@ $<  -I$(IDIR1) -I$(IDIR2) -I$(IDIR3)
 
-$(TARGET1): $(COMMON_OBJ) $(TARGET1_OBJ)
+$(TARGET_FQPROCESS): $(COMMON_OBJ) $(TARGET_FQPROCESS_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
 
-$(TARGET2): $(COMMON_OBJ) $(TARGET2_OBJ)
-	$(CC) -Wl,-rpath,/usr/local/bin:fastqpreprocessing/bin:bin:. -o $@ $(COMMON_OBJ)  $(TARGET2_OBJ) $(LIBS) -Lhtslib-1.13 -lhts
+$(TARGET_TAGSORT): $(COMMON_OBJ) $(TARGET_TAGSORT_OBJ)
+	$(CC) -Wl,-rpath,/usr/local/bin:fastqpreprocessing/bin:bin:. -o $@ $(COMMON_OBJ)  $(TARGET_TAGSORT_OBJ) $(LIBS) -Lhtslib-1.13 -lhts
 
-$(TARGET3): $(COMMON_OBJ) $(TARGET3_OBJ)
+$(TARGET_FQSLIDESEQ): $(COMMON_OBJ) $(TARGET_FQSLIDESEQ_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
 
-$(TARGET4): $(COMMON_OBJ) $(TARGET4_OBJ)
+$(TARGET_FQMETRICS): $(COMMON_OBJ) $(TARGET_FQMETRICS_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
 
-$(TARGET5): $(COMMON_OBJ) $(TARGET5_OBJ)
+$(TARGET_SAMPLEFQ): $(COMMON_OBJ) $(TARGET_SAMPLEFQ_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)  $(LIBS)
 
 .PHONY: clean
 clean:
 	rm -f obj/*.o *~ core $(INCDIR)/*~  *.o *.so *.a
-	rm -rf $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
+	rm -rf $(TARGET_FQPROCESS) $(TARGET_TAGSORT) $(TARGET_FQSLIDESEQ) $(TARGET_FQMETRICS) $(TARGET_SAMPLEFQ)

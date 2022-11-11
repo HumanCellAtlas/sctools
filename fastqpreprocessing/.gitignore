@@ -6,3 +6,7 @@ dox/
 dox_errors.txt
 *#
 *nohup.txt
+gzstream*
+htslib-*
+libStatGen/
+*.tar.gz

@@ -129,6 +129,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
     "file listing gene names, one per line, that the program should care about. [required, may omit if you want mouse or human]"
   };
 
+  string metric_type_str;
 
   /* getopt_long stores the option index here. */
   int option_index = 0;
@@ -193,7 +194,7 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
       options.tag_order[string(optarg)] = curr_size;
       break;
     case 'K':
-      options.metric_type = string(optarg);
+      metric_type_str = string(optarg);
       break;
     case 'g':
       options.mitochondrial_gene_names_filename = string(optarg);
@@ -229,12 +230,18 @@ INPUT_OPTIONS_TAGSORT readOptionsTagsort(int argc, char** argv)
   if (options.output_sorted_info && options.sorted_output_file.empty())
     crash("ERROR: Must specify --sorted-output when specifying --output-sorted-info");
 
-  // metric type must be either of type cell or gene
-  if (options.metric_type != "cell" && options.metric_type != "gene")
-    crash("ERROR: --metric-type must either be \"cell\" or \"gene\"");
+  if (metric_type_str == "cell")
+    options.metric_type = MetricType::Cell;
+  else if (metric_type_str == "gene")
+    options.metric_type = MetricType::Gene;
+  else if (metric_type_str == "umi")
+    options.metric_type = MetricType::Umi;
+  else
+    crash("ERROR: --metric-type must be \"cell\", \"gene\", or \"umi\"");
 
+  // TODO TODO also needed for umi?
   // if metric type is cell then the gtf file must be provided
-  if (options.metric_type == "cell" && options.gtf_file.empty())
+  if (options.metric_type == MetricType::Cell && options.gtf_file.empty())
     crash("ERROR: The gtf file name must be provided with metric_type \"cell\"");
 
   // the gtf file should not be gzipped

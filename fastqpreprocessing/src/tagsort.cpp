@@ -1,10 +1,3 @@
-/**
- *  @file   tagsort.cpp
- *  @brief  functions for file processing
- *  @author Kishori M. Konwar
- *  @date   2021-08-11
- ***********************************************/
-
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -76,130 +69,6 @@ struct Context
 };
 
 using QUEUETUPLE = std::tuple<std::string, int, int>;
-
-inline std::string ltrim(std::string& s)
-{
-  auto it = find_if_not(s.begin(), s.end(), [](int c) { return isspace(c); });
-  s.erase(s.begin(), it);
-  return s;
-}
-
-// remove the " (quotes) from the beginning and end of the string
-// (TODO and the middle; hopefully nobody is trying to use escaped quotes).
-std::string removeQuotes(std::string& s)
-{
-  s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c)
-  {
-    return c=='\"';
-  }), s.end());
-  return s;
-}
-
-std::vector<std::string> splitStringToFields(std::string const& str, char delim)
-{
-  std::stringstream splitter(str);
-  std::vector<std::string> ret;
-  for (std::string field; std::getline(splitter, field, delim); )
-    ret.push_back(field);
-  return ret;
-}
-
-class MitochondrialGeneSelector
-{
-public:
-  MitochondrialGeneSelector(std::string const& mitochondrial_gene_names_filename)
-  {
-    if (mitochondrial_gene_names_filename.empty())
-    {
-      default_old_behavior_ = true;
-      return;
-    }
-
-    std::ifstream input_file(mitochondrial_gene_names_filename);
-    if (!input_file)
-    {
-      crash("ERROR failed to open the mitochondrial gene names file named: " +
-            mitochondrial_gene_names_filename);
-    }
-    for (std::string line; std::getline(input_file, line);)
-    {
-      if (line.empty() || line[0] == '#') // skip comment lines
-        continue;
-      mito_genes_.insert(line);
-    }
-  }
-
-  bool interestedInGeneName(std::string const& gene_name)
-  {
-    if (default_old_behavior_)
-      return std::regex_search(gene_name, std::regex("^mt-", std::regex_constants::icase));
-    else
-      return mito_genes_.find(gene_name) != mito_genes_.end();
-  }
-
-private:
-  bool default_old_behavior_ = false;
-  std::unordered_set<std::string> mito_genes_;
-};
-
-// TODO function is named "get gene names", and there is something in there called
-//      "gene name", but it instead returns a set of "gene id"s. correct?
-//
-// The file at gtf_filename should be unzipped.
-std::unordered_set<std::string> get_mitochondrial_gene_names(
-    std::string const& gtf_filename, std::string const& mitochondrial_gene_names_filename)
-{
-  std::unordered_set<std::string> mitochondrial_gene_ids;
-
-  MitochondrialGeneSelector gene_selector(mitochondrial_gene_names_filename);
-
-  std::ifstream input_file(gtf_filename);
-  if (!input_file)
-    crash("ERROR failed to open the GTF file named: " + gtf_filename);
-
-  for (std::string line; std::getline(input_file, line);)
-  {
-    if (line.empty() || line[0] == '#') // skip comment lines
-      continue;
-
-    std::vector<std::string> tabbed_fields = splitStringToFields(line, '\t');
-    assert(tabbed_fields.size() > 8);
-    if (tabbed_fields[2] != "gene") // skip the line unless it is a gene
-      continue;
-    // split the semicolon-separated attributes field
-    std::vector<std::string> attribs = splitStringToFields(tabbed_fields[8], ';');
-
-    std::string gene_name;
-    std::string gene_id;
-    // now examine each of the attribute name-value pairs
-    for (std::string attrib : attribs)
-    {
-      // each attribute is a space-separated key-value pair
-      std::vector<std::string> key_and_val = splitStringToFields(ltrim(attrib), ' ');
-      if (key_and_val.size() != 2)
-        crash("Expected 2 fields, found " + std::to_string(key_and_val.size()) + " fields");
-
-      // the second element in the pair is the value string
-      std::string& key = key_and_val[0];
-      std::string value = removeQuotes(key_and_val[1]);
-
-      if (key == "gene_id")
-        gene_id = value;
-      if (key == "gene_name")
-        gene_name = value;
-    }
-    if (gene_name.empty())
-    {
-      crash("Malformed GTF file detected. Record is of type gene but does not "
-            "have a gene_name in line:\n" + line);
-    }
-
-    if (gene_selector.interestedInGeneName(gene_name))
-      mitochondrial_gene_ids.insert(gene_id); // TODO what if gene_id is empty?
-  }
-  std::cout << "Number of mitochondrial genes found " << mitochondrial_gene_ids.size() << std::endl;
-  return mitochondrial_gene_ids;
-}
 
 
 /*
@@ -275,17 +144,7 @@ std::string extractCompTag(std::string& s)
 int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
                             std::vector<std::string> const& partial_files)
 {
-  const std::string& sorted_output_file = options.sorted_output_file;
-  const std::string& metric_type  = options.metric_type;
-  const std::string& metric_output_file = options.metric_output_file;
   int filling_counter = 0;
-
-  std::unordered_set<std::string> mitochondrial_genes;
-  if (!options.gtf_file.empty())
-  {
-    mitochondrial_genes = get_mitochondrial_gene_names(
-        options.gtf_file, options.mitochondrial_gene_names_filename);
-  }
 
   // input the buffer size and partial files
   Context contx(partial_files.size());
@@ -317,33 +176,30 @@ int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
   //  now merge by pop an push
   std::ofstream fout;
   if (options.compute_metric) // TODO i think this is a mistake, and should actually be options.output_sorted_info
-    fout.open(sorted_output_file);
+    fout.open(options.sorted_output_file);
 
   // pop and push from the heap
   int num_alignments = 0;
   int i, j;
 
-  Metrics* metric_gatherer = nullptr;
-  MetricType metric_type_enum = MetricType::Cell;
-  if (metric_type.compare("cell")==0)
+  std::unique_ptr<MetricGatherer> metric_gatherer;
+  if (options.metric_type == MetricType::Cell)
   {
-    metric_gatherer = new CellMetrics;
-    metric_type_enum = MetricType::Cell;
+    metric_gatherer = std::make_unique<CellMetricGatherer>(
+        options.gtf_file, options.mitochondrial_gene_names_filename);
   }
-  else if (metric_type.compare("gene")==0)
-  {
-    metric_gatherer = new GeneMetrics;
-    metric_type_enum = MetricType::Gene;
-  }
+  else if (options.metric_type == MetricType::Gene)
+    metric_gatherer = std::make_unique<GeneMetricGatherer>();
+  else if (options.metric_type == MetricType::Umi)
+    metric_gatherer = std::make_unique<UmiMetricGatherer>();
   else
-    crash("Expected metric_type 'cell' or 'gene', got: " + metric_type);
-
+    crash("new MetricType enum value is not yet handled by MetricGatherer!");
   metric_gatherer->clear();
 
   std::ofstream fmetric_out;
   if (options.compute_metric)
   {
-    fmetric_out.open(metric_output_file.c_str());
+    fmetric_out.open(options.metric_output_file.c_str());
     fmetric_out << metric_gatherer->getHeader() << std::endl;
   }
 
@@ -356,17 +212,17 @@ int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
     // read the top
     QUEUETUPLE qtuple = heap.top();
     std::string curr_comp_tag = std::get<0>(qtuple);
-    assert(prev_comp_tag.compare(curr_comp_tag) <= 0);
+    i = std::get<1>(qtuple);  //buffer no
+    j = std::get<2>(qtuple);  //the pointer into the ith buffer array
 
 #ifdef DEBUG
+    assert(prev_comp_tag.compare(curr_comp_tag) <= 0);
     contx.print_status();
     if (prev_comp_tag.compare(curr_comp_tag) <= 0)
       std::cout << "Expected " << prev_comp_tag << "\n\t\t" << curr_comp_tag << std::endl;
     else
       crash("Anomaly " + prev_comp_tag + "\n\t\t" + curr_comp_tag);
 #endif
-    i = std::get<1>(qtuple);  //buffer no
-    j = std::get<2>(qtuple);  //the pointer into the ith buffer array
 
     heap.pop();
 
@@ -382,12 +238,12 @@ int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
     }
 
     // load into stream buffer
-    std::string field  = contx.data[i][j];
+    std::string field = contx.data[i][j];
     if (options.output_sorted_info)
       str << field << std::endl;
 
     if (options.compute_metric)
-      metric_gatherer->parse_line(field, fmetric_out, mitochondrial_genes, metric_type_enum);
+      metric_gatherer->ingestLine(field, fmetric_out);
     num_alignments += 1;
 
     // if ismpty is true means the file has been fully read
@@ -413,10 +269,8 @@ int mergeSortedPartialFiles(INPUT_OPTIONS_TAGSORT const& options,
   }
 
   // process the final line
-  metric_gatherer->finalize(mitochondrial_genes);
   metric_gatherer->output_metrics(fmetric_out);
   metric_gatherer->output_metrics_extra(fmetric_out);
-  delete metric_gatherer;
 
   // close the metric file
   if (options.compute_metric)

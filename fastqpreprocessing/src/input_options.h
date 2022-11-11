@@ -57,9 +57,10 @@ struct InputOptionsFastqProcess
 
 
 // Structure to hold input options for tagsort
+enum class MetricType { Cell, Gene, Umi };
 struct INPUT_OPTIONS_TAGSORT
 {
-  std::string metric_type;
+  MetricType metric_type;
   bool output_sorted_info = false;
   bool compute_metric = false;
   // name of the bam file
