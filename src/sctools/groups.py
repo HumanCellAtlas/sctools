@@ -69,7 +69,7 @@ def write_aggregated_picard_metrics_by_row(file_names, output_name):
         )
         df = pd.DataFrame.from_dict(metrics, orient="columns")
         df.insert(0, "Class", class_name)
-        d = d.append(df)
+        d = pd.concat([d, df])
     d_T = d.T
     d_T.to_csv(output_name + ".csv")
 
