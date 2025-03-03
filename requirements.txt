@@ -7,9 +7,9 @@ scipy==1.5.2
 black==19.3b0
 flake8==3.7.7
 gffutils==0.9
-numpy==1.19.1
+numpy==1.22.2
 requests==2.20.0
-setuptools==40.4.3
+setuptools==65.5.1
 setuptools_scm==3.1.0
 h5py==2.10.0
 tables==3.4.4
